@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/lib/AuthContext'
+import { GeistSans } from 'geist/font/sans'
 import './globals.css'
 
 export const metadata = {
@@ -8,8 +9,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es">
-      <body>
+    <html lang="es" className={GeistSans.className}>
+      <body className="antialiased">
         <AuthProvider>
           {children}
         </AuthProvider>

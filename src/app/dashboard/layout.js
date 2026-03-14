@@ -1,90 +1,145 @@
 'use client'
 
 import { useAuth } from '@/lib/AuthContext'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useEffect } from 'react'
 import Link from 'next/link'
+
+const navigation = [
+  { name: 'Dashboard',    href: '/dashboard',              icon: '⊞' },
+  { name: 'Citas',        href: '/dashboard/appointments', icon: '◷' },
+  { name: 'Doctores',     href: '/dashboard/doctors',      icon: '✚' },
+  { name: 'Pacientes',    href: '/dashboard/patients',     icon: '♡' },
+  { name: 'Propietarios', href: '/dashboard/owners',       icon: '◎' },
+]
+
+const clinicTypeLabel = {
+  veterinary: 'Veterinaria',
+  pediatric:  'Pediatría',
+  general:    'Medicina General',
+  dental:     'Odontología'
+}
+
+const roleLabel = {
+  admin:        'Administrador',
+  doctor:       'Doctor',
+  receptionist: 'Recepcionista',
+  patient:      'Paciente'
+}
 
 export default function DashboardLayout({ children }) {
   const { user, organization, logout, loading } = useAuth()
-  const router = useRouter()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const router   = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    }
+    if (!loading && !user) router.push('/login')
   }, [user, loading])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500 text-sm">Cargando...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f1f5f9' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm" style={{ color: '#64748b' }}>Cargando...</p>
+        </div>
       </div>
     )
   }
 
-  const navigation = [
-    { name: 'Dashboard',  href: '/dashboard',             icon: '📊' },
-    { name: 'Citas',      href: '/dashboard/appointments', icon: '📅' },
-    { name: 'Doctores',   href: '/dashboard/doctors',      icon: '👨‍⚕️' },
-    { name: 'Pacientes',  href: '/dashboard/patients',     icon: '🐾' },
-    { name: 'Propietarios', href: '/dashboard/owners',     icon: '👤' },
-  ]
+  const initials = `${user?.first_name?.[0] || ''}${user?.last_name?.[0] || ''}`
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: '#f1f5f9' }}>
 
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <aside
+        className="w-64 fixed h-full flex flex-col"
+        style={{ backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0' }}
+      >
 
         {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="px-6 py-5" style={{ borderBottom: '1px solid #e2e8f0' }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">C</span>
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#2563eb' }}
+            >
+              <span className="text-white text-sm font-bold">
+                {organization?.name?.[0] || 'C'}
+              </span>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900 truncate w-40">
-                {organization?.name || 'Clínica'}
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: '#0f172a' }}>
+                {organization?.name}
               </p>
-              <p className="text-xs text-gray-500 capitalize">
-                {organization?.clinic_type}
+              <p className="text-xs" style={{ color: '#94a3b8' }}>
+                {clinicTypeLabel[organization?.clinic_type]}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Navegación */}
-        <nav className="flex-1 p-4 space-y-1">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-            >
-              <span>{item.icon}</span>
-              <span>{item.name}</span>
-            </Link>
-          ))}
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          <p
+            className="text-xs font-medium uppercase tracking-widest px-3 mb-3"
+            style={{ color: '#94a3b8' }}
+          >
+            Menú
+          </p>
+          {navigation.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: isActive ? '#eff6ff' : 'transparent',
+                  color: isActive ? '#2563eb' : '#64748b',
+                }}
+              >
+                <span>{item.icon}</span>
+                {item.name}
+              </Link>
+            )
+          })}
         </nav>
 
         {/* Usuario */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-gray-600 text-xs font-medium">
-                {user?.first_name?.[0]}{user?.last_name?.[0]}
-              </span>
+        <div className="px-3 py-4" style={{ borderTop: '1px solid #e2e8f0' }}>
+          <div
+            className="flex items-center gap-3 px-3 py-3 rounded-lg mb-2"
+            style={{ backgroundColor: '#f8fafc' }}
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#2563eb' }}
+            >
+              <span className="text-white text-xs font-semibold">{initials}</span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">{user?.full_name}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate" style={{ color: '#0f172a' }}>
+                {user?.full_name}
+              </p>
+              <p className="text-xs" style={{ color: '#94a3b8' }}>
+                {roleLabel[user?.role]}
+              </p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="w-full text-left text-sm text-red-600 hover:text-red-700 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
+            className="w-full text-left text-sm px-3 py-2 rounded-lg transition-colors"
+            style={{ color: '#94a3b8' }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = '#ef4444'
+              e.currentTarget.style.backgroundColor = '#fef2f2'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = '#94a3b8'
+              e.currentTarget.style.backgroundColor = 'transparent'
+            }}
           >
             Cerrar sesión
           </button>
@@ -92,18 +147,29 @@ export default function DashboardLayout({ children }) {
 
       </aside>
 
-      {/* Contenido principal */}
-      <main className="flex-1 flex flex-col">
+      {/* Main */}
+      <main className="flex-1 ml-64 flex flex-col min-h-screen">
 
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <h1 className="text-lg font-semibold text-gray-900">
-            {organization?.name}
-          </h1>
+        <header
+          className="px-8 py-4 sticky top-0 z-10 flex items-center justify-between"
+          style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}
+        >
+          <p className="text-sm" style={{ color: '#94a3b8' }}>
+            {new Date().toLocaleDateString('es-GT', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            })}
+          </p>
+          <span
+            className="text-xs font-medium px-3 py-1 rounded-full"
+            style={{ color: '#2563eb', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}
+          >
+            {roleLabel[user?.role]}
+          </span>
         </header>
 
-        {/* Página */}
-        <div className="flex-1 p-6">
+        {/* Content */}
+        <div className="flex-1 p-8" style={{ backgroundColor: '#f1f5f9' }}>
           {children}
         </div>
 
