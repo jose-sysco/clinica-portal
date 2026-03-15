@@ -156,6 +156,24 @@ export default function DashboardLayout({ children }) {
               </p>
             </div>
           </div>
+
+          <Link href="/dashboard/profile">
+            <button
+              className="w-full text-left text-sm px-3 py-2 rounded-lg transition-colors mb-1"
+              style={{ color: "#64748b" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#0f172a";
+                e.currentTarget.style.backgroundColor = "#f1f5f9";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#64748b";
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              Mi perfil
+            </button>
+          </Link>
+
           <button
             onClick={logout}
             className="w-full text-left text-sm px-3 py-2 rounded-lg transition-colors"
