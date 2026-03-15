@@ -351,7 +351,7 @@ export default function NewPatientPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Peso (kg)</label>
+              <label style={labelStyle}>Peso (lb)</label>
               <input
                 type="number"
                 step="0.01"

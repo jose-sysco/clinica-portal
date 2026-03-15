@@ -241,7 +241,7 @@ export default function NewDoctorPage() {
             <div>
               <label style={labelStyle}>Contraseña temporal *</label>
               <input
-                type="text"
+                type="password"
                 value={form.user.password}
                 onChange={(e) => {
                   handleUser("password", e.target.value);
