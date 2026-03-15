@@ -1,0 +1,336 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import Link from "next/link";
+
+export default function RegisterPage() {
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    organization: {
+      name: "",
+      subdomain: "",
+      email: "",
+      phone: "",
+      city: "",
+      country: "Guatemala",
+      timezone: "America/Guatemala",
+      clinic_type: "veterinary",
+    },
+    user: {
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
+      password: "",
+      password_confirmation: "",
+    },
+  });
+
+  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleOrg = (field, value) => {
+    setForm((f) => ({
+      ...f,
+      organization: { ...f.organization, [field]: value },
+    }));
+  };
+
+  const handleUser = (field, value) => {
+    setForm((f) => ({ ...f, user: { ...f.user, [field]: value } }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setErrors([]);
+    setLoading(true);
+
+    try {
+      await api.post("/api/v1/auth/sign_up", form);
+      router.push("/login?registered=true");
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        setErrors(err.response.data.errors);
+      } else {
+        setError(err.response?.data?.error || "Error al registrar");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "8px 12px",
+    fontSize: "14px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    outline: "none",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+  };
+
+  const labelStyle = {
+    display: "block",
+    fontSize: "13px",
+    fontWeight: "500",
+    color: "#374151",
+    marginBottom: "6px",
+  };
+
+  return (
+    <div className="min-h-screen flex" style={{ backgroundColor: "#f1f5f9" }}>
+      <div className="w-full flex items-center justify-center p-8">
+        <div className="w-full max-w-3xl">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: "#2563eb" }}
+            >
+              <span className="text-white font-bold">C</span>
+            </div>
+            <h1 className="text-2xl font-bold" style={{ color: "#0f172a" }}>
+              Registra tu clínica
+            </h1>
+            <p className="text-sm mt-1" style={{ color: "#64748b" }}>
+              Completa los datos para empezar a usar Clínica Portal
+            </p>
+          </div>
+
+          {/* Errores */}
+          {(error || errors.length > 0) && (
+            <div
+              className="px-4 py-3 rounded-lg mb-6 text-sm"
+              style={{
+                backgroundColor: "#fef2f2",
+                color: "#dc2626",
+                border: "1px solid #fecaca",
+              }}
+            >
+              {error && <p>{error}</p>}
+              {errors.map((e, i) => (
+                <p key={i}>{e}</p>
+              ))}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-2 gap-5">
+              {/* Datos de la clínica */}
+              <div
+                className="rounded-xl p-6 shadow-sm space-y-4"
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-widest"
+                  style={{ color: "#94a3b8" }}
+                >
+                  Datos de la clínica
+                </p>
+
+                <div>
+                  <label style={labelStyle}>Nombre de la clínica *</label>
+                  <input
+                    type="text"
+                    value={form.organization.name}
+                    onChange={(e) => handleOrg("name", e.target.value)}
+                    placeholder="Clínica Veterinaria Patitas"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Tipo de clínica *</label>
+                  <select
+                    value={form.organization.clinic_type}
+                    onChange={(e) => handleOrg("clinic_type", e.target.value)}
+                    style={inputStyle}
+                    required
+                  >
+                    <option value="veterinary">Veterinaria</option>
+                    <option value="pediatric">Pediatría</option>
+                    <option value="general">Medicina General</option>
+                    <option value="dental">Odontología</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Email de la clínica *</label>
+                  <input
+                    type="email"
+                    value={form.organization.email}
+                    onChange={(e) => handleOrg("email", e.target.value)}
+                    placeholder="contacto@clinica.com"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Teléfono</label>
+                  <input
+                    type="text"
+                    value={form.organization.phone}
+                    onChange={(e) => handleOrg("phone", e.target.value)}
+                    placeholder="55551234"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Ciudad</label>
+                  <input
+                    type="text"
+                    value={form.organization.city}
+                    onChange={(e) => handleOrg("city", e.target.value)}
+                    placeholder="Guatemala"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>País</label>
+                  <input
+                    type="text"
+                    value={form.organization.country}
+                    onChange={(e) => handleOrg("country", e.target.value)}
+                    placeholder="Guatemala"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Datos del administrador */}
+              <div
+                className="rounded-xl p-6 shadow-sm space-y-4"
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-widest"
+                  style={{ color: "#94a3b8" }}
+                >
+                  Datos del administrador
+                </p>
+
+                <div>
+                  <label style={labelStyle}>Nombre *</label>
+                  <input
+                    type="text"
+                    value={form.user.first_name}
+                    onChange={(e) => handleUser("first_name", e.target.value)}
+                    placeholder="Carlos"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Apellido *</label>
+                  <input
+                    type="text"
+                    value={form.user.last_name}
+                    onChange={(e) => handleUser("last_name", e.target.value)}
+                    placeholder="López"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Email *</label>
+                  <input
+                    type="email"
+                    value={form.user.email}
+                    onChange={(e) => handleUser("email", e.target.value)}
+                    placeholder="admin@clinica.com"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Teléfono</label>
+                  <input
+                    type="text"
+                    value={form.user.phone}
+                    onChange={(e) => handleUser("phone", e.target.value)}
+                    placeholder="55559999"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Contraseña *</label>
+                  <input
+                    type="password"
+                    value={form.user.password}
+                    onChange={(e) => handleUser("password", e.target.value)}
+                    placeholder="••••••••"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Confirmar contraseña *</label>
+                  <input
+                    type="password"
+                    value={form.user.password_confirmation}
+                    onChange={(e) =>
+                      handleUser("password_confirmation", e.target.value)
+                    }
+                    placeholder="••••••••"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3 mt-5">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: loading ? "#93c5fd" : "#2563eb",
+                  color: "#ffffff",
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                {loading ? "Registrando..." : "Crear cuenta"}
+              </button>
+              <Link href="/login">
+                <button
+                  type="button"
+                  className="px-6 py-2.5 rounded-lg text-sm font-medium"
+                  style={{
+                    backgroundColor: "#f1f5f9",
+                    color: "#64748b",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  Ya tengo cuenta
+                </button>
+              </Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
