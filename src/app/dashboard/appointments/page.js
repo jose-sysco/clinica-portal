@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const statusLabel = {
   pending: {
@@ -84,9 +85,10 @@ export default function AppointmentsPage() {
   const handleConfirm = async (id) => {
     try {
       await api.patch(`/api/v1/appointments/${id}/confirm`);
+      toast.success("Cita confirmada correctamente");
       fetchAppointments();
     } catch (err) {
-      alert(err.response?.data?.errors?.[0] || "Error al confirmar");
+      toast.error(err.response?.data?.errors?.[0] || "Error al confirmar");
     }
   };
 
@@ -97,9 +99,10 @@ export default function AppointmentsPage() {
         cancelled_by: "cancelled_by_system",
         cancellation_reason: "Cancelado desde el portal",
       });
+      toast.success("Cita cancelada correctamente");
       fetchAppointments();
     } catch (err) {
-      alert(err.response?.data?.errors?.[0] || "Error al cancelar");
+      toast.error(err.response?.data?.errors?.[0] || "Error al cancelar");
     }
   };
 

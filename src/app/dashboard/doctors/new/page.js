@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function NewDoctorPage() {
   const router = useRouter();
@@ -99,6 +100,7 @@ export default function NewDoctorPage() {
         ),
       );
 
+      toast.success("Doctor creado correctamente");
       router.push("/dashboard/doctors");
     } catch (err) {
       if (err.response?.data?.errors) {

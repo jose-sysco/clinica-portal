@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function NewAppointmentPage() {
   const router = useRouter();
@@ -116,9 +117,10 @@ export default function NewAppointmentPage() {
           reason: form.reason,
         },
       });
+      toast.success("Cita creada correctamente");
       router.push("/dashboard/appointments");
     } catch (err) {
-      setError(err.response?.data?.errors?.[0] || "Error al crear la cita");
+      toast.error(err.response?.data?.errors?.[0] || "Error al crear la cita");
     } finally {
       setSubmitting(false);
     }
