@@ -5,13 +5,20 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
 
-const navigation = [
-  { name: 'Dashboard',    href: '/dashboard',              icon: '⊞' },
-  { name: 'Citas',        href: '/dashboard/appointments', icon: '◷' },
-  { name: 'Doctores',     href: '/dashboard/doctors',      icon: '✚' },
-  { name: 'Pacientes',    href: '/dashboard/patients',     icon: '♡' },
-  { name: 'Propietarios', href: '/dashboard/owners',       icon: '◎' },
-]
+const getNavigation = (clinicType) => {
+  const base = [
+    { name: 'Dashboard',  href: '/dashboard',              icon: '⊞' },
+    { name: 'Citas',      href: '/dashboard/appointments', icon: '◷' },
+    { name: 'Doctores',   href: '/dashboard/doctors',      icon: '✚' },
+    { name: 'Pacientes',  href: '/dashboard/patients',     icon: '♡' },
+  ]
+
+  if (clinicType === 'veterinary' || clinicType === 'pediatric') {
+    base.push({ name: 'Propietarios', href: '/dashboard/owners', icon: '◎' })
+  }
+
+  return base
+}
 
 const clinicTypeLabel = {
   veterinary: 'Veterinaria',
@@ -47,7 +54,8 @@ export default function DashboardLayout({ children }) {
     )
   }
 
-  const initials = `${user?.first_name?.[0] || ''}${user?.last_name?.[0] || ''}`
+  const initials    = `${user?.first_name?.[0] || ''}${user?.last_name?.[0] || ''}`
+  const navigation  = getNavigation(organization?.clinic_type)
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: '#f1f5f9' }}>
