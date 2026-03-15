@@ -94,6 +94,20 @@ export default function DoctorsPage() {
             {doctors.length !== 1 ? "s" : ""}
           </p>
         </div>
+        <Link href="/dashboard/doctors/new">
+          <button
+            className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1d4ed8")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#2563eb")
+            }
+          >
+            + Nuevo doctor
+          </button>
+        </Link>
       </div>
 
       {/* Lista */}
