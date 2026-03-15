@@ -404,6 +404,30 @@ export default function AppointmentsPage() {
                             Cancelar
                           </button>
                         )}
+                        {apt.status === "confirmed" && (
+                          <Link
+                            href={`/dashboard/medical-records/new?appointment_id=${apt.id}`}
+                          >
+                            <button
+                              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                              style={{
+                                color: "#7c3aed",
+                                backgroundColor: "#faf5ff",
+                                border: "1px solid #e9d5ff",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#f3e8ff")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#faf5ff")
+                              }
+                            >
+                              Registrar consulta
+                            </button>
+                          </Link>
+                        )}
                       </div>
                     </td>
                   </tr>

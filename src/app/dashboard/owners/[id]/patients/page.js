@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 
 export default function OwnerPatientsPage() {
   const { id } = useParams();
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   const [owner, setOwner] = useState(null);
   const [patients, setPatients] = useState([]);
@@ -79,31 +83,32 @@ export default function OwnerPatientsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/owners">
-          <button
-            className="text-sm px-3 py-1.5 rounded-lg transition-colors"
-            style={{
-              color: "#64748b",
-              backgroundColor: "#f1f5f9",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            ← Volver
-          </button>
-        </Link>
-        <div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "#0f172a" }}
-          >
-            {owner?.full_name}
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
-            {owner?.phone} {owner?.email && `· ${owner?.email}`}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard/owners">
+            <button
+              className="text-sm px-3 py-1.5 rounded-lg"
+              style={{
+                color: "#64748b",
+                backgroundColor: "#f1f5f9",
+                border: "1px solid #e2e8f0",
+              }}
+            >
+              ← Volver
+            </button>
+          </Link>
+          <div>
+            <h1
+              className="text-2xl font-bold tracking-tight"
+              style={{ color: "#0f172a" }}
+            >
+              {owner?.full_name}
+            </h1>
+            <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
+              {owner?.phone} {owner?.email && `· ${owner?.email}`}
+            </p>
+          </div>
         </div>
-
         <Link href={`/dashboard/owners/${id}/patients/new`}>
           <button
             className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -115,7 +120,7 @@ export default function OwnerPatientsPage() {
               (e.currentTarget.style.backgroundColor = "#2563eb")
             }
           >
-            + Nuevo paciente
+            + Nuevo {config.patientLabel.toLowerCase()}
           </button>
         </Link>
       </div>
@@ -167,8 +172,10 @@ export default function OwnerPatientsPage() {
           className="text-sm font-semibold uppercase tracking-widest"
           style={{ color: "#94a3b8" }}
         >
-          Responsable de {patients.length}{" "}
-          {patients.length === 1 ? "paciente" : "pacientes"}
+          {config.ownerLabel} de {patients.length}{" "}
+          {patients.length === 1
+            ? config.patientLabel.toLowerCase()
+            : config.patientsLabel.toLowerCase()}
         </h2>
       </div>
 
@@ -178,7 +185,8 @@ export default function OwnerPatientsPage() {
           style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
         >
           <p className="text-sm" style={{ color: "#94a3b8" }}>
-            Este responsable no tiene pacientes registrados
+            Este {config.ownerLabel.toLowerCase()} no tiene{" "}
+            {config.patientsLabel.toLowerCase()} registrados
           </p>
         </div>
       ) : (
@@ -215,7 +223,13 @@ export default function OwnerPatientsPage() {
                         {patient.name}
                       </p>
                       <p className="text-xs" style={{ color: "#64748b" }}>
-                        {patient.species || patient.patient_type}
+                        {config.showSpecies
+                          ? patient.species || patient.patient_type
+                          : patient.gender === "male"
+                            ? "Masculino"
+                            : patient.gender === "female"
+                              ? "Femenino"
+                              : "—"}
                       </p>
                     </div>
                   </div>
@@ -231,8 +245,8 @@ export default function OwnerPatientsPage() {
                   </span>
                 </div>
 
-                <div className="space-y-2">
-                  {patient.breed && (
+                <div className="space-y-2 mb-4">
+                  {config.showBreed && patient.breed && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs" style={{ color: "#94a3b8" }}>
                         Raza
@@ -245,7 +259,7 @@ export default function OwnerPatientsPage() {
                       </span>
                     </div>
                   )}
-                  {patient.gender && (
+                  {!config.showAnimalGender && patient.gender && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs" style={{ color: "#94a3b8" }}>
                         Género
@@ -254,7 +268,28 @@ export default function OwnerPatientsPage() {
                         className="text-xs font-medium"
                         style={{ color: "#0f172a" }}
                       >
-                        {patient.gender}
+                        {patient.gender === "male"
+                          ? "Masculino"
+                          : patient.gender === "female"
+                            ? "Femenino"
+                            : "N/A"}
+                      </span>
+                    </div>
+                  )}
+                  {config.showAnimalGender && patient.gender && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs" style={{ color: "#94a3b8" }}>
+                        Sexo
+                      </span>
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: "#0f172a" }}
+                      >
+                        {patient.gender === "male"
+                          ? "Macho"
+                          : patient.gender === "female"
+                            ? "Hembra"
+                            : "N/A"}
                       </span>
                     </div>
                   )}
@@ -280,16 +315,34 @@ export default function OwnerPatientsPage() {
                         className="text-xs font-medium"
                         style={{ color: "#0f172a" }}
                       >
-                        {patient.weight} kg
+                        {patient.weight} lb
                       </span>
                     </div>
                   )}
                 </div>
 
                 <div
-                  className="mt-4 pt-4"
+                  className="grid grid-cols-2 gap-2 pt-4"
                   style={{ borderTop: "1px solid #f1f5f9" }}
                 >
+                  <Link href={`/dashboard/patients/${patient.id}/records`}>
+                    <button
+                      className="w-full py-2 rounded-lg text-xs font-medium transition-all"
+                      style={{
+                        backgroundColor: "#f8fafc",
+                        color: "#64748b",
+                        border: "1px solid #e2e8f0",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f8fafc")
+                      }
+                    >
+                      Historial
+                    </button>
+                  </Link>
                   <Link
                     href={`/dashboard/appointments/new?patient_id=${patient.id}&owner_id=${id}`}
                   >

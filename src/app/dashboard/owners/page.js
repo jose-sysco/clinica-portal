@@ -1,36 +1,42 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 
 export default function OwnersPage() {
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
+
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchOwners();
   }, []);
 
-  const fetchOwners = async () => {
+  const fetchOwners = async (q = "") => {
+    setLoading(true);
     try {
-      const response = await api.get("/api/v1/owners");
+      const params = q ? { q } : {};
+      const response = await api.get("/api/v1/owners", { params });
       setOwners(response.data.data);
     } catch (err) {
-      setError("Error al cargar los dueños");
+      setError(`Error al cargar los ${config.ownersLabel.toLowerCase()}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    if (value.length === 0 || value.length >= 3) fetchOwners(value);
+  };
 
   if (error) {
     return (
@@ -56,11 +62,10 @@ export default function OwnersPage() {
             className="text-2xl font-bold tracking-tight"
             style={{ color: "#0f172a" }}
           >
-            Dueños
+            {config.ownersLabel}
           </h1>
           <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-            {owners.length} dueño{owners.length !== 1 ? "es" : ""} registrado
-            {owners.length !== 1 ? "s" : ""}
+            {config.ownerLabel}s registrados en el sistema
           </p>
         </div>
         <Link href="/dashboard/owners/new">
@@ -74,91 +79,175 @@ export default function OwnersPage() {
               (e.currentTarget.style.backgroundColor = "#2563eb")
             }
           >
-            + Nuevo propietario
+            + Nuevo {config.ownerLabel.toLowerCase()}
           </button>
         </Link>
       </div>
 
-      {/* Listado */}
-      {owners.length === 0 ? (
+      {/* Búsqueda */}
+      <div
+        className="rounded-xl p-4"
+        style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+      >
+        <input
+          type="text"
+          value={search}
+          onChange={handleSearch}
+          placeholder={`Buscar ${config.ownerLabel.toLowerCase()} por nombre, email o teléfono...`}
+          className="w-full text-sm outline-none"
+          style={{ color: "#0f172a" }}
+        />
+      </div>
+
+      {/* Tabla */}
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : owners.length === 0 ? (
         <div
           className="rounded-xl p-12 text-center"
           style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
         >
           <p className="text-sm" style={{ color: "#94a3b8" }}>
-            No hay dueños registrados
+            No se encontraron {config.ownersLabel.toLowerCase()}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {owners.map((owner) => (
-            <div
-              key={owner.id}
-              className="rounded-xl flex flex-col justify-between p-5 shadow-sm transition-shadow hover:shadow-md"
-              style={{
-                backgroundColor: "#ffffff",
-                border: "1px solid #e2e8f0",
-              }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: "#f1f5f9" }}
-                  >
-                    <span className="text-xl">👤</span>
-                  </div>
-                  <div>
-                    <p
-                      className="text-sm font-medium"
-                      style={{ color: "#0f172a" }}
-                    >
-                      {owner.full_name}
+        <div
+          className="rounded-xl overflow-hidden shadow-sm"
+          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+        >
+          <table className="w-full">
+            <thead>
+              <tr
+                style={{
+                  borderBottom: "1px solid #e2e8f0",
+                  backgroundColor: "#f8fafc",
+                }}
+              >
+                <th
+                  className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "#64748b" }}
+                >
+                  {config.ownerLabel}
+                </th>
+                <th
+                  className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "#64748b" }}
+                >
+                  Contacto
+                </th>
+                <th
+                  className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "#64748b" }}
+                >
+                  Identificación
+                </th>
+                <th
+                  className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "#64748b" }}
+                >
+                  {config.patientsLabel}
+                </th>
+                <th className="px-6 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {owners.map((owner, index) => (
+                <tr
+                  key={owner.id}
+                  style={{
+                    borderBottom:
+                      index < owners.length - 1 ? "1px solid #f1f5f9" : "none",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8fafc")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "transparent")
+                  }
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: "#eff6ff" }}
+                      >
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: "#2563eb" }}
+                        >
+                          {owner.full_name
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </span>
+                      </div>
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: "#0f172a" }}
+                      >
+                        {owner.full_name}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-sm" style={{ color: "#0f172a" }}>
+                      {owner.phone}
                     </p>
-                    <p className="text-xs" style={{ color: "#64748b" }}>
-                      {owner.email}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link href={`/dashboard/owners/${owner.id}/patients`}>
-                    <button
-                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm"
-                      style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#1d4ed8")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#2563eb")
-                      }
+                    {owner.email && (
+                      <p className="text-xs" style={{ color: "#94a3b8" }}>
+                        {owner.email}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm" style={{ color: "#64748b" }}>
+                      {owner.identification || "—"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className="text-xs font-medium px-2.5 py-1 rounded-full"
+                      style={{
+                        color: "#2563eb",
+                        backgroundColor: "#eff6ff",
+                        border: "1px solid #bfdbfe",
+                      }}
                     >
-                      Ver
-                    </button>
-                  </Link>
-                  <button
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm"
-                    style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#1d4ed8")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#2563eb")
-                    }
-                  >
-                    Editar
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm" style={{ color: "#64748b" }}>
-                  {owner.phone}
-                </p>
-                <p className="text-sm" style={{ color: "#64748b" }}>
-                  {owner.address}
-                </p>
-              </div>
-            </div>
-          ))}
+                      {owner.patients_count}{" "}
+                      {owner.patients_count === 1
+                        ? config.patientLabel.toLowerCase()
+                        : config.patientsLabel.toLowerCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <Link href={`/dashboard/owners/${owner.id}/patients`}>
+                      <button
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                        style={{
+                          color: "#2563eb",
+                          backgroundColor: "#eff6ff",
+                          border: "1px solid #bfdbfe",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#dbeafe")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#eff6ff")
+                        }
+                      >
+                        Ver {config.patientsLabel.toLowerCase()}
+                      </button>
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

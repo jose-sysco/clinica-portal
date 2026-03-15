@@ -1,0 +1,54 @@
+export const clinicConfig = {
+  veterinary: {
+    patientLabel: "Mascota",
+    patientsLabel: "Mascotas",
+    ownerLabel: "Dueño",
+    ownersLabel: "Dueños",
+    patientType: "animal",
+    showSpecies: true,
+    showBreed: true,
+    showAnimalGender: true,
+    requiresOwner: true,
+    adultCheck: false,
+  },
+  pediatric: {
+    patientLabel: "Paciente",
+    patientsLabel: "Pacientes",
+    ownerLabel: "Tutor / Responsable",
+    ownersLabel: "Tutores",
+    patientType: "human",
+    showSpecies: false,
+    showBreed: false,
+    showAnimalGender: false,
+    requiresOwner: true,
+    adultCheck: false,
+  },
+  general: {
+    patientLabel: "Paciente",
+    patientsLabel: "Pacientes",
+    ownerLabel: "Responsable",
+    ownersLabel: "Responsables",
+    patientType: "human",
+    showSpecies: false,
+    showBreed: false,
+    showAnimalGender: false,
+    requiresOwner: false,
+    adultCheck: true,
+  },
+  dental: {
+    patientLabel: "Paciente",
+    patientsLabel: "Pacientes",
+    ownerLabel: "Responsable",
+    ownersLabel: "Responsables",
+    patientType: "human",
+    showSpecies: false,
+    showBreed: false,
+    showAnimalGender: false,
+    requiresOwner: false,
+    adultCheck: true,
+  },
+};
+
+export const getConfig = (clinicType) => {
+  return clinicConfig[clinicType] || clinicConfig.general;
+};

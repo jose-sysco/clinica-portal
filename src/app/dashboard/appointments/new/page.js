@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -9,14 +11,25 @@ import { toast } from "sonner";
 export default function NewAppointmentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   const [doctors, setDoctors] = useState([]);
-  const [owners, setOwners] = useState([]);
-  const [patients, setPatients] = useState([]);
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  const [ownerSearch, setOwnerSearch] = useState("");
+  const [ownerResults, setOwnerResults] = useState([]);
+  const [ownerLoading, setOwnerLoading] = useState(false);
+  const [selectedOwner, setSelectedOwner] = useState(null);
+  const [showOwnerResults, setShowOwnerResults] = useState(false);
+  const ownerRef = useRef(null);
+
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [showPatientList, setShowPatientList] = useState(false);
 
   const [form, setForm] = useState({
     doctor_id: searchParams.get("doctor_id") || "",
@@ -30,7 +43,8 @@ export default function NewAppointmentPage() {
 
   useEffect(() => {
     fetchDoctors();
-    fetchOwners();
+    if (searchParams.get("owner_id"))
+      loadOwnerFromParam(searchParams.get("owner_id"));
   }, []);
 
   useEffect(() => {
@@ -38,32 +52,29 @@ export default function NewAppointmentPage() {
   }, [form.doctor_id, form.date]);
 
   useEffect(() => {
-    if (form.owner_id) {
-      fetchPatients(form.owner_id);
-    } else {
-      setPatients([]);
-      setForm((f) => ({ ...f, patient_id: "" }));
-    }
-  }, [form.owner_id]);
+    const handleClick = (e) => {
+      if (ownerRef.current && !ownerRef.current.contains(e.target)) {
+        setShowOwnerResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const loadOwnerFromParam = async (ownerId) => {
+    try {
+      const res = await api.get(`/api/v1/owners/${ownerId}`);
+      setSelectedOwner(res.data);
+      setOwnerSearch(res.data.full_name);
+      handleChange("owner_id", ownerId);
+      fetchPatients(ownerId);
+    } catch (err) {}
+  };
 
   const fetchDoctors = async () => {
     try {
       const res = await api.get("/api/v1/doctors");
       setDoctors(res.data.data.filter((d) => d.status === "active"));
-    } catch (err) {}
-  };
-
-  const fetchOwners = async () => {
-    try {
-      const res = await api.get("/api/v1/owners");
-      setOwners(res.data.data);
-    } catch (err) {}
-  };
-
-  const fetchPatients = async (ownerId) => {
-    try {
-      const res = await api.get(`/api/v1/owners/${ownerId}/patients`);
-      setPatients(res.data.data.filter((p) => p.status === "active"));
     } catch (err) {}
   };
 
@@ -84,6 +95,57 @@ export default function NewAppointmentPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const searchOwners = async (q) => {
+    if (q.length < 2) {
+      setOwnerResults([]);
+      return;
+    }
+    setOwnerLoading(true);
+    try {
+      const res = await api.get("/api/v1/owners", { params: { q } });
+      setOwnerResults(res.data.data);
+      setShowOwnerResults(true);
+    } catch (err) {
+    } finally {
+      setOwnerLoading(false);
+    }
+  };
+
+  const fetchPatients = async (ownerId) => {
+    try {
+      const res = await api.get(`/api/v1/owners/${ownerId}/patients`);
+      setPatients(res.data.data.filter((p) => p.status === "active"));
+      setShowPatientList(true);
+    } catch (err) {}
+  };
+
+  const selectOwner = (owner) => {
+    setSelectedOwner(owner);
+    setOwnerSearch(owner.full_name);
+    setShowOwnerResults(false);
+    setSelectedPatient(null);
+    setPatients([]);
+    handleChange("owner_id", owner.id);
+    handleChange("patient_id", "");
+    fetchPatients(owner.id);
+  };
+
+  const selectPatient = (patient) => {
+    setSelectedPatient(patient);
+    setShowPatientList(false);
+    handleChange("patient_id", patient.id);
+  };
+
+  const clearOwner = () => {
+    setSelectedOwner(null);
+    setOwnerSearch("");
+    setOwnerResults([]);
+    setPatients([]);
+    setSelectedPatient(null);
+    handleChange("owner_id", "");
+    handleChange("patient_id", "");
   };
 
   const handleChange = (field, value) => {
@@ -120,7 +182,7 @@ export default function NewAppointmentPage() {
       toast.success("Cita creada correctamente");
       router.push("/dashboard/appointments");
     } catch (err) {
-      toast.error(err.response?.data?.errors?.[0] || "Error al crear la cita");
+      setError(err.response?.data?.errors?.[0] || "Error al crear la cita");
     } finally {
       setSubmitting(false);
     }
@@ -147,7 +209,6 @@ export default function NewAppointmentPage() {
 
   return (
     <div className="h-full space-y-5">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/dashboard/appointments">
           <button
@@ -187,7 +248,6 @@ export default function NewAppointmentPage() {
         </div>
       )}
 
-      {/* Formulario en dos columnas */}
       <form onSubmit={handleSubmit} className="h-full">
         <div className="grid grid-cols-2 gap-5">
           {/* Columna izquierda */}
@@ -202,7 +262,6 @@ export default function NewAppointmentPage() {
               Médico y horario
             </p>
 
-            {/* Doctor */}
             <div>
               <label style={labelStyle}>Doctor *</label>
               <select
@@ -220,7 +279,6 @@ export default function NewAppointmentPage() {
               </select>
             </div>
 
-            {/* Fecha */}
             <div>
               <label style={labelStyle}>Fecha *</label>
               <input
@@ -233,7 +291,6 @@ export default function NewAppointmentPage() {
               />
             </div>
 
-            {/* Slots */}
             <div>
               <label style={labelStyle}>Horario disponible *</label>
               {!form.doctor_id ? (
@@ -284,51 +341,224 @@ export default function NewAppointmentPage() {
               className="text-xs font-semibold uppercase tracking-widest"
               style={{ color: "#94a3b8" }}
             >
-              Paciente y motivo
+              {config.patientLabel} y motivo
             </p>
 
-            {/* Propietario */}
-            <div>
-              <label style={labelStyle}>Propietario / Tutor *</label>
-              <select
-                value={form.owner_id}
-                onChange={(e) => handleChange("owner_id", e.target.value)}
-                style={inputStyle}
-                required
-              >
-                <option value="">Selecciona un propietario</option>
-                {owners.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.full_name} {o.phone ? `— ${o.phone}` : ""}
-                  </option>
-                ))}
-              </select>
+            {/* Buscador de owner */}
+            <div ref={ownerRef}>
+              <label style={labelStyle}>{config.ownerLabel} *</label>
+              {selectedOwner ? (
+                <div
+                  className="flex items-center justify-between px-3 py-2 rounded-lg"
+                  style={{
+                    border: "1px solid #bfdbfe",
+                    backgroundColor: "#eff6ff",
+                  }}
+                >
+                  <div>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "#0f172a" }}
+                    >
+                      {selectedOwner.full_name}
+                    </p>
+                    <p className="text-xs" style={{ color: "#64748b" }}>
+                      {selectedOwner.phone}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearOwner}
+                    className="text-xs px-2 py-1 rounded"
+                    style={{ color: "#dc2626", backgroundColor: "#fef2f2" }}
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={ownerSearch}
+                    onChange={(e) => {
+                      setOwnerSearch(e.target.value);
+                      searchOwners(e.target.value);
+                    }}
+                    placeholder={`Buscar ${config.ownerLabel.toLowerCase()} por nombre, email o teléfono...`}
+                    style={inputStyle}
+                  />
+                  {ownerLoading && (
+                    <div className="absolute right-3 top-2.5">
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  {showOwnerResults && ownerResults.length > 0 && (
+                    <div
+                      className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
+                      style={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                      }}
+                    >
+                      {ownerResults.map((owner) => (
+                        <button
+                          key={owner.id}
+                          type="button"
+                          onClick={() => selectOwner(owner)}
+                          className="w-full text-left px-4 py-3 transition-colors"
+                          style={{ borderBottom: "1px solid #f1f5f9" }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f8fafc")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
+                        >
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: "#0f172a" }}
+                          >
+                            {owner.full_name}
+                          </p>
+                          <p className="text-xs" style={{ color: "#94a3b8" }}>
+                            {owner.phone}{" "}
+                            {owner.email ? `· ${owner.email}` : ""}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showOwnerResults &&
+                    ownerResults.length === 0 &&
+                    ownerSearch.length >= 2 &&
+                    !ownerLoading && (
+                      <div
+                        className="absolute z-10 w-full mt-1 rounded-lg p-3 text-center"
+                        style={{
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <p className="text-sm" style={{ color: "#94a3b8" }}>
+                          No se encontraron {config.ownersLabel.toLowerCase()}
+                        </p>
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
 
-            {/* Paciente */}
-            <div>
-              <label style={labelStyle}>Paciente *</label>
-              <select
-                value={form.patient_id}
-                onChange={(e) => handleChange("patient_id", e.target.value)}
-                style={inputStyle}
-                disabled={!form.owner_id}
-                required
-              >
-                <option value="">
-                  {form.owner_id
-                    ? "Selecciona un paciente"
-                    : "Primero selecciona un propietario"}
-                </option>
-                {patients.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.species ? `— ${p.species}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Selector de paciente */}
+            {selectedOwner && (
+              <div>
+                <label style={labelStyle}>{config.patientLabel} *</label>
+                {selectedPatient ? (
+                  <div
+                    className="flex items-center justify-between px-3 py-2 rounded-lg"
+                    style={{
+                      border: "1px solid #bfdbfe",
+                      backgroundColor: "#eff6ff",
+                    }}
+                  >
+                    <div>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "#0f172a" }}
+                      >
+                        {selectedPatient.name}
+                      </p>
+                      <p className="text-xs" style={{ color: "#64748b" }}>
+                        {config.showSpecies
+                          ? selectedPatient.species ||
+                            selectedPatient.patient_type
+                          : selectedPatient.gender === "male"
+                            ? "Masculino"
+                            : selectedPatient.gender === "female"
+                              ? "Femenino"
+                              : "—"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPatient(null);
+                        setShowPatientList(true);
+                        handleChange("patient_id", "");
+                      }}
+                      className="text-xs px-2 py-1 rounded"
+                      style={{ color: "#dc2626", backgroundColor: "#fef2f2" }}
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                ) : patients.length === 0 ? (
+                  <p className="text-sm py-2" style={{ color: "#94a3b8" }}>
+                    Este {config.ownerLabel.toLowerCase()} no tiene{" "}
+                    {config.patientsLabel.toLowerCase()} activos
+                  </p>
+                ) : (
+                  <div
+                    className="rounded-lg overflow-hidden"
+                    style={{ border: "1px solid #e2e8f0" }}
+                  >
+                    {patients.map((patient, index) => (
+                      <button
+                        key={patient.id}
+                        type="button"
+                        onClick={() => selectPatient(patient)}
+                        className="w-full text-left px-4 py-3 transition-colors"
+                        style={{
+                          borderBottom:
+                            index < patients.length - 1
+                              ? "1px solid #f1f5f9"
+                              : "none",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#f8fafc")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: "#eff6ff" }}
+                          >
+                            <span
+                              className="text-xs font-semibold"
+                              style={{ color: "#2563eb" }}
+                            >
+                              {patient.name?.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "#0f172a" }}
+                            >
+                              {patient.name}
+                            </p>
+                            <p className="text-xs" style={{ color: "#94a3b8" }}>
+                              {config.showSpecies
+                                ? `${patient.species || ""}${patient.breed ? ` · ${patient.breed}` : ""}`
+                                : patient.gender === "male"
+                                  ? "Masculino"
+                                  : patient.gender === "female"
+                                    ? "Femenino"
+                                    : "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Tipo */}
             <div>
               <label style={labelStyle}>Tipo de consulta *</label>
               <select
@@ -346,20 +576,18 @@ export default function NewAppointmentPage() {
               </select>
             </div>
 
-            {/* Motivo */}
             <div>
               <label style={labelStyle}>Motivo de consulta *</label>
               <textarea
                 value={form.reason}
                 onChange={(e) => handleChange("reason", e.target.value)}
                 placeholder="Describe el motivo de la consulta..."
-                rows={4}
+                rows={3}
                 style={{ ...inputStyle, resize: "none" }}
                 required
               />
             </div>
 
-            {/* Botones */}
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 
@@ -28,6 +29,8 @@ const statusLabel = {
 
 export default function PatientsPage() {
   const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
+
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,7 +47,7 @@ export default function PatientsPage() {
       const response = await api.get("/api/v1/patients", { params });
       setPatients(response.data.data);
     } catch (err) {
-      setError("Error al cargar los pacientes");
+      setError(`Error al cargar los ${config.patientsLabel.toLowerCase()}`);
     } finally {
       setLoading(false);
     }
@@ -53,14 +56,8 @@ export default function PatientsPage() {
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearch(value);
-    if (value.length === 0 || value.length >= 3) {
-      fetchPatients(value);
-    }
+    if (value.length === 0 || value.length >= 3) fetchPatients(value);
   };
-
-  const isVetOrPediatric =
-    organization?.clinic_type === "veterinary" ||
-    organization?.clinic_type === "pediatric";
 
   if (error) {
     return (
@@ -86,13 +83,30 @@ export default function PatientsPage() {
             className="text-2xl font-bold tracking-tight"
             style={{ color: "#0f172a" }}
           >
-            Pacientes
+            {config.patientsLabel}
           </h1>
           <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-            {patients.length} paciente{patients.length !== 1 ? "s" : ""}{" "}
+            {patients.length}{" "}
+            {patients.length === 1
+              ? config.patientLabel.toLowerCase()
+              : config.patientsLabel.toLowerCase()}{" "}
             registrado{patients.length !== 1 ? "s" : ""}
           </p>
         </div>
+        <Link href="/dashboard/patients/new">
+          <button
+            className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1d4ed8")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#2563eb")
+            }
+          >
+            + Nuevo {config.patientLabel.toLowerCase()}
+          </button>
+        </Link>
       </div>
 
       {/* Búsqueda */}
@@ -104,7 +118,7 @@ export default function PatientsPage() {
           type="text"
           value={search}
           onChange={handleSearch}
-          placeholder="Buscar por nombre..."
+          placeholder={`Buscar ${config.patientLabel.toLowerCase()} por nombre...`}
           className="w-full text-sm outline-none"
           style={{ color: "#0f172a" }}
         />
@@ -121,7 +135,7 @@ export default function PatientsPage() {
           style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
         >
           <p className="text-sm" style={{ color: "#94a3b8" }}>
-            No se encontraron pacientes
+            No se encontraron {config.patientsLabel.toLowerCase()}
           </p>
         </div>
       ) : (
@@ -141,14 +155,14 @@ export default function PatientsPage() {
                   className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
                   style={{ color: "#64748b" }}
                 >
-                  Paciente
+                  {config.patientLabel}
                 </th>
-                {isVetOrPediatric && (
+                {config.requiresOwner && (
                   <th
                     className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
                     style={{ color: "#64748b" }}
                   >
-                    Propietario
+                    {config.ownerLabel}
                   </th>
                 )}
                 <th
@@ -206,16 +220,17 @@ export default function PatientsPage() {
                           >
                             {patient.name}
                           </p>
-                          {patient.species && (
+                          {config.showSpecies && patient.species && (
                             <p className="text-xs" style={{ color: "#94a3b8" }}>
-                              {patient.species}{" "}
-                              {patient.breed ? `· ${patient.breed}` : ""}
+                              {patient.species}
+                              {patient.breed ? ` · ${patient.breed}` : ""}
                             </p>
                           )}
                         </div>
                       </div>
                     </td>
-                    {isVetOrPediatric && (
+
+                    {config.requiresOwner && (
                       <td className="px-6 py-4">
                         <p className="text-sm" style={{ color: "#0f172a" }}>
                           {patient.owner?.full_name}
@@ -225,6 +240,7 @@ export default function PatientsPage() {
                         </p>
                       </td>
                     )}
+
                     <td className="px-6 py-4">
                       <div className="space-y-0.5">
                         {patient.age !== null && (
@@ -238,19 +254,21 @@ export default function PatientsPage() {
                           </p>
                         )}
                         {patient.gender && (
-                          <p
-                            className="text-xs capitalize"
-                            style={{ color: "#64748b" }}
-                          >
+                          <p className="text-xs" style={{ color: "#64748b" }}>
                             {patient.gender === "male"
-                              ? "Macho"
+                              ? config.showAnimalGender
+                                ? "Macho"
+                                : "Masculino"
                               : patient.gender === "female"
-                                ? "Hembra"
+                                ? config.showAnimalGender
+                                  ? "Hembra"
+                                  : "Femenino"
                                 : "N/A"}
                           </p>
                         )}
                       </div>
                     </td>
+
                     <td className="px-6 py-4">
                       <span
                         className="text-xs font-medium px-2.5 py-1 rounded-full"
@@ -263,27 +281,54 @@ export default function PatientsPage() {
                         {status.label}
                       </span>
                     </td>
+
                     <td className="px-6 py-4 text-right">
-                      <Link
-                        href={`/dashboard/appointments/new?patient_id=${patient.id}&owner_id=${patient.owner?.id}`}
-                      >
-                        <button
-                          className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                          style={{
-                            color: "#2563eb",
-                            backgroundColor: "#eff6ff",
-                            border: "1px solid #bfdbfe",
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#dbeafe")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#eff6ff")
-                          }
+                      <div className="flex items-center gap-2 justify-end">
+                        <Link
+                          href={`/dashboard/patients/${patient.id}/records`}
                         >
-                          Agendar cita
-                        </button>
-                      </Link>
+                          <button
+                            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                            style={{
+                              color: "#64748b",
+                              backgroundColor: "#f8fafc",
+                              border: "1px solid #e2e8f0",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "#f1f5f9")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "#f8fafc")
+                            }
+                          >
+                            Historial
+                          </button>
+                        </Link>
+                        <Link
+                          href={`/dashboard/appointments/new?patient_id=${patient.id}&owner_id=${patient.owner?.id}`}
+                        >
+                          <button
+                            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                            style={{
+                              color: "#2563eb",
+                              backgroundColor: "#eff6ff",
+                              border: "1px solid #bfdbfe",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "#dbeafe")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "#eff6ff")
+                            }
+                          >
+                            Agendar cita
+                          </button>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

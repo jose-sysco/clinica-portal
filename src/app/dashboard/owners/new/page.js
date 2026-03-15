@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
 
 export default function NewOwnerPage() {
   const router = useRouter();
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   const [form, setForm] = useState({
     first_name: "",
@@ -31,13 +35,16 @@ export default function NewOwnerPage() {
     setLoading(true);
     try {
       await api.post("/api/v1/owners", { owner: form });
-      toast.success("Propietario creado correctamente");
+      toast.success(`${config.ownerLabel} creado correctamente`);
       router.push("/dashboard/owners");
     } catch (err) {
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);
       } else {
-        toast.error(err.response?.data?.error || "Error al crear propietario");
+        toast.error(
+          err.response?.data?.error ||
+            `Error al crear ${config.ownerLabel.toLowerCase()}`,
+        );
       }
     } finally {
       setLoading(false);
@@ -84,10 +91,10 @@ export default function NewOwnerPage() {
             className="text-2xl font-bold tracking-tight"
             style={{ color: "#0f172a" }}
           >
-            Nuevo propietario
+            Nuevo {config.ownerLabel.toLowerCase()}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
-            Registra un nuevo tutor o dueño de paciente
+            Registra un nuevo {config.ownerLabel.toLowerCase()} en el sistema
           </p>
         </div>
       </div>
@@ -217,7 +224,9 @@ export default function NewOwnerPage() {
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Creando..." : "Crear propietario"}
+            {loading
+              ? "Creando..."
+              : `Crear ${config.ownerLabel.toLowerCase()}`}
           </button>
           <Link href="/dashboard/owners">
             <button

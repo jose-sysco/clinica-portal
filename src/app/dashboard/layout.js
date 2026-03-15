@@ -4,18 +4,20 @@ import { useAuth } from "@/lib/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
+import { getConfig } from "@/lib/clinicConfig";
 
 const getNavigation = (clinicType) => {
+  const config = getConfig(clinicType);
   const base = [
     { name: "Dashboard", href: "/dashboard", icon: "⊞" },
     { name: "Citas", href: "/dashboard/appointments", icon: "◷" },
     { name: "Doctores", href: "/dashboard/doctors", icon: "✚" },
-    { name: "Pacientes", href: "/dashboard/patients", icon: "♡" },
+    { name: config.patientsLabel, href: "/dashboard/patients", icon: "♡" },
   ];
 
   if (clinicType === "veterinary" || clinicType === "pediatric") {
     base.push({
-      name: "Propietarios / Tutores",
+      name: config.ownersLabel,
       href: "/dashboard/owners",
       icon: "◎",
     });
