@@ -15,8 +15,8 @@ export default function NewUserPage() {
     email: "",
     phone: "",
     role: "receptionist",
-    password: "password123",
-    password_confirmation: "password123",
+    password: "",
+    password_confirmation: "",
   });
 
   const [errors, setErrors] = useState([]);
@@ -205,7 +205,7 @@ export default function NewUserPage() {
             <div>
               <label style={labelStyle}>Contraseña temporal *</label>
               <input
-                type="text"
+                type="password"
                 value={form.password}
                 onChange={(e) => {
                   handleChange("password", e.target.value);
