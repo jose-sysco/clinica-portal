@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { getConfig } from "@/lib/clinicConfig";
 
-const getNavigation = (clinicType) => {
+const getNavigation = (clinicType, role) => {
   const config = getConfig(clinicType);
   const base = [
     { name: "Dashboard", href: "/dashboard", icon: "⊞" },
@@ -20,6 +20,14 @@ const getNavigation = (clinicType) => {
       name: config.ownersLabel,
       href: "/dashboard/owners",
       icon: "◎",
+    });
+  }
+
+  if (role === "admin") {
+    base.push({
+      name: "Usuarios",
+      href: "/dashboard/users",
+      icon: "👥",
     });
   }
 
@@ -66,7 +74,7 @@ export default function DashboardLayout({ children }) {
   }
 
   const initials = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
-  const navigation = getNavigation(organization?.clinic_type);
+  const navigation = getNavigation(organization?.clinic_type, user?.role);
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#f1f5f9" }}>
