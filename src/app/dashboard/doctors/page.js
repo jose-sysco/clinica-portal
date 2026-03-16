@@ -276,26 +276,52 @@ export default function DoctorsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link
-                        href={`/dashboard/doctors/${doctor.id}/availability`}
-                      >
-                        <button
-                          className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                          style={{
-                            color: "#2563eb",
-                            backgroundColor: "#eff6ff",
-                            border: "1px solid #bfdbfe",
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#dbeafe")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#eff6ff")
-                          }
-                        >
-                          Ver disponibilidad
-                        </button>
-                      </Link>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center gap-2 justify-end">
+                          <Link href={`/dashboard/doctors/${doctor.id}/edit`}>
+                            <button
+                              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                              style={{
+                                color: "#64748b",
+                                backgroundColor: "#f8fafc",
+                                border: "1px solid #e2e8f0",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#f1f5f9")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#f8fafc")
+                              }
+                            >
+                              Editar
+                            </button>
+                          </Link>
+                          <Link
+                            href={`/dashboard/doctors/${doctor.id}/availability`}
+                          >
+                            <button
+                              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                              style={{
+                                color: "#2563eb",
+                                backgroundColor: "#eff6ff",
+                                border: "1px solid #bfdbfe",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#dbeafe")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#eff6ff")
+                              }
+                            >
+                              Ver disponibilidad
+                            </button>
+                          </Link>
+                        </div>
+                      </td>
                     </td>
                   </tr>
                 );
