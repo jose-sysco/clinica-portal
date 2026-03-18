@@ -1,343 +1,251 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
 
+const STATUS_CONFIG = {
+  active:   { label: "Activo",     color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
+  inactive: { label: "Inactivo",   color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+  on_leave: { label: "De permiso", color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
+};
+
+const DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+const DAY_LABEL = { monday:"Lun", tuesday:"Mar", wednesday:"Mié", thursday:"Jue", friday:"Vie", saturday:"Sáb", sunday:"Dom" };
+
+function formatNextAppt(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  const today = new Date();
+  const diff  = Math.floor((d - today) / 86400000);
+  const time  = d.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
+  if (diff === 0) return `Hoy ${time}`;
+  if (diff === 1) return `Mañana ${time}`;
+  return d.toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short" }) + ` ${time}`;
+}
+
 export default function DoctorsPage() {
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [doctors,    setDoctors]    = useState([]);
+  const [loading,    setLoading]    = useState(true);
   const [pagination, setPagination] = useState(null);
-  const [page, setPage] = useState(1);
+  const [page,       setPage]       = useState(1);
+  const [search,     setSearch]     = useState("");
+  const debounceRef = useRef(null);
 
-  useEffect(() => {
-    setPage(1);
-  }, []);
+  useEffect(() => { fetchDoctors(); }, [page]);
 
-  useEffect(() => {
-    fetchDoctors();
-  }, [page]);
+  // Debounce search
+  const handleSearch = (val) => {
+    setSearch(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setPage(1);
+      fetchDoctors(1, val);
+    }, 350);
+  };
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = async (p = page, q = search) => {
     setLoading(true);
     try {
-      const params = { page };
-      const response = await api.get("/api/v1/doctors", { params });
-      setDoctors(response.data.data);
-      setPagination(response.data.pagination);
-    } catch (err) {
-      setError("Error al cargar los doctores");
-    } finally {
-      setLoading(false);
-    }
+      const params = { page: p };
+      if (q) params.q = q;
+      const res = await api.get("/api/v1/doctors", { params });
+      setDoctors(res.data.data);
+      setPagination(res.data.pagination);
+    } catch {}
+    finally { setLoading(false); }
   };
-
-  const statusConfig = {
-    active: {
-      label: "Activo",
-      color: "#16a34a",
-      bg: "#f0fdf4",
-      border: "#bbf7d0",
-    },
-    inactive: {
-      label: "Inactivo",
-      color: "#dc2626",
-      bg: "#fef2f2",
-      border: "#fecaca",
-    },
-    on_leave: {
-      label: "De permiso",
-      color: "#ea580c",
-      bg: "#fff7ed",
-      border: "#fed7aa",
-    },
-  };
-
-  const dayLabel = {
-    monday: "Lun",
-    tuesday: "Mar",
-    wednesday: "Mié",
-    thursday: "Jue",
-    friday: "Vie",
-    saturday: "Sáb",
-    sunday: "Dom",
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div
-        className="rounded-xl p-4 text-sm"
-        style={{
-          backgroundColor: "#fef2f2",
-          color: "#dc2626",
-          border: "1px solid #fecaca",
-        }}
-      >
-        {error}
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "#0f172a" }}
-          >
-            Doctores
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>Doctores</h1>
           <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-            Gestión de doctores
-            {pagination && (
-              <span style={{ color: "#94a3b8" }}>
-                {" "}
-                — {pagination.count} en total
-              </span>
-            )}
+            Gestión del equipo médico
+            {pagination && <span style={{ color: "#94a3b8" }}> — {pagination.count} en total</span>}
           </p>
         </div>
         <Link href="/dashboard/doctors/new">
           <button
             className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#1d4ed8")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#2563eb")
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
           >
             + Nuevo doctor
           </button>
         </Link>
       </div>
 
-      {/* Cards */}
-      {doctors.length === 0 ? (
-        <div
-          className="rounded-xl p-12 text-center"
-          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
-        >
+      {/* Búsqueda */}
+      <div className="flex gap-3">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o especialidad..."
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="flex-1 text-sm px-4 py-2.5 rounded-xl outline-none"
+          style={{ border: "1px solid #e2e8f0", backgroundColor: "#ffffff", color: "#0f172a" }}
+        />
+        {search && (
+          <button
+            onClick={() => handleSearch("")}
+            className="text-sm px-4 py-2.5 rounded-xl"
+            style={{ border: "1px solid #e2e8f0", color: "#94a3b8", backgroundColor: "#ffffff" }}
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
+
+      {/* Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : doctors.length === 0 ? (
+        <div className="rounded-xl p-12 text-center" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <p className="text-sm" style={{ color: "#94a3b8" }}>
-            No hay doctores registrados
+            {search ? `Sin resultados para "${search}"` : "No hay doctores registrados"}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {doctors.map((doctor) => {
-            const status = statusConfig[doctor.status] || statusConfig.active;
-            const activeDays =
-              doctor.schedules?.filter((s) => s.is_active) || [];
+            const status     = STATUS_CONFIG[doctor.status] || STATUS_CONFIG.active;
+            const activeSch  = doctor.schedules?.filter((s) => s.is_active)
+                                 .sort((a,b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)) || [];
+            const nextAppt   = formatNextAppt(doctor.next_appointment?.scheduled_at);
+            const initials   = doctor.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2);
+
             return (
               <div
                 key={doctor.id}
-                className="rounded-xl shadow-sm flex flex-col"
-                style={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                }}
+                className="rounded-xl flex flex-col"
+                style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
               >
-                {/* Card header */}
-                <div
-                  className="p-5"
-                  style={{ borderBottom: "1px solid #f1f5f9" }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: "#eff6ff" }}
-                      >
-                        <span
-                          className="text-sm font-bold"
-                          style={{ color: "#2563eb" }}
-                        >
-                          {doctor.full_name
-                            ?.split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </span>
+                {/* Header */}
+                <div className="p-5" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: "#eff6ff" }}>
+                        <span className="text-sm font-bold" style={{ color: "#2563eb" }}>{initials}</span>
                       </div>
-                      <div>
-                        <p
-                          className="text-sm font-semibold"
-                          style={{ color: "#0f172a" }}
-                        >
-                          {doctor.full_name}
-                        </p>
-                        <p
-                          className="text-xs mt-0.5"
-                          style={{ color: "#64748b" }}
-                        >
-                          {doctor.specialty}
-                        </p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "#0f172a" }}>{doctor.full_name}</p>
+                        <p className="text-xs mt-0.5 truncate" style={{ color: "#64748b" }}>{doctor.specialty}</p>
                       </div>
                     </div>
-                    <span
-                      className="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
-                      style={{
-                        color: status.color,
-                        backgroundColor: status.bg,
-                        border: `1px solid ${status.border}`,
-                      }}
-                    >
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
+                      style={{ color: status.color, backgroundColor: status.bg, border: `1px solid ${status.border}` }}>
                       {status.label}
                     </span>
                   </div>
                 </div>
 
-                {/* Card body */}
-                <div className="p-5 flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "#94a3b8" }}>
-                      Email
-                    </span>
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: "#0f172a" }}
-                    >
-                      {doctor.email}
-                    </span>
+                {/* Stats de citas */}
+                <div className="grid grid-cols-3 divide-x" style={{ borderBottom: "1px solid #f1f5f9", divideColor: "#f1f5f9" }}>
+                  <div className="px-4 py-3 text-center">
+                    <p className="text-lg font-bold" style={{ color: "#0f172a" }}>{doctor.appointments_today ?? 0}</p>
+                    <p className="text-xs" style={{ color: "#94a3b8" }}>Hoy</p>
                   </div>
-                  {doctor.phone && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs" style={{ color: "#94a3b8" }}>
-                        Teléfono
-                      </span>
-                      <span
-                        className="text-xs font-medium"
-                        style={{ color: "#0f172a" }}
-                      >
-                        {doctor.phone}
-                      </span>
-                    </div>
-                  )}
-                  {doctor.license_number && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs" style={{ color: "#94a3b8" }}>
-                        Cédula
-                      </span>
-                      <span
-                        className="text-xs font-medium"
-                        style={{ color: "#0f172a" }}
-                      >
-                        {doctor.license_number}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "#94a3b8" }}>
-                      Duración consulta
-                    </span>
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: "#0f172a" }}
-                    >
-                      {doctor.consultation_duration} min
-                    </span>
+                  <div className="px-4 py-3 text-center" style={{ borderLeft: "1px solid #f1f5f9" }}>
+                    <p className="text-lg font-bold" style={{ color: "#0f172a" }}>{doctor.appointments_this_week ?? 0}</p>
+                    <p className="text-xs" style={{ color: "#94a3b8" }}>Esta semana</p>
                   </div>
-
-                  {/* Días */}
-                  <div>
-                    <p className="text-xs mb-2" style={{ color: "#94a3b8" }}>
-                      Días de atención
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {activeDays.length > 0 ? (
-                        activeDays.map((s) => (
-                          <span
-                            key={s.id}
-                            className="text-xs px-2 py-0.5 rounded"
-                            style={{
-                              backgroundColor: "#f1f5f9",
-                              color: "#475569",
-                            }}
-                          >
-                            {dayLabel[s.day_of_week]}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs" style={{ color: "#94a3b8" }}>
-                          Sin horarios configurados
-                        </span>
-                      )}
-                    </div>
+                  <div className="px-4 py-3 text-center" style={{ borderLeft: "1px solid #f1f5f9" }}>
+                    <p className="text-lg font-bold" style={{ color: "#0f172a" }}>{doctor.consultation_duration}</p>
+                    <p className="text-xs" style={{ color: "#94a3b8" }}>Min/cita</p>
                   </div>
                 </div>
 
-                {/* Card footer — acciones */}
-                <div
-                  className="grid grid-cols-3 gap-0"
-                  style={{ borderTop: "1px solid #f1f5f9" }}
-                >
-                  <Link
-                    href={`/dashboard/doctors/${doctor.id}/edit`}
-                    className="flex-1"
-                  >
-                    <button
-                      className="w-full py-3 text-xs font-medium transition-colors"
-                      style={{ color: "#64748b" }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#f8fafc")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
-                    >
-                      Editar
-                    </button>
-                  </Link>
-                  <Link
-                    href={`/dashboard/doctors/${doctor.id}/calendar`}
-                    className="flex-1"
-                  >
-                    <button
-                      className="w-full py-3 text-xs font-medium transition-colors"
-                      style={{
-                        color: "#7c3aed",
-                        borderLeft: "1px solid #f1f5f9",
-                        borderRight: "1px solid #f1f5f9",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#faf5ff")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
-                    >
-                      Calendario
-                    </button>
-                  </Link>
-                  <Link
-                    href={`/dashboard/doctors/${doctor.id}/availability`}
-                    className="flex-1"
-                  >
-                    <button
-                      className="w-full py-3 text-xs font-medium transition-colors"
-                      style={{ color: "#2563eb" }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#eff6ff")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
-                    >
-                      Disponibilidad
-                    </button>
-                  </Link>
+                {/* Info */}
+                <div className="px-5 py-4 flex-1 space-y-3">
+                  {/* Próxima cita */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs" style={{ color: "#94a3b8" }}>Próxima cita</span>
+                    <span className="text-xs font-medium" style={{ color: nextAppt ? "#2563eb" : "#cbd5e1" }}>
+                      {nextAppt
+                        ? `${doctor.next_appointment.patient_name} · ${nextAppt}`
+                        : "Sin citas próximas"}
+                    </span>
+                  </div>
+
+                  {doctor.license_number && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs" style={{ color: "#94a3b8" }}>Cédula</span>
+                      <span className="text-xs font-medium" style={{ color: "#0f172a" }}>{doctor.license_number}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs" style={{ color: "#94a3b8" }}>Email</span>
+                    <span className="text-xs font-medium truncate ml-4" style={{ color: "#0f172a" }}>{doctor.email}</span>
+                  </div>
+
+                  {/* Horario */}
+                  {activeSch.length > 0 && (
+                    <div>
+                      <p className="text-xs mb-2" style={{ color: "#94a3b8" }}>Horario de atención</p>
+                      <div className="space-y-1">
+                        {/* Agrupar días con el mismo horario */}
+                        {(() => {
+                          const groups = [];
+                          activeSch.forEach((s) => {
+                            const key = `${s.start_time}–${s.end_time}`;
+                            const existing = groups.find((g) => g.key === key);
+                            if (existing) existing.days.push(s.day_of_week);
+                            else groups.push({ key, days: [s.day_of_week], start: s.start_time, end: s.end_time });
+                          });
+                          return groups.map((g) => (
+                            <div key={g.key} className="flex items-center justify-between">
+                              <div className="flex gap-1">
+                                {g.days.map((d) => (
+                                  <span key={d} className="text-xs px-1.5 py-0.5 rounded"
+                                    style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>
+                                    {DAY_LABEL[d]}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="text-xs font-medium" style={{ color: "#64748b" }}>
+                                {g.start} – {g.end}
+                              </span>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSch.length === 0 && (
+                    <p className="text-xs" style={{ color: "#e2e8f0" }}>Sin horarios configurados</p>
+                  )}
+                </div>
+
+                {/* Footer acciones */}
+                <div className="grid grid-cols-3" style={{ borderTop: "1px solid #f1f5f9" }}>
+                  {[
+                    { label: "Editar",         href: `/dashboard/doctors/${doctor.id}/edit`,         color: "#64748b", hoverBg: "#f8fafc" },
+                    { label: "Calendario",     href: `/dashboard/doctors/${doctor.id}/calendar`,     color: "#7c3aed", hoverBg: "#faf5ff" },
+                    { label: "Disponibilidad", href: `/dashboard/doctors/${doctor.id}/availability`, color: "#2563eb", hoverBg: "#eff6ff" },
+                  ].map((action, i) => (
+                    <Link key={action.label} href={action.href}>
+                      <button
+                        className="w-full py-3 text-xs font-medium transition-colors"
+                        style={{
+                          color: action.color,
+                          borderLeft: i > 0 ? "1px solid #f1f5f9" : "none",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = action.hoverBg)}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        {action.label}
+                      </button>
+                    </Link>
+                  ))}
                 </div>
               </div>
             );
@@ -347,40 +255,26 @@ export default function DoctorsPage() {
 
       {/* Paginación */}
       {pagination && pagination.pages > 1 && (
-        <div
-          className="flex items-center justify-between px-6 py-4"
-          style={{
-            borderTop: "1px solid #e2e8f0",
-            backgroundColor: "#f8fafc",
-          }}
-        >
+        <div className="flex items-center justify-between px-2 py-4">
           <p className="text-xs" style={{ color: "#94a3b8" }}>
-            Página {pagination.page} de {pagination.pages} — {pagination.count}{" "}
-            doctores
+            Página {pagination.page} de {pagination.pages} — {pagination.count} doctores
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => p - 1)}
               disabled={pagination.page === 1}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg"
               style={{
                 border: "1px solid #e2e8f0",
-                backgroundColor: pagination.page === 1 ? "#f8fafc" : "#ffffff",
+                backgroundColor: "#ffffff",
                 color: pagination.page === 1 ? "#cbd5e1" : "#64748b",
                 cursor: pagination.page === 1 ? "not-allowed" : "pointer",
               }}
             >
               ← Anterior
             </button>
-
-            {/* Números de página */}
             {Array.from({ length: pagination.pages }, (_, i) => i + 1)
-              .filter(
-                (p) =>
-                  p === 1 ||
-                  p === pagination.pages ||
-                  Math.abs(p - pagination.page) <= 1,
-              )
+              .filter((p) => p === 1 || p === pagination.pages || Math.abs(p - pagination.page) <= 1)
               .reduce((acc, p, idx, arr) => {
                 if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
                 acc.push(p);
@@ -388,44 +282,31 @@ export default function DoctorsPage() {
               }, [])
               .map((p, i) =>
                 p === "..." ? (
-                  <span
-                    key={`dots-${i}`}
-                    className="text-xs"
-                    style={{ color: "#94a3b8" }}
-                  >
-                    ...
-                  </span>
+                  <span key={`d${i}`} className="text-xs" style={{ color: "#94a3b8" }}>…</span>
                 ) : (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className="text-xs font-medium w-8 h-8 rounded-lg transition-colors"
+                    className="text-xs font-medium w-8 h-8 rounded-lg"
                     style={{
-                      backgroundColor:
-                        pagination.page === p ? "#2563eb" : "#ffffff",
-                      color: pagination.page === p ? "#ffffff" : "#64748b",
-                      border: `1px solid ${pagination.page === p ? "#2563eb" : "#e2e8f0"}`,
+                      backgroundColor: pagination.page === p ? "#2563eb" : "#ffffff",
+                      color:           pagination.page === p ? "#ffffff" : "#64748b",
+                      border:          `1px solid ${pagination.page === p ? "#2563eb" : "#e2e8f0"}`,
                     }}
                   >
                     {p}
                   </button>
-                ),
+                )
               )}
-
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={pagination.page === pagination.pages}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg"
               style={{
                 border: "1px solid #e2e8f0",
-                backgroundColor:
-                  pagination.page === pagination.pages ? "#f8fafc" : "#ffffff",
-                color:
-                  pagination.page === pagination.pages ? "#cbd5e1" : "#64748b",
-                cursor:
-                  pagination.page === pagination.pages
-                    ? "not-allowed"
-                    : "pointer",
+                backgroundColor: "#ffffff",
+                color: pagination.page === pagination.pages ? "#cbd5e1" : "#64748b",
+                cursor: pagination.page === pagination.pages ? "not-allowed" : "pointer",
               }}
             >
               Siguiente →
