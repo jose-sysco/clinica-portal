@@ -22,8 +22,12 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(form.slug, form.email, form.password);
-      router.push("/dashboard");
+      const data = await login(form.slug, form.email, form.password);
+      if (data.user?.role === "superadmin") {
+        router.push("/superadmin");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.error || "Credenciales incorrectas");
     } finally {
