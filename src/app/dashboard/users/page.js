@@ -62,15 +62,24 @@ export default function UsersPage() {
   });
   const [savingPassword, setSavingPassword] = useState(false);
 
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, []);
+
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [page]);
 
   const fetchUsers = async () => {
     setLoading(true);
+    const params = { page };
     try {
-      const res = await api.get("/api/v1/users");
+      const res = await api.get("/api/v1/users", { params });
       setUsers(res.data.data);
+      setPagination(res.data.pagination);
     } catch (err) {
       setError("Error al cargar los usuarios");
     } finally {
@@ -157,7 +166,13 @@ export default function UsersPage() {
             Usuarios
           </h1>
           <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-            Gestiona los usuarios de la clínica
+            Gestión de usuarios
+            {pagination && (
+              <span style={{ color: "#94a3b8" }}>
+                {" "}
+                — {pagination.count} en total
+              </span>
+            )}
           </p>
         </div>
         <Link href="/dashboard/users/new">
@@ -346,6 +361,100 @@ export default function UsersPage() {
               })}
             </tbody>
           </table>
+
+          {/* Paginación */}
+          {pagination && pagination.pages > 1 && (
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{
+                borderTop: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+              }}
+            >
+              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                Página {pagination.page} de {pagination.pages} —{" "}
+                {pagination.count} citas
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={pagination.page === 1}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    backgroundColor:
+                      pagination.page === 1 ? "#f8fafc" : "#ffffff",
+                    color: pagination.page === 1 ? "#cbd5e1" : "#64748b",
+                    cursor: pagination.page === 1 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  ← Anterior
+                </button>
+
+                {/* Números de página */}
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+                  .filter(
+                    (p) =>
+                      p === 1 ||
+                      p === pagination.pages ||
+                      Math.abs(p - pagination.page) <= 1,
+                  )
+                  .reduce((acc, p, idx, arr) => {
+                    if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    p === "..." ? (
+                      <span
+                        key={`dots-${i}`}
+                        className="text-xs"
+                        style={{ color: "#94a3b8" }}
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className="text-xs font-medium w-8 h-8 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor:
+                            pagination.page === p ? "#2563eb" : "#ffffff",
+                          color: pagination.page === p ? "#ffffff" : "#64748b",
+                          border: `1px solid ${pagination.page === p ? "#2563eb" : "#e2e8f0"}`,
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  )}
+
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={pagination.page === pagination.pages}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    backgroundColor:
+                      pagination.page === pagination.pages
+                        ? "#f8fafc"
+                        : "#ffffff",
+                    color:
+                      pagination.page === pagination.pages
+                        ? "#cbd5e1"
+                        : "#64748b",
+                    cursor:
+                      pagination.page === pagination.pages
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  Siguiente →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
