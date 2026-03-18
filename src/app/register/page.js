@@ -161,6 +161,7 @@ export default function RegisterPage() {
                     <option value="pediatric">Pediatría</option>
                     <option value="general">Medicina General</option>
                     <option value="dental">Odontología</option>
+                    <option value="psychology">Psicología</option>
                   </select>
                 </div>
 

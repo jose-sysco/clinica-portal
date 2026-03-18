@@ -98,9 +98,10 @@ const getNavigation = (clinicType, role) => {
 
 const clinicTypeLabel = {
   veterinary: "Veterinaria",
-  pediatric: "Pediatría",
-  general: "Medicina General",
-  dental: "Odontología",
+  pediatric:  "Pediatría",
+  general:    "Medicina General",
+  dental:     "Odontología",
+  psychology: "Psicología",
 };
 
 const roleLabel = {

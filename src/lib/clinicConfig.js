@@ -47,6 +47,18 @@ export const clinicConfig = {
     requiresOwner: false,
     adultCheck: true,
   },
+  psychology: {
+    patientLabel: "Paciente",
+    patientsLabel: "Pacientes",
+    ownerLabel: "Tutor / Responsable",
+    ownersLabel: "Tutores",
+    patientType: "human",
+    showSpecies: false,
+    showBreed: false,
+    showAnimalGender: false,
+    requiresOwner: false,
+    adultCheck: true,
+  },
 };
 
 export const getConfig = (clinicType) => {

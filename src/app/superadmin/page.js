@@ -9,6 +9,7 @@ const clinicTypeLabel = {
   pediatric:  "Pediatría",
   general:    "Medicina General",
   dental:     "Odontología",
+  psychology: "Psicología",
 };
 
 const planLabel = {
