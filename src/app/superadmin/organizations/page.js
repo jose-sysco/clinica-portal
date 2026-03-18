@@ -24,15 +24,29 @@ const clinicTypeLabel = {
   dental:     "Odontología",
 };
 
+function formatDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("es-GT", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function timeAgo(d) {
+  if (!d) return "Sin actividad";
+  const diff = Math.floor((Date.now() - new Date(d)) / 86400000);
+  if (diff === 0) return "Hoy";
+  if (diff === 1) return "Ayer";
+  if (diff < 7)  return `Hace ${diff} días`;
+  if (diff < 30) return `Hace ${Math.floor(diff / 7)} sem.`;
+  return `Hace ${Math.floor(diff / 30)} meses`;
+}
+
 export default function SuperadminOrganizationsPage() {
-  const [orgs, setOrgs] = useState([]);
+  const [orgs, setOrgs]           = useState([]);
   const [pagination, setPagination] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({ q: "", status: "", plan: "" });
+  const [loading, setLoading]     = useState(true);
+  const [page, setPage]           = useState(1);
+  const [filters, setFilters]     = useState({ q: "", status: "", plan: "" });
 
   useEffect(() => { setPage(1); }, [filters]);
-
   useEffect(() => { fetchOrgs(); }, [page, filters]);
 
   const fetchOrgs = async () => {
@@ -49,9 +63,6 @@ export default function SuperadminOrganizationsPage() {
     finally { setLoading(false); }
   };
 
-  const formatDate = (d) =>
-    d ? new Date(d).toLocaleDateString("es-GT", { day: "numeric", month: "short", year: "numeric" }) : "—";
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -64,10 +75,7 @@ export default function SuperadminOrganizationsPage() {
       </div>
 
       {/* Filtros */}
-      <div
-        className="rounded-xl p-4 flex flex-wrap gap-3"
-        style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}
-      >
+      <div className="rounded-xl p-4 flex flex-wrap gap-3" style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}>
         <input
           type="text"
           placeholder="Buscar por nombre, email o slug..."
@@ -116,10 +124,7 @@ export default function SuperadminOrganizationsPage() {
           <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : orgs.length === 0 ? (
-        <div
-          className="rounded-xl p-12 text-center"
-          style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}
-        >
+        <div className="rounded-xl p-12 text-center" style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}>
           <p className="text-sm" style={{ color: "#64748b" }}>No se encontraron organizaciones</p>
         </div>
       ) : (
@@ -127,12 +132,8 @@ export default function SuperadminOrganizationsPage() {
           <table className="w-full">
             <thead>
               <tr style={{ backgroundColor: "#1e293b", borderBottom: "1px solid #334155" }}>
-                {["Organización", "Tipo", "Plan / Estado", "Trial", "Usuarios", "Citas", "Creada"].map((h) => (
-                  <th
-                    key={h}
-                    className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: "#475569" }}
-                  >
+                {["Organización", "Tipo", "Plan / Estado", "Trial / Licencia", "Actividad", "Equipo", "Registrada"].map((h) => (
+                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#475569" }}>
                     {h}
                   </th>
                 ))}
@@ -142,48 +143,68 @@ export default function SuperadminOrganizationsPage() {
             <tbody>
               {orgs.map((org, i) => {
                 const status = statusConfig[org.status] || statusConfig.active;
-                const plan   = planConfig[org.plan]   || planConfig.trial;
-                const trialExpired = org.trial_expired;
+                const plan   = planConfig[org.plan]     || planConfig.trial;
+                const rowBg  = org.expiring_soon
+                  ? "rgba(251,146,60,0.05)"
+                  : org.trial_expired
+                    ? "rgba(239,68,68,0.04)"
+                    : "#0f172a";
+                const rowBorder = org.expiring_soon ? "2px solid rgba(251,146,60,0.3)" : "none";
+
                 return (
                   <tr
                     key={org.id}
                     style={{
-                      backgroundColor: "#0f172a",
+                      backgroundColor: rowBg,
                       borderBottom: i < orgs.length - 1 ? "1px solid #1e293b" : "none",
+                      borderLeft: rowBorder,
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e293b")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0f172a")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = rowBg)}
                   >
                     <td className="px-5 py-4">
-                      <p className="text-sm font-medium" style={{ color: "#f1f5f9" }}>{org.name}</p>
-                      <p className="text-xs" style={{ color: "#475569" }}>{org.email}</p>
+                      <div className="flex items-center gap-2">
+                        {org.expiring_soon && (
+                          <span title="Vence pronto" style={{ color: "#fb923c", fontSize: "12px" }}>⚠</span>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium" style={{ color: "#f1f5f9" }}>{org.name}</p>
+                          <p className="text-xs" style={{ color: "#475569" }}>{org.email}</p>
+                          {org.city && (
+                            <p className="text-xs" style={{ color: "#334155" }}>{[org.city, org.country].filter(Boolean).join(", ")}</p>
+                          )}
+                        </div>
+                      </div>
                     </td>
+
                     <td className="px-5 py-4">
                       <span className="text-xs" style={{ color: "#94a3b8" }}>
                         {clinicTypeLabel[org.clinic_type] || org.clinic_type}
                       </span>
                     </td>
+
                     <td className="px-5 py-4">
                       <div className="flex flex-col gap-1">
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded-full w-fit"
-                          style={{ color: plan.color, backgroundColor: "#0f172a", border: `1px solid ${plan.color}33` }}
-                        >
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full w-fit"
+                          style={{ color: plan.color, border: `1px solid ${plan.color}33`, backgroundColor: `${plan.color}11` }}>
                           {plan.label}
                         </span>
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded-full w-fit"
-                          style={{ color: status.color, backgroundColor: status.bg, border: `1px solid ${status.border}` }}
-                        >
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full w-fit"
+                          style={{ color: status.color, backgroundColor: status.bg, border: `1px solid ${status.border}` }}>
                           {status.label}
                         </span>
                       </div>
                     </td>
+
                     <td className="px-5 py-4">
                       {org.on_trial ? (
                         <div>
-                          {trialExpired ? (
-                            <span className="text-xs font-semibold" style={{ color: "#ef4444" }}>Vencido</span>
+                          {org.trial_expired ? (
+                            <span className="text-xs font-bold" style={{ color: "#ef4444" }}>Vencido</span>
+                          ) : org.expiring_soon ? (
+                            <span className="text-xs font-bold" style={{ color: "#fb923c" }}>
+                              ⚠ {org.trial_days_remaining}d restantes
+                            </span>
                           ) : (
                             <span className="text-xs font-semibold" style={{ color: "#f59e0b" }}>
                               {org.trial_days_remaining}d restantes
@@ -194,19 +215,26 @@ export default function SuperadminOrganizationsPage() {
                           </p>
                         </div>
                       ) : (
-                        <span className="text-xs" style={{ color: "#475569" }}>—</span>
+                        <span className="text-xs font-medium" style={{ color: "#22c55e" }}>Activa</span>
                       )}
                     </td>
+
+                    <td className="px-5 py-4">
+                      <p className="text-xs font-medium" style={{ color: "#94a3b8" }}>
+                        {timeAgo(org.last_appointment_at)}
+                      </p>
+                      <p className="text-xs" style={{ color: "#334155" }}>{org.appointments_count} citas</p>
+                    </td>
+
                     <td className="px-5 py-4">
                       <p className="text-sm font-medium" style={{ color: "#f1f5f9" }}>{org.users_count}</p>
-                      <p className="text-xs" style={{ color: "#475569" }}>{org.doctors_count} doctores</p>
+                      <p className="text-xs" style={{ color: "#475569" }}>{org.doctors_count} doc · {org.patients_count} pac</p>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="text-sm" style={{ color: "#94a3b8" }}>{org.appointments_count}</span>
-                    </td>
+
                     <td className="px-5 py-4">
                       <span className="text-xs" style={{ color: "#475569" }}>{formatDate(org.created_at)}</span>
                     </td>
+
                     <td className="px-5 py-4 text-right">
                       <Link href={`/superadmin/organizations/${org.id}`}>
                         <button
@@ -227,38 +255,24 @@ export default function SuperadminOrganizationsPage() {
 
           {/* Paginación */}
           {pagination && pagination.pages > 1 && (
-            <div
-              className="flex items-center justify-between px-5 py-4"
-              style={{ borderTop: "1px solid #334155", backgroundColor: "#1e293b" }}
-            >
+            <div className="flex items-center justify-between px-5 py-4"
+              style={{ borderTop: "1px solid #334155", backgroundColor: "#1e293b" }}>
               <p className="text-xs" style={{ color: "#475569" }}>
                 Página {pagination.page} de {pagination.pages} — {pagination.count} orgs
               </p>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={pagination.page === 1}
+                <button onClick={() => setPage((p) => p - 1)} disabled={pagination.page === 1}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg"
-                  style={{
-                    border: "1px solid #334155",
-                    backgroundColor: "#0f172a",
+                  style={{ border: "1px solid #334155", backgroundColor: "#0f172a",
                     color: pagination.page === 1 ? "#334155" : "#94a3b8",
-                    cursor: pagination.page === 1 ? "not-allowed" : "pointer",
-                  }}
-                >
+                    cursor: pagination.page === 1 ? "not-allowed" : "pointer" }}>
                   ← Anterior
                 </button>
-                <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={pagination.page === pagination.pages}
+                <button onClick={() => setPage((p) => p + 1)} disabled={pagination.page === pagination.pages}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg"
-                  style={{
-                    border: "1px solid #334155",
-                    backgroundColor: "#0f172a",
+                  style={{ border: "1px solid #334155", backgroundColor: "#0f172a",
                     color: pagination.page === pagination.pages ? "#334155" : "#94a3b8",
-                    cursor: pagination.page === pagination.pages ? "not-allowed" : "pointer",
-                  }}
-                >
+                    cursor: pagination.page === pagination.pages ? "not-allowed" : "pointer" }}>
                   Siguiente →
                 </button>
               </div>

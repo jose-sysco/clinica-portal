@@ -8,6 +8,7 @@ import Link from "next/link";
 const navigation = [
   { name: "Dashboard", href: "/superadmin", icon: "⊞" },
   { name: "Organizaciones", href: "/superadmin/organizations", icon: "🏥" },
+  { name: "Administradores", href: "/superadmin/users", icon: "🛡️" },
 ];
 
 export default function SuperadminLayout({ children }) {
