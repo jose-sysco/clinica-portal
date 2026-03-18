@@ -6,6 +6,12 @@ import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const DownloadMedicalRecordPDF = dynamic(
+  () => import("@/components/MedicalRecordPDF"),
+  { ssr: false }
+);
 
 const SOAP_SECTIONS = [
   { field: "soap_subjective", letter: "S", title: "Subjetivo",               color: "#3b82f6", bg: "#eff6ff",  border: "#bfdbfe" },
@@ -94,6 +100,7 @@ export default function MedicalRecordDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <DownloadMedicalRecordPDF record={record} organization={organization} config={config} />
           <Link href={`/dashboard/medical-records/${record?.id}/edit`}>
             <button
               className="text-sm font-medium px-4 py-2 rounded-lg"
