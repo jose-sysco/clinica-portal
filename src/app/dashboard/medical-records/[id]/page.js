@@ -93,10 +93,20 @@ export default function MedicalRecordDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-lg"
-          style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
-          <span className="text-sm font-bold" style={{ color: "#2563eb" }}>Rx</span>
-          <span className="text-xs" style={{ color: "#2563eb" }}>#{record?.id}</span>
+        <div className="flex items-center gap-3">
+          <Link href={`/dashboard/medical-records/${record?.id}/edit`}>
+            <button
+              className="text-sm font-medium px-4 py-2 rounded-lg"
+              style={{ backgroundColor: "#ffffff", color: "#64748b", border: "1px solid #e2e8f0" }}
+            >
+              Editar
+            </button>
+          </Link>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg"
+            style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+            <span className="text-sm font-bold" style={{ color: "#2563eb" }}>Rx</span>
+            <span className="text-xs" style={{ color: "#2563eb" }}>#{record?.id}</span>
+          </div>
         </div>
       </div>
 

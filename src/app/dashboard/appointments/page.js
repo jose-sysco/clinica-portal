@@ -352,6 +352,16 @@ export default function AppointmentsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 justify-end">
+                        <Link href={`/dashboard/appointments/${apt.id}`}>
+                          <button
+                            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                            style={{ color: "#64748b", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                          >
+                            Ver
+                          </button>
+                        </Link>
                         {apt.status === "pending" && (
                           <button
                             onClick={() => handleConfirm(apt.id)}

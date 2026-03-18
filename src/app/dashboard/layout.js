@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
 import { getConfig } from "@/lib/clinicConfig";
+import { useFeatures } from "@/lib/useFeature";
 
 function TrialBanner({ organization }) {
   const expired = organization.trial_expired;
@@ -68,29 +69,40 @@ function TrialBanner({ organization }) {
   );
 }
 
-const getNavigation = (clinicType, role) => {
+const getNavigation = (clinicType, role, features) => {
   const config = getConfig(clinicType);
+  const has = (f) => features.includes(f);
+
   const base = [
-    { name: "Dashboard", href: "/dashboard", icon: "⊞" },
-    { name: "Citas", href: "/dashboard/appointments", icon: "◷" },
-    { name: "Doctores", href: "/dashboard/doctors", icon: "✚" },
+    { name: "Dashboard",  href: "/dashboard",              icon: "⊞" },
+    { name: "Citas",      href: "/dashboard/appointments", icon: "◷", feature: "appointments" },
+    { name: "Doctores",   href: "/dashboard/doctors",      icon: "✚" },
     { name: config.patientsLabel, href: "/dashboard/patients", icon: "♡" },
   ];
 
   if (clinicType === "veterinary" || clinicType === "pediatric") {
-    base.push({
-      name: config.ownersLabel,
-      href: "/dashboard/owners",
-      icon: "◎",
-    });
+    base.push({ name: config.ownersLabel, href: "/dashboard/owners", icon: "◎" });
   }
 
+  // Feature-gated items
+  base.push({
+    name:    "Expedientes",
+    href:    "/dashboard/medical-records",
+    icon:    "📋",
+    feature: "medical_records",
+    locked:  features.length > 0 && !has("medical_records"),
+  });
+
+  base.push({
+    name:    "Reportes",
+    href:    "/dashboard/reports",
+    icon:    "◈",
+    feature: "reporting",
+    locked:  features.length > 0 && !has("reporting"),
+  });
+
   if (role === "admin") {
-    base.push({
-      name: "Usuarios",
-      href: "/dashboard/users",
-      icon: "👥",
-    });
+    base.push({ name: "Usuarios", href: "/dashboard/users", icon: "👥" });
   }
 
   return base;
@@ -113,6 +125,7 @@ const roleLabel = {
 
 export default function DashboardLayout({ children }) {
   const { user, organization, logout, loading } = useAuth();
+  const features = useFeatures();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -137,7 +150,7 @@ export default function DashboardLayout({ children }) {
   }
 
   const initials = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
-  const navigation = getNavigation(organization?.clinic_type, user?.role);
+  const navigation = getNavigation(organization?.clinic_type, user?.role, features);
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#f1f5f9" }}>
@@ -183,7 +196,21 @@ export default function DashboardLayout({ children }) {
             Menú
           </p>
           {navigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            if (item.locked) {
+              return (
+                <div
+                  key={item.name}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
+                  title="No disponible en tu plan actual"
+                  style={{ color: "#cbd5e1", cursor: "not-allowed" }}
+                >
+                  <span>{item.icon}</span>
+                  <span className="flex-1">{item.name}</span>
+                  <span className="text-xs" style={{ color: "#e2e8f0" }}>🔒</span>
+                </div>
+              );
+            }
             return (
               <Link
                 key={item.name}

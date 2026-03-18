@@ -26,6 +26,11 @@ export default function NewPatientPage() {
     birthdate: "",
     weight: "",
     notes: "",
+    blood_type: "",
+    allergies: "",
+    chronic_conditions: "",
+    microchip_number: "",
+    reproductive_status: "",
   });
 
   const [ownerForm, setOwnerForm] = useState({
@@ -351,7 +356,7 @@ export default function NewPatientPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Peso (lb)</label>
+              <label style={labelStyle}>Peso (kg)</label>
               <input
                 type="number"
                 step="0.01"
@@ -362,13 +367,84 @@ export default function NewPatientPage() {
               />
             </div>
 
+            {config.showBloodType && (
+              <div>
+                <label style={labelStyle}>Tipo de sangre</label>
+                <select
+                  value={patientForm.blood_type}
+                  onChange={(e) => handlePatient("blood_type", e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">No especificado</option>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {config.showMicrochip && (
+              <div>
+                <label style={labelStyle}>Número de microchip</label>
+                <input
+                  type="text"
+                  value={patientForm.microchip_number}
+                  onChange={(e) => handlePatient("microchip_number", e.target.value)}
+                  placeholder="985112345678901"
+                  style={inputStyle}
+                />
+              </div>
+            )}
+
+            {config.showReproductiveStatus && (
+              <div>
+                <label style={labelStyle}>Estado reproductivo</label>
+                <select
+                  value={patientForm.reproductive_status}
+                  onChange={(e) => handlePatient("reproductive_status", e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">No especificado</option>
+                  <option value="intact">Íntegro/a</option>
+                  <option value="neutered">Castrado/a</option>
+                  <option value="spayed">Esterilizada</option>
+                </select>
+              </div>
+            )}
+
+            {config.showAllergies && (
+              <div>
+                <label style={labelStyle}>Alergias conocidas</label>
+                <textarea
+                  value={patientForm.allergies}
+                  onChange={(e) => handlePatient("allergies", e.target.value)}
+                  placeholder="Penicilina, látex, mariscos..."
+                  rows={2}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+              </div>
+            )}
+
+            {config.showChronicConditions && (
+              <div>
+                <label style={labelStyle}>Condiciones crónicas</label>
+                <textarea
+                  value={patientForm.chronic_conditions}
+                  onChange={(e) => handlePatient("chronic_conditions", e.target.value)}
+                  placeholder="Diabetes, hipertensión, asma..."
+                  rows={2}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+              </div>
+            )}
+
             <div>
-              <label style={labelStyle}>Notas</label>
+              <label style={labelStyle}>Notas adicionales</label>
               <textarea
                 value={patientForm.notes}
                 onChange={(e) => handlePatient("notes", e.target.value)}
-                placeholder="Alergias, condiciones especiales..."
-                rows={3}
+                placeholder="Observaciones generales..."
+                rows={2}
                 style={{ ...inputStyle, resize: "none" }}
               />
             </div>
