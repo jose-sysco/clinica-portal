@@ -230,6 +230,45 @@ export default function DashboardLayout({ children }) {
           </span>
         </header>
 
+        {/* Banner de trial */}
+        {organization?.on_trial && (
+          <div
+            className="px-8 py-3 flex items-center justify-between"
+            style={{
+              backgroundColor: organization.trial_days_remaining <= 3 ? "#fef2f2" : "#fffbeb",
+              borderBottom: `1px solid ${organization.trial_days_remaining <= 3 ? "#fecaca" : "#fde68a"}`,
+            }}
+          >
+            <p
+              className="text-sm"
+              style={{ color: organization.trial_days_remaining <= 3 ? "#dc2626" : "#92400e" }}
+            >
+              {organization.trial_days_remaining > 0 ? (
+                <>
+                  <span className="font-semibold">
+                    {organization.trial_days_remaining === 1
+                      ? "Te queda 1 día"
+                      : `Te quedan ${organization.trial_days_remaining} días`}
+                  </span>{" "}
+                  de período de prueba gratuita.
+                </>
+              ) : (
+                <span className="font-semibold">Tu período de prueba ha expirado.</span>
+              )}
+            </p>
+            <a
+              href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
+              style={{
+                backgroundColor: organization.trial_days_remaining <= 3 ? "#dc2626" : "#d97706",
+                color: "#ffffff",
+              }}
+            >
+              Activar suscripción →
+            </a>
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 p-8" style={{ backgroundColor: "#f1f5f9" }}>
           {children}

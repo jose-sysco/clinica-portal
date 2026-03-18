@@ -26,7 +26,7 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-// Interceptor - maneja erorres globalmente
+// Interceptor - maneja errores globalmente
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -34,6 +34,10 @@ api.interceptors.response.use(
             Cookies.remove('token')
             Cookies.remove('organization_slug')
             window.location.href = '/login'
+        }
+        if (error.response?.status === 402) {
+            const code = error.response?.data?.code
+            window.location.href = `/subscription-required?reason=${code || 'expired'}`
         }
         return Promise.reject(error)
     }
