@@ -78,7 +78,7 @@ export default function OrgDetailPage() {
   const plan   = planConfig[org.plan]     || planConfig.trial;
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

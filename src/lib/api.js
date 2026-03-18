@@ -37,7 +37,12 @@ api.interceptors.response.use(
         }
         if (error.response?.status === 402) {
             const code = error.response?.data?.code
-            window.location.href = `/subscription-required?reason=${code || 'expired'}`
+            if (code === 'license_suspended') {
+                // Org suspendida → bloqueo total, redirige
+                window.location.href = `/subscription-required?reason=license_suspended`
+            }
+            // trial_expired → el overlay del dashboard ya bloquea la UI,
+            // no redirigimos — el error lo maneja cada componente con su propio catch
         }
         return Promise.reject(error)
     }
