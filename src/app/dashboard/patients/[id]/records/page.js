@@ -233,13 +233,13 @@ export default function PatientRecordsPage() {
                   className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
                   style={{ color: "#64748b" }}
                 >
-                  Diagnóstico
+                  Evaluación / Diagnóstico
                 </th>
                 <th
                   className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
                   style={{ color: "#64748b" }}
                 >
-                  Signos vitales
+                  Vitales
                 </th>
                 <th
                   className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
@@ -279,46 +279,28 @@ export default function PatientRecordsPage() {
                     </p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm" style={{ color: "#0f172a" }}>
-                      {record.diagnosis?.length > 60
-                        ? `${record.diagnosis.slice(0, 60)}...`
-                        : record.diagnosis}
-                    </p>
+                    {(() => {
+                      const text = record.soap_assessment || record.diagnosis || "";
+                      return (
+                        <p className="text-sm" style={{ color: "#0f172a" }}>
+                          {text.length > 60 ? `${text.slice(0, 60)}...` : text || "—"}
+                        </p>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-3">
-                      {record.weight && (
-                        <span
-                          className="text-xs px-2 py-0.5 rounded"
-                          style={{
-                            backgroundColor: "#f1f5f9",
-                            color: "#475569",
-                          }}
-                        >
-                          {record.weight} kg
+                    <div className="flex flex-wrap gap-1.5">
+                      {record.weight      && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.weight} kg</span>}
+                      {record.temperature && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.temperature}°C</span>}
+                      {record.heart_rate  && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.heart_rate} ppm</span>}
+                      {record.blood_pressure_systolic && record.blood_pressure_diastolic && (
+                        <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>
+                          {record.blood_pressure_systolic}/{record.blood_pressure_diastolic} mmHg
                         </span>
                       )}
-                      {record.height && (
-                        <span
-                          className="text-xs px-2 py-0.5 rounded"
-                          style={{
-                            backgroundColor: "#f1f5f9",
-                            color: "#475569",
-                          }}
-                        >
-                          {record.height} cm
-                        </span>
-                      )}
-                      {record.temperature && (
-                        <span
-                          className="text-xs px-2 py-0.5 rounded"
-                          style={{
-                            backgroundColor: "#f1f5f9",
-                            color: "#475569",
-                          }}
-                        >
-                          {record.temperature}°C
-                        </span>
+                      {record.oxygen_saturation && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.oxygen_saturation}% SpO₂</span>}
+                      {!record.weight && !record.temperature && !record.heart_rate && !record.oxygen_saturation && (
+                        <span className="text-xs" style={{ color: "#94a3b8" }}>—</span>
                       )}
                     </div>
                   </td>
