@@ -228,9 +228,9 @@ export default function DoctorsPage() {
                 {/* Footer acciones */}
                 <div className="grid grid-cols-3" style={{ borderTop: "1px solid #f1f5f9" }}>
                   {[
-                    { label: "Editar",         href: `/dashboard/doctors/${doctor.id}/edit`,         color: "#64748b", hoverBg: "#f8fafc" },
-                    { label: "Calendario",     href: `/dashboard/doctors/${doctor.id}/calendar`,     color: "#7c3aed", hoverBg: "#faf5ff" },
-                    { label: "Disponibilidad", href: `/dashboard/doctors/${doctor.id}/availability`, color: "#2563eb", hoverBg: "#eff6ff" },
+                    { label: "Editar",      href: `/dashboard/doctors/${doctor.id}/edit`,         color: "#64748b", hoverBg: "#f8fafc" },
+                    { label: "Calendario",  href: `/dashboard/doctors/${doctor.id}/calendar`,     color: "#7c3aed", hoverBg: "#faf5ff" },
+                    { label: "Horario",     href: `/dashboard/doctors/${doctor.id}/schedule`,     color: "#2563eb", hoverBg: "#eff6ff" },
                   ].map((action, i) => (
                     <Link key={action.label} href={action.href}>
                       <button

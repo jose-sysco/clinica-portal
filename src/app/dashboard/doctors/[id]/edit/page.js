@@ -264,6 +264,16 @@ export default function EditDoctorPage() {
           </p>
         </div>
       </div>
+      <Link href={`/dashboard/doctors/${id}/schedule`}>
+        <button
+          className="text-sm font-medium px-4 py-2 rounded-lg"
+          style={{ color: "#2563eb", backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#dbeafe")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#eff6ff")}
+        >
+          Gestionar horario →
+        </button>
+      </Link>
 
       {errors.length > 0 && (
         <div
