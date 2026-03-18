@@ -2,10 +2,11 @@
 
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getConfig } from "@/lib/clinicConfig";
 import { useFeatures } from "@/lib/useFeature";
+import GlobalSearch from "@/components/GlobalSearch";
 
 function TrialBanner({ organization }) {
   const expired = organization.trial_expired;
@@ -128,10 +129,22 @@ export default function DashboardLayout({ children }) {
   const features = useFeatures();
   const router = useRouter();
   const pathname = usePathname();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
   }, [user, loading]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   if (loading) {
     return (
@@ -308,16 +321,29 @@ export default function DashboardLayout({ children }) {
               day: "numeric",
             })}
           </p>
-          <span
-            className="text-xs font-medium px-3 py-1 rounded-full"
-            style={{
-              color: "#2563eb",
-              backgroundColor: "#eff6ff",
-              border: "1px solid #bfdbfe",
-            }}
-          >
-            {roleLabel[user?.role]}
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg transition-colors"
+              style={{ color: "#64748b", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+            >
+              <span>⌕</span>
+              <span className="hidden sm:inline">Buscar</span>
+              <kbd className="text-xs px-1 py-0.5 rounded hidden sm:inline" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", fontFamily: "monospace" }}>⌘K</kbd>
+            </button>
+            <span
+              className="text-xs font-medium px-3 py-1 rounded-full"
+              style={{
+                color: "#2563eb",
+                backgroundColor: "#eff6ff",
+                border: "1px solid #bfdbfe",
+              }}
+            >
+              {roleLabel[user?.role]}
+            </span>
+          </div>
         </header>
 
         {/* Banner de trial */}
@@ -356,6 +382,8 @@ export default function DashboardLayout({ children }) {
           {children}
         </div>
       </main>
+
+      {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
     </div>
   );
 }

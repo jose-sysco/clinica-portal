@@ -3,59 +3,35 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
+import Link from "next/link";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-const COLORS = [
-  "#2563eb",
-  "#22c55e",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-];
-const STATUS_COLORS = {
-  completed: "#22c55e",
-  confirmed: "#2563eb",
-  pending: "#f59e0b",
-  cancelled: "#ef4444",
-};
-const monthNames = [
-  "Ene",
-  "Feb",
-  "Mar",
-  "Abr",
-  "May",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dic",
-];
+const COLORS = ["#2563eb","#22c55e","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
+const STATUS_COLORS = { completed: "#22c55e", confirmed: "#2563eb", pending: "#f59e0b", cancelled: "#ef4444" };
+const STATUS_LABEL  = { pending: "Pendiente", confirmed: "Confirmada", completed: "Completada", cancelled: "Cancelada" };
+const monthNames = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-const cardStyle = {
-  backgroundColor: "#ffffff",
-  border: "1px solid #e2e8f0",
-  borderRadius: "12px",
-  padding: "24px",
-};
+function Trend({ value }) {
+  if (value == null) return <span style={{ fontSize: "11px", color: "#94a3b8" }}>—</span>;
+  const up    = value >= 0;
+  const color = up ? "#16a34a" : "#dc2626";
+  return (
+    <span style={{ fontSize: "11px", fontWeight: "600", color }}>
+      {up ? "▲" : "▼"} {Math.abs(value)}%
+    </span>
+  );
+}
+
+function Skeleton({ h = 32, w }) {
+  return <div className="animate-pulse rounded-lg" style={{ height: h, width: w || "100%", backgroundColor: "#f1f5f9" }} />;
+}
 
 export default function DashboardPage() {
   const { user, organization } = useAuth();
-  const [stats, setStats] = useState(null);
+  const [stats,   setStats]   = useState(null);
   const [reports, setReports] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,314 +40,161 @@ export default function DashboardPage() {
       api.get("/api/v1/dashboard/stats"),
       api.get("/api/v1/dashboard/reports"),
     ])
-      .then(([statsRes, reportsRes]) => {
-        setStats(statsRes.data);
-        setReports(reportsRes.data);
-      })
-      .catch((err) => console.error(err))
+      .then(([s, r]) => { setStats(s.data); setReports(r.data); })
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const statCards = [
-    {
-      title: "Citas hoy",
-      value: stats?.appointments_today,
-      description: "Programadas para hoy",
-      accent: "#2563eb",
-      light: "#eff6ff",
-    },
-    {
-      title: "Doctores activos",
-      value: stats?.doctors_active,
-      description: "Personal disponible",
-      accent: "#16a34a",
-      light: "#f0fdf4",
-    },
-    {
-      title: "Pacientes",
-      value: stats?.patients_total,
-      description: "Total en el sistema",
-      accent: "#7c3aed",
-      light: "#faf5ff",
-    },
-    {
-      title: "Propietarios/Tutores",
-      value: stats?.owners_total,
-      description: "Propietarios registrados",
-      accent: "#ea580c",
-      light: "#fff7ed",
-    },
-  ];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
-  const quickActions = [
-    {
-      title: "Nueva cita",
-      description: "Agenda una cita para un paciente",
-      href: "/dashboard/appointments/new",
-    },
-    {
-      title: "Registrar paciente",
-      description: "Agrega un nuevo paciente al sistema",
-      href: "/dashboard/patients/new",
-    },
-    {
-      title: "Ver disponibilidad",
-      description: "Consulta horarios de doctores",
-      href: "/dashboard/doctors",
-    },
-  ];
-
-  // Preparar datos gráficas
-  const monthlyData =
-    reports?.appointments_by_month?.map(({ month, total }) => {
-      const [year, m] = month.split("-");
-      return {
-        month: `${monthNames[parseInt(m) - 1]} ${year.slice(2)}`,
-        total,
-      };
-    }) ?? [];
+  const monthlyData = reports?.appointments_by_month?.map(({ month, total }) => {
+    const [year, m] = month.split("-");
+    return { month: `${monthNames[parseInt(m) - 1]} ${year.slice(2)}`, total };
+  }) ?? [];
 
   const cs = reports?.cancellation_stats;
   const pieData = cs
     ? [
         { name: "Completadas", value: cs.completed, key: "completed" },
         { name: "Confirmadas", value: cs.confirmed, key: "confirmed" },
-        { name: "Pendientes", value: cs.pending, key: "pending" },
-        { name: "Canceladas", value: cs.cancelled, key: "cancelled" },
+        { name: "Pendientes",  value: cs.pending,   key: "pending"   },
+        { name: "Canceladas",  value: cs.cancelled,  key: "cancelled" },
       ].filter((d) => d.value > 0)
     : [];
 
+  const card = {
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "24px",
+  };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Bienvenida */}
-      <div>
-        <h1
-          className="text-2xl font-bold tracking-tight"
-          style={{ color: "#0f172a" }}
-        >
-          Bienvenido, {user?.first_name} 👋
-        </h1>
-        <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-          Resumen de actividad — {organization?.name}
-        </p>
+    <div className="space-y-6">
+
+      {/* ── Greeting ─────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>
+            {greeting}, {user?.first_name} 👋
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
+            {organization?.name} · {new Date().toLocaleDateString("es-GT", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <span className="text-xs" style={{ color: "#94a3b8" }}>Búsqueda rápida</span>
+          <kbd className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b", fontFamily: "monospace" }}>⌘K</kbd>
+        </div>
       </div>
 
-      {/* Stat Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "20px",
-        }}
-      >
-        {statCards.map((stat) => (
-          <div key={stat.title} style={cardStyle}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "16px",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  color: "#64748b",
-                }}
-              >
-                {stat.title}
-              </p>
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  backgroundColor: stat.light,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    backgroundColor: stat.accent,
-                  }}
-                />
-              </div>
+      {/* ── Stat cards ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+
+        {/* Citas hoy */}
+        <div style={card}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Citas hoy</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#eff6ff" }}>
+              <span style={{ color: "#2563eb", fontSize: "14px" }}>◷</span>
             </div>
-            {loading ? (
-              <div
-                style={{
-                  width: "48px",
-                  height: "32px",
-                  borderRadius: "6px",
-                  backgroundColor: "#f1f5f9",
-                }}
-                className="animate-pulse"
-              />
-            ) : (
-              <p
-                style={{
-                  fontSize: "30px",
-                  fontWeight: "700",
-                  color: stat.accent,
-                  marginBottom: "4px",
-                }}
-              >
-                {stat.value ?? "—"}
-              </p>
-            )}
-            <p style={{ fontSize: "12px", color: "#94a3b8" }}>
-              {stat.description}
-            </p>
           </div>
-        ))}
+          {loading ? <Skeleton h={40} w={80} /> : (
+            <p className="text-4xl font-bold mb-3" style={{ color: "#0f172a" }}>{stats?.appointments_today ?? "—"}</p>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            {loading ? <Skeleton h={20} w={160} /> : (
+              <>
+                {stats?.today_pending   > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#fffbeb", color: "#d97706", border: "1px solid #fde68a" }}>{stats.today_pending} pend.</span>}
+                {stats?.today_confirmed > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>{stats.today_confirmed} conf.</span>}
+                {stats?.today_completed > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}>{stats.today_completed} comp.</span>}
+                {stats?.appointments_today === 0 && <span className="text-xs" style={{ color: "#cbd5e1" }}>Sin citas</span>}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Esta semana */}
+        <div style={card}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Esta semana</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#f0fdf4" }}>
+              <span style={{ color: "#16a34a", fontSize: "14px" }}>⊞</span>
+            </div>
+          </div>
+          {loading ? <Skeleton h={40} w={80} /> : (
+            <p className="text-4xl font-bold mb-1" style={{ color: "#0f172a" }}>{stats?.appointments_this_week ?? "—"}</p>
+          )}
+          {loading ? <Skeleton h={16} w={100} /> : (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Trend value={stats?.week_change} />
+              <span className="text-xs" style={{ color: "#94a3b8" }}>vs semana pasada ({stats?.appointments_last_week ?? 0})</span>
+            </div>
+          )}
+        </div>
+
+        {/* Nuevos pacientes */}
+        <div style={card}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Nuevos pacientes</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#faf5ff" }}>
+              <span style={{ color: "#7c3aed", fontSize: "14px" }}>♡</span>
+            </div>
+          </div>
+          {loading ? <Skeleton h={40} w={80} /> : (
+            <p className="text-4xl font-bold mb-1" style={{ color: "#0f172a" }}>{stats?.patients_this_week ?? "—"}</p>
+          )}
+          {loading ? <Skeleton h={16} w={100} /> : (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Trend value={stats?.patients_change} />
+              <span className="text-xs" style={{ color: "#94a3b8" }}>vs semana pasada ({stats?.patients_last_week ?? 0})</span>
+            </div>
+          )}
+        </div>
+
+        {/* Tasa de asistencia */}
+        <div style={card}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Asistencia</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#fff7ed" }}>
+              <span style={{ color: "#ea580c", fontSize: "14px" }}>✓</span>
+            </div>
+          </div>
+          {loading ? <Skeleton h={40} w={80} /> : (
+            <p className="text-4xl font-bold mb-1" style={{ color: stats?.attendance_rate >= 80 ? "#16a34a" : stats?.attendance_rate >= 60 ? "#d97706" : "#dc2626" }}>
+              {stats?.attendance_rate != null ? `${stats.attendance_rate}%` : "—"}
+            </p>
+          )}
+          <p className="text-xs mt-2" style={{ color: "#94a3b8" }}>Últimos 30 días · citas completadas</p>
+        </div>
       </div>
 
-      {/* Gráfica citas por mes */}
-      <div style={cardStyle}>
-        <p
-          style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "#94a3b8",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            marginBottom: "4px",
-          }}
-        >
-          Actividad
-        </p>
-        <p
-          style={{
-            fontSize: "18px",
-            fontWeight: "600",
-            color: "#0f172a",
-            marginBottom: "20px",
-          }}
-        >
-          Citas por mes — últimos 12 meses
-        </p>
-        {loading ? (
-          <div
-            style={{
-              height: "260px",
-              backgroundColor: "#f8fafc",
-              borderRadius: "8px",
-            }}
-            className="animate-pulse"
-          />
-        ) : monthlyData.length === 0 ? (
-          <p style={{ fontSize: "14px", color: "#94a3b8" }}>Sin datos aún</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "1px solid #e2e8f0",
-                  fontSize: "13px",
-                }}
-                cursor={{ fill: "#f8fafc" }}
-              />
-              <Bar
-                dataKey="total"
-                name="Citas"
-                fill="#2563eb"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      {/* ── Horas pico + Próximas citas hoy ─────────────────────────── */}
+      <div className="grid grid-cols-3 gap-5">
 
-      {/* Doctores + Distribución */}
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}
-      >
-        {/* Doctores más ocupados */}
-        <div style={cardStyle}>
-          <p
-            style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "#94a3b8",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "4px",
-            }}
-          >
-            Doctores
-          </p>
-          <p
-            style={{
-              fontSize: "18px",
-              fontWeight: "600",
-              color: "#0f172a",
-              marginBottom: "20px",
-            }}
-          >
-            Más ocupados
-          </p>
-          {loading ? (
-            <div
-              style={{
-                height: "220px",
-                backgroundColor: "#f8fafc",
-                borderRadius: "8px",
-              }}
-              className="animate-pulse"
-            />
-          ) : !reports?.busiest_doctors?.length ? (
-            <p style={{ fontSize: "14px", color: "#94a3b8" }}>Sin datos aún</p>
+        {/* Horas pico */}
+        <div className="col-span-2" style={card}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Actividad</p>
+          <p className="text-base font-semibold mb-4" style={{ color: "#0f172a" }}>Horas pico esta semana</p>
+          {loading ? <Skeleton h={180} /> : !stats?.peak_hours?.length ? (
+            <div className="flex items-center justify-center h-44">
+              <p className="text-sm" style={{ color: "#94a3b8" }}>Sin datos esta semana</p>
+            </div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={reports.busiest_doctors} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis
-                  type="number"
-                  allowDecimals={false}
-                  tick={{ fontSize: 12, fill: "#94a3b8" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  width={110}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={stats.peak_hours} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="hour" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid #e2e8f0",
-                    fontSize: "13px",
-                  }}
+                  contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }}
                   cursor={{ fill: "#f8fafc" }}
+                  formatter={(v) => [v, "Citas"]}
                 />
-                <Bar dataKey="total" name="Citas" radius={[0, 4, 4, 0]}>
-                  {reports.busiest_doctors.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                <Bar dataKey="count" name="Citas" fill="#2563eb" radius={[4, 4, 0, 0]}>
+                  {stats.peak_hours.map((_, i) => (
+                    <Cell key={i} fill={`rgba(37,99,235,${0.4 + (i / stats.peak_hours.length) * 0.6})`} />
                   ))}
                 </Bar>
               </BarChart>
@@ -379,151 +202,123 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Distribución por estado */}
-        <div style={cardStyle}>
-          <p
-            style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "#94a3b8",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "4px",
-            }}
-          >
-            Distribución
-          </p>
-          <p
-            style={{
-              fontSize: "18px",
-              fontWeight: "600",
-              color: "#0f172a",
-              marginBottom: "20px",
-            }}
-          >
-            Por estado
-          </p>
+        {/* Próximas citas hoy */}
+        <div style={{ ...card, display: "flex", flexDirection: "column" }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Agenda</p>
+              <p className="text-base font-semibold mt-0.5" style={{ color: "#0f172a" }}>Próximas hoy</p>
+            </div>
+            <Link href="/dashboard/appointments">
+              <span className="text-xs font-medium" style={{ color: "#2563eb", cursor: "pointer" }}>Ver todas →</span>
+            </Link>
+          </div>
+
           {loading ? (
-            <div
-              style={{
-                height: "220px",
-                backgroundColor: "#f8fafc",
-                borderRadius: "8px",
-              }}
-              className="animate-pulse"
-            />
-          ) : pieData.length === 0 ? (
+            <div className="space-y-3">
+              {[1,2,3].map(i => <Skeleton key={i} h={52} />)}
+            </div>
+          ) : !stats?.upcoming_today?.length ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: "#f1f5f9" }}>
+                <span style={{ fontSize: "20px" }}>◷</span>
+              </div>
+              <p className="text-sm font-medium" style={{ color: "#64748b" }}>Sin citas pendientes</p>
+              <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>No hay más citas por hoy</p>
+            </div>
+          ) : (
+            <div className="space-y-2 flex-1 overflow-y-auto">
+              {stats.upcoming_today.map((appt) => (
+                <Link key={appt.id} href={`/dashboard/appointments/${appt.id}`}>
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors"
+                    style={{ backgroundColor: "#f8fafc" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: STATUS_COLORS[appt.status] + "20" }}>
+                      <span className="text-sm font-bold" style={{ color: STATUS_COLORS[appt.status] }}>{appt.time}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate" style={{ color: "#0f172a" }}>{appt.patient_name}</p>
+                      <p className="text-xs truncate" style={{ color: "#94a3b8" }}>{appt.doctor_name}</p>
+                    </div>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: STATUS_COLORS[appt.status] + "15", color: STATUS_COLORS[appt.status] }}>
+                      {STATUS_LABEL[appt.status]}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Gráficas históricas ───────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-5">
+        <div style={card}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Histórico</p>
+          <p className="text-base font-semibold mb-4" style={{ color: "#0f172a" }}>Citas por mes — últimos 12 meses</p>
+          {loading ? <Skeleton h={220} /> : monthlyData.length === 0 ? (
+            <p style={{ fontSize: "14px", color: "#94a3b8" }}>Sin datos aún</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={monthlyData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }} cursor={{ fill: "#f8fafc" }} />
+                <Bar dataKey="total" name="Citas" fill="#2563eb" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div style={card}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Distribución</p>
+          <p className="text-base font-semibold mb-4" style={{ color: "#0f172a" }}>Estado de citas (total)</p>
+          {loading ? <Skeleton h={220} /> : pieData.length === 0 ? (
             <p style={{ fontSize: "14px", color: "#94a3b8" }}>Sin datos aún</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="45%"
-                  innerRadius={55}
-                  outerRadius={90}
-                  dataKey="value"
-                  paddingAngle={3}
-                >
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={STATUS_COLORS[entry.key]} />
-                  ))}
+                <Pie data={pieData} cx="50%" cy="45%" innerRadius={55} outerRadius={90} dataKey="value" paddingAngle={3}>
+                  {pieData.map((entry, i) => <Cell key={i} fill={STATUS_COLORS[entry.key]} />)}
                 </Pie>
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  formatter={(value) => (
-                    <span style={{ fontSize: "13px", color: "#64748b" }}>
-                      {value}
-                    </span>
-                  )}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid #e2e8f0",
-                    fontSize: "13px",
-                  }}
-                />
+                <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: "12px", color: "#64748b" }}>{v}</span>} />
+                <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* Accesos rápidos */}
+      {/* ── Accesos rápidos ───────────────────────────────────────────── */}
       <div>
-        <p
-          style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "#94a3b8",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            marginBottom: "16px",
-          }}
-        >
-          Accesos rápidos
-        </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
-          }}
-        >
-          {quickActions.map((action) => (
-            <a key={action.title} href={action.href}>
-              <div
-                style={{
-                  ...cardStyle,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#2563eb";
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 12px rgba(37,99,235,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#e2e8f0";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
+        <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>Accesos rápidos</p>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { title: "Nueva cita",          description: "Agenda una cita para un paciente", href: "/dashboard/appointments/new", color: "#2563eb", bg: "#eff6ff" },
+            { title: "Registrar paciente",  description: "Agrega un nuevo paciente al sistema", href: "/dashboard/patients/new",      color: "#7c3aed", bg: "#faf5ff" },
+            { title: "Ver disponibilidad",  description: "Consulta horarios de doctores",       href: "/dashboard/doctors",           color: "#16a34a", bg: "#f0fdf4" },
+          ].map((action) => (
+            <Link key={action.title} href={action.href}>
+              <div style={{ ...card, cursor: "pointer", transition: "all 0.15s ease" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = action.color; e.currentTarget.style.boxShadow = `0 4px 14px ${action.color}18`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; }}
               >
-                <p
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#0f172a",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {action.title}
-                </p>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#94a3b8",
-                    marginBottom: "12px",
-                  }}
-                >
-                  {action.description}
-                </p>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    color: "#2563eb",
-                  }}
-                >
-                  Ir al módulo →
-                </p>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: action.bg }}>
+                  <span style={{ color: action.color, fontSize: "16px" }}>→</span>
+                </div>
+                <p className="text-sm font-semibold mb-1" style={{ color: "#0f172a" }}>{action.title}</p>
+                <p className="text-xs" style={{ color: "#94a3b8" }}>{action.description}</p>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
+
     </div>
   );
 }
