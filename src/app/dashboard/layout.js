@@ -25,31 +25,31 @@ function TrialBanner({ organization }) {
 
   return (
     <div
-      className="px-8 py-2.5 flex items-center justify-between gap-4"
+      className="px-4 lg:px-8 py-2.5 flex items-center justify-between gap-4"
       style={{
         backgroundColor: urgent ? "#fef2f2" : "#fffbeb",
         borderBottom: `1px solid ${urgent ? "#fecaca" : "#fde68a"}`,
       }}
     >
-      <p className="text-sm" style={{ color: urgent ? "#dc2626" : "#92400e" }}>
+      <p className="text-xs lg:text-sm" style={{ color: urgent ? "#dc2626" : "#92400e" }}>
         {expired ? (
           <>
             <span className="font-semibold">Tu período de prueba venció</span>
             {expiryDate && (
-              <span style={{ color: urgent ? "#ef4444" : "#b45309" }}>
+              <span className="hidden sm:inline" style={{ color: urgent ? "#ef4444" : "#b45309" }}>
                 {" "}el {expiryDate}
               </span>
             )}
-            . El sistema está en modo solo lectura.
+            . Modo solo lectura.
           </>
         ) : (
           <>
             <span className="font-semibold">
               {days === 1 ? "Te queda 1 día" : `Te quedan ${days} días`}
             </span>{" "}
-            de prueba gratuita
+            de prueba
             {expiryDate && (
-              <span style={{ color: urgent ? "#ef4444" : "#b45309" }}>
+              <span className="hidden sm:inline" style={{ color: urgent ? "#ef4444" : "#b45309" }}>
                 {" "}— vence el {expiryDate}
               </span>
             )}
@@ -65,7 +65,7 @@ function TrialBanner({ organization }) {
           color: "#ffffff",
         }}
       >
-        Activar suscripción →
+        Activar →
       </a>
     </div>
   );
@@ -86,7 +86,6 @@ const getNavigation = (clinicType, role, features) => {
     base.push({ name: config.ownersLabel, href: "/dashboard/owners", icon: "◎" });
   }
 
-  // Feature-gated items
   base.push({
     name:    "Expedientes",
     href:    "/dashboard/medical-records",
@@ -119,18 +118,22 @@ const clinicTypeLabel = {
 };
 
 const roleLabel = {
-  admin: "Administrador",
-  doctor: "Doctor",
+  admin:        "Administrador",
+  doctor:       "Doctor",
   receptionist: "Recepcionista",
-  patient: "Paciente",
+  patient:      "Paciente",
 };
 
 export default function DashboardLayout({ children }) {
   const { user, organization, logout, loading } = useAuth();
   const features = useFeatures();
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen,  setSearchOpen]  = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on navigation (mobile)
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -155,29 +158,35 @@ export default function DashboardLayout({ children }) {
       >
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm" style={{ color: "#64748b" }}>
-            Cargando...
-          </p>
+          <p className="text-sm" style={{ color: "#64748b" }}>Cargando...</p>
         </div>
       </div>
     );
   }
 
-  const initials = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
+  const initials   = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
   const navigation = getNavigation(organization?.clinic_type, user?.role, features);
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#f1f5f9" }}>
-      {/* Sidebar */}
+
+      {/* ── Backdrop móvil ───────────────────────────────────────────── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 lg:hidden"
+          style={{ backgroundColor: "rgba(15,23,42,0.5)" }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar ──────────────────────────────────────────────────── */}
       <aside
-        className="w-64 fixed h-full flex flex-col"
+        className={`w-64 fixed h-full flex flex-col z-40 transition-transform duration-300
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
         style={{ backgroundColor: "#ffffff", borderRight: "1px solid #e2e8f0" }}
       >
         {/* Logo */}
-        <div
-          className="px-6 py-5"
-          style={{ borderBottom: "1px solid #e2e8f0" }}
-        >
+        <div className="px-6 py-5" style={{ borderBottom: "1px solid #e2e8f0" }}>
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -188,10 +197,7 @@ export default function DashboardLayout({ children }) {
               </span>
             </div>
             <div className="min-w-0">
-              <p
-                className="text-sm font-semibold truncate"
-                style={{ color: "#0f172a" }}
-              >
+              <p className="text-sm font-semibold truncate" style={{ color: "#0f172a" }}>
                 {organization?.name}
               </p>
               <p className="text-xs" style={{ color: "#94a3b8" }}>
@@ -202,7 +208,7 @@ export default function DashboardLayout({ children }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <p
             className="text-xs font-medium uppercase tracking-widest px-3 mb-3"
             style={{ color: "#94a3b8" }}
@@ -252,15 +258,10 @@ export default function DashboardLayout({ children }) {
               className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: "#2563eb" }}
             >
-              <span className="text-white text-xs font-semibold">
-                {initials}
-              </span>
+              <span className="text-white text-xs font-semibold">{initials}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <p
-                className="text-sm font-medium truncate"
-                style={{ color: "#0f172a" }}
-              >
+              <p className="text-sm font-medium truncate" style={{ color: "#0f172a" }}>
                 {user?.full_name}
               </p>
               <p className="text-xs" style={{ color: "#94a3b8" }}>
@@ -304,25 +305,61 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 ml-64 flex flex-col min-h-screen">
+      {/* ── Main ─────────────────────────────────────────────────────── */}
+      <main className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+
         {/* Header */}
         <header
-          className="px-8 py-4 sticky top-0 z-10 flex items-center justify-between"
-          style={{
-            backgroundColor: "#ffffff",
-            borderBottom: "1px solid #e2e8f0",
-          }}
+          className="px-4 lg:px-8 py-4 sticky top-0 z-20 flex items-center justify-between gap-3"
+          style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}
         >
-          <p className="text-sm" style={{ color: "#94a3b8" }}>
-            {new Date().toLocaleDateString("es-GT", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
-          <div className="flex items-center gap-3">
+          {/* Left: hamburger (mobile) + date */}
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Hamburger — visible only on mobile */}
+            <button
+              className="lg:hidden w-9 h-9 flex flex-col items-center justify-center gap-1.5 rounded-lg flex-shrink-0"
+              style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label="Abrir menú"
+            >
+              <span
+                className="block w-4 h-0.5 transition-all origin-center"
+                style={{
+                  backgroundColor: "#64748b",
+                  transform: sidebarOpen ? "rotate(45deg) translate(2px, 2px)" : "none",
+                }}
+              />
+              <span
+                className="block w-4 h-0.5 transition-all"
+                style={{
+                  backgroundColor: "#64748b",
+                  opacity: sidebarOpen ? 0 : 1,
+                }}
+              />
+              <span
+                className="block w-4 h-0.5 transition-all origin-center"
+                style={{
+                  backgroundColor: "#64748b",
+                  transform: sidebarOpen ? "rotate(-45deg) translate(2px, -2px)" : "none",
+                }}
+              />
+            </button>
+
+            <p className="text-sm truncate hidden sm:block" style={{ color: "#94a3b8" }}>
+              {new Date().toLocaleDateString("es-GT", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+            <p className="text-sm sm:hidden" style={{ color: "#94a3b8" }}>
+              {new Date().toLocaleDateString("es-GT", { day: "numeric", month: "short" })}
+            </p>
+          </div>
+
+          {/* Right: actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setSearchOpen(true)}
               className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg transition-colors"
@@ -331,30 +368,24 @@ export default function DashboardLayout({ children }) {
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
             >
               <span>⌕</span>
-              <span className="hidden sm:inline">Buscar</span>
-              <kbd className="text-xs px-1 py-0.5 rounded hidden sm:inline" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", fontFamily: "monospace" }}>⌘K</kbd>
+              <span className="hidden md:inline">Buscar</span>
+              <kbd className="text-xs px-1 py-0.5 rounded hidden lg:inline" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", fontFamily: "monospace" }}>⌘K</kbd>
             </button>
             <NotificationBell />
             <span
-              className="text-xs font-medium px-3 py-1 rounded-full"
-              style={{
-                color: "#2563eb",
-                backgroundColor: "#eff6ff",
-                border: "1px solid #bfdbfe",
-              }}
+              className="text-xs font-medium px-2.5 py-1 rounded-full hidden sm:inline"
+              style={{ color: "#2563eb", backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}
             >
               {roleLabel[user?.role]}
             </span>
           </div>
         </header>
 
-        {/* Banner de trial */}
-        {organization?.on_trial && (
-          <TrialBanner organization={organization} />
-        )}
+        {/* Trial banner */}
+        {organization?.on_trial && <TrialBanner organization={organization} />}
 
-        {/* Content — bloqueado si el trial venció */}
-        <div className="flex-1 p-8 relative" style={{ backgroundColor: "#f1f5f9" }}>
+        {/* Content */}
+        <div className="flex-1 p-4 lg:p-8 relative" style={{ backgroundColor: "#f1f5f9" }}>
           {organization?.trial_expired && (
             <div
               className="absolute inset-0 z-20 flex items-start justify-center pt-24"

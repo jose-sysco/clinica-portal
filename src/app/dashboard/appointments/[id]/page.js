@@ -144,7 +144,7 @@ export default function AppointmentDetailPage() {
       </div>
 
       {/* Meta cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Doctor */}
         <div className="rounded-xl p-5" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>Doctor</p>
@@ -190,7 +190,7 @@ export default function AppointmentDetailPage() {
       </div>
 
       {/* Detalles de la cita */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#94a3b8" }}>Detalle de la cita</p>
           <div className="space-y-3">

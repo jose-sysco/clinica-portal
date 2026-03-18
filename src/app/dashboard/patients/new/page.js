@@ -271,7 +271,7 @@ export default function NewPatientPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Columna izquierda — Datos del paciente */}
           <div
             className="rounded-xl p-6 shadow-sm space-y-4"

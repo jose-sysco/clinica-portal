@@ -149,7 +149,7 @@ export default function PatientsPage() {
         </div>
       ) : (
         <div
-          className="rounded-xl overflow-hidden shadow-sm"
+          className="rounded-xl overflow-x-auto shadow-sm"
           style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
         >
           <table className="w-full">

@@ -335,7 +335,7 @@ export default function NewAppointmentPage() {
       )}
 
       <form onSubmit={handleSubmit} className="h-full">
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Columna izquierda — Médico y horario */}
           <div
             className="rounded-xl p-6 shadow-sm space-y-5"

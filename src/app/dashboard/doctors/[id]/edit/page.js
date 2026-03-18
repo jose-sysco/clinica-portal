@@ -291,7 +291,7 @@ export default function EditDoctorPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Datos profesionales */}
           <div
             className="rounded-xl p-6 shadow-sm space-y-4"

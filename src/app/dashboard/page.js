@@ -74,7 +74,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
 
       {/* ── Greeting ─────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>
             {greeting}, {user?.first_name} 👋
@@ -90,7 +90,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Stat cards ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
 
         {/* Citas hoy */}
         <div style={card}>
@@ -171,10 +171,10 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Horas pico + Próximas citas hoy ─────────────────────────── */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
 
         {/* Horas pico */}
-        <div className="col-span-2" style={card}>
+        <div className="lg:col-span-2" style={card}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Actividad</p>
           <p className="text-base font-semibold mb-4" style={{ color: "#0f172a" }}>Horas pico esta semana</p>
           {loading ? <Skeleton h={180} /> : !stats?.peak_hours?.length ? (
@@ -256,7 +256,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Gráficas históricas ───────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
         <div style={card}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#94a3b8" }}>Histórico</p>
           <p className="text-base font-semibold mb-4" style={{ color: "#0f172a" }}>Citas por mes — últimos 12 meses</p>
@@ -297,7 +297,7 @@ export default function DashboardPage() {
       {/* ── Accesos rápidos ───────────────────────────────────────────── */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>Accesos rápidos</p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { title: "Nueva cita",          description: "Agenda una cita para un paciente", href: "/dashboard/appointments/new", color: "#2563eb", bg: "#eff6ff" },
             { title: "Registrar paciente",  description: "Agrega un nuevo paciente al sistema", href: "/dashboard/patients/new",      color: "#7c3aed", bg: "#faf5ff" },

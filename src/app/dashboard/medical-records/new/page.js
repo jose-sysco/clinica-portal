@@ -169,7 +169,7 @@ export default function NewMedicalRecordPage() {
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>
             Información de la cita
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: config.patientLabel, value: appointment.patient?.name },
               { label: "Doctor",            value: appointment.doctor?.full_name },
@@ -200,7 +200,7 @@ export default function NewMedicalRecordPage() {
           <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: "#94a3b8" }}>
             Signos vitales
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {/* Fila 1 */}
             <div>
               <label style={lbl}>Peso ({organization?.clinic_type === "veterinary" ? "kg" : "kg"})</label>

@@ -72,7 +72,7 @@ export default function MedicalRecordsPage() {
           <p className="text-xs" style={{ color: "#94a3b8" }}>Los expedientes se crean al completar una cita médica</p>
         </div>
       ) : (
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+        <div className="rounded-xl overflow-x-auto" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <table className="w-full">
             <thead>
               <tr style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: "#f8fafc" }}>
