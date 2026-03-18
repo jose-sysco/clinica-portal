@@ -7,6 +7,7 @@ import Link from "next/link";
 import { getConfig } from "@/lib/clinicConfig";
 import { useFeatures } from "@/lib/useFeature";
 import GlobalSearch from "@/components/GlobalSearch";
+import NotificationBell from "@/components/NotificationBell";
 
 function TrialBanner({ organization }) {
   const expired = organization.trial_expired;
@@ -333,6 +334,7 @@ export default function DashboardLayout({ children }) {
               <span className="hidden sm:inline">Buscar</span>
               <kbd className="text-xs px-1 py-0.5 rounded hidden sm:inline" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", fontFamily: "monospace" }}>⌘K</kbd>
             </button>
+            <NotificationBell />
             <span
               className="text-xs font-medium px-3 py-1 rounded-full"
               style={{
