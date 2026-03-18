@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -31,16 +32,29 @@ function Skeleton({ h = 32, w }) {
 
 export default function DashboardPage() {
   const { user, organization } = useAuth();
-  const [stats,   setStats]   = useState(null);
-  const [reports, setReports] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [stats,        setStats]        = useState(null);
+  const [reports,      setReports]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [showOnboard,  setShowOnboard]  = useState(false);
 
   useEffect(() => {
     Promise.all([
       api.get("/api/v1/dashboard/stats"),
       api.get("/api/v1/dashboard/reports"),
+      api.get("/api/v1/doctors", { params: { per_page: 1 } }),
     ])
-      .then(([s, r]) => { setStats(s.data); setReports(r.data); })
+      .then(([s, r, d]) => {
+        setStats(s.data);
+        setReports(r.data);
+        // Show onboarding banner for admins when no doctors and wizard not done
+        if (user?.role === "admin" && d.data.pagination?.count === 0) {
+          try {
+            const done = localStorage.getItem(`onboarding_done_${organization?.id}`);
+            if (!done) setShowOnboard(true);
+          } catch { setShowOnboard(true); }
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -88,6 +102,47 @@ export default function DashboardPage() {
           <kbd className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b", fontFamily: "monospace" }}>⌘K</kbd>
         </div>
       </div>
+
+      {/* ── Onboarding banner ─────────────────────────────────────────── */}
+      {showOnboard && (
+        <div
+          className="rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          style={{ background: "linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%)", border: "none" }}
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+              🚀
+            </div>
+            <div>
+              <p className="text-base font-bold text-white mb-1">Completa la configuración inicial</p>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.8)" }}>
+                Agrega tu primer profesional y configura su horario para empezar a agendar citas en minutos.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <button
+              onClick={() => router.push("/dashboard/onboarding")}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              style={{ backgroundColor: "#ffffff", color: "#2563eb" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
+            >
+              Iniciar configuración →
+            </button>
+            <button
+              onClick={() => {
+                try { localStorage.setItem(`onboarding_done_${organization?.id}`, "1"); } catch {}
+                setShowOnboard(false);
+              }}
+              className="text-xs"
+              style={{ color: "rgba(255,255,255,0.6)" }}
+            >
+              Omitir
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Stat cards ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
