@@ -35,9 +35,10 @@ function fmtTime(d) {
 // ── Add to Waitlist Modal ────────────────────────────────────────────────────
 
 function AddWaitlistModal({ onClose, onSaved }) {
-  const [doctors,  setDoctors]  = useState([]);
-  const [patients, setPatients] = useState([]);
-  const [owners,   setOwners]   = useState([]);
+  const [doctors,       setDoctors]       = useState([]);
+  const [patients,      setPatients]      = useState([]);
+  const [selectedOwner, setSelectedOwner] = useState(null);
+  const [loadingData,   setLoadingData]   = useState(true);
   const [form, setForm] = useState({ doctor_id: "", patient_id: "", owner_id: "", preferred_date: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState(null);
@@ -46,25 +47,23 @@ function AddWaitlistModal({ onClose, onSaved }) {
     Promise.all([
       api.get("/api/v1/doctors",  { params: { per_page: 200 } }),
       api.get("/api/v1/patients", { params: { per_page: 200 } }),
-      api.get("/api/v1/owners",   { params: { per_page: 200 } }),
-    ]).then(([d, p, o]) => {
-      const toArr = (v) => (Array.isArray(v) ? v : []);
-      setDoctors(toArr(d.data?.data));
-      setPatients(toArr(p.data?.data));
-      setOwners(toArr(o.data?.data));
-    });
+    ]).then(([d, p]) => {
+      setDoctors(Array.isArray(d.data?.data)  ? d.data.data  : []);
+      setPatients(Array.isArray(p.data?.data) ? p.data.data  : []);
+    }).finally(() => setLoadingData(false));
   }, []);
 
-  // Auto-fill owner when patient is selected
   const handlePatientChange = (patientId) => {
     const patient = patients.find(p => String(p.id) === String(patientId));
-    setForm(f => ({ ...f, patient_id: patientId, owner_id: patient?.owner?.id ? String(patient.owner.id) : f.owner_id }));
+    const owner   = patient?.owner || null;
+    setSelectedOwner(owner);
+    setForm(f => ({ ...f, patient_id: patientId, owner_id: owner ? String(owner.id) : "" }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.doctor_id || !form.patient_id || !form.owner_id) {
-      setError("Doctor, paciente y responsable son obligatorios.");
+      setError("Doctor y paciente son obligatorios.");
       return;
     }
     setSaving(true);
@@ -90,7 +89,7 @@ function AddWaitlistModal({ onClose, onSaved }) {
         <div className="flex items-center justify-between p-6 pb-4" style={{ borderBottom: "1px solid #f1f5f9" }}>
           <div>
             <h2 className="text-lg font-bold" style={{ color: "#0f172a" }}>Agregar a lista de espera</h2>
-            <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>El paciente será notificado cuando haya un espacio disponible.</p>
+            <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>El staff será notificado cuando se libere un espacio.</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg transition-colors hover:bg-slate-100" style={{ color: "#94a3b8" }}>×</button>
         </div>
@@ -102,58 +101,73 @@ function AddWaitlistModal({ onClose, onSaved }) {
             </div>
           )}
 
-          <div>
-            <label className={labelCls} style={{ color: "#64748b" }}>Doctor</label>
-            <select value={form.doctor_id} onChange={e => setForm(f => ({ ...f, doctor_id: e.target.value }))}
-              className={inputCls} style={inputStyle} required>
-              <option value="">Seleccionar doctor...</option>
-              {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name} — {d.specialty}</option>)}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls} style={{ color: "#64748b" }}>Paciente</label>
-              <select value={form.patient_id} onChange={e => handlePatientChange(e.target.value)}
-                className={inputCls} style={inputStyle} required>
-                <option value="">Seleccionar paciente...</option>
-                {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+          {loadingData ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
-            <div>
-              <label className={labelCls} style={{ color: "#64748b" }}>Responsable</label>
-              <select value={form.owner_id} onChange={e => setForm(f => ({ ...f, owner_id: e.target.value }))}
-                className={inputCls} style={inputStyle} required>
-                <option value="">Seleccionar responsable...</option>
-                {owners.map(o => <option key={o.id} value={o.id}>{o.full_name}</option>)}
-              </select>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div>
+                <label className={labelCls} style={{ color: "#64748b" }}>Doctor</label>
+                <select value={form.doctor_id} onChange={e => setForm(f => ({ ...f, doctor_id: e.target.value }))}
+                  className={inputCls} style={inputStyle} required>
+                  <option value="">Seleccionar doctor...</option>
+                  {doctors.map(d => (
+                    <option key={d.id} value={d.id}>{d.full_name}{d.specialty ? ` — ${d.specialty}` : ""}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label className={labelCls} style={{ color: "#64748b" }}>Fecha preferida <span className="font-normal normal-case tracking-normal">(opcional)</span></label>
-            <input type="date" value={form.preferred_date} onChange={e => setForm(f => ({ ...f, preferred_date: e.target.value }))}
-              className={inputCls} style={inputStyle} />
-          </div>
+              <div>
+                <label className={labelCls} style={{ color: "#64748b" }}>Paciente</label>
+                <select value={form.patient_id} onChange={e => handlePatientChange(e.target.value)}
+                  className={inputCls} style={inputStyle} required>
+                  <option value="">Seleccionar paciente...</option>
+                  {patients.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}{p.owner?.full_name ? ` (${p.owner.full_name})` : ""}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label className={labelCls} style={{ color: "#64748b" }}>Notas <span className="font-normal normal-case tracking-normal">(opcional)</span></label>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              rows={2} placeholder="Motivo, disponibilidad horaria..." className={inputCls} style={inputStyle} />
-          </div>
+              {/* Responsable — se llena automático desde el paciente */}
+              {selectedOwner && (
+                <div className="flex items-center gap-3 rounded-lg px-4 py-3" style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: "#15803d" }}>Responsable asignado automáticamente</p>
+                    <p className="text-sm font-medium" style={{ color: "#166534" }}>{selectedOwner.full_name}</p>
+                  </div>
+                </div>
+              )}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg transition-colors hover:bg-slate-100"
-              style={{ color: "#64748b", border: "1px solid #e2e8f0" }}>
-              Cancelar
-            </button>
-            <button type="submit" disabled={saving}
-              className="px-5 py-2 text-sm font-medium rounded-lg transition-opacity"
-              style={{ backgroundColor: saving ? "#93c5fd" : "#2563eb", color: "#fff", opacity: saving ? 0.7 : 1 }}>
-              {saving ? "Guardando..." : "Agregar a la lista"}
-            </button>
-          </div>
+              <div>
+                <label className={labelCls} style={{ color: "#64748b" }}>Fecha preferida <span className="font-normal normal-case tracking-normal">(opcional)</span></label>
+                <input type="date" value={form.preferred_date} onChange={e => setForm(f => ({ ...f, preferred_date: e.target.value }))}
+                  className={inputCls} style={inputStyle} />
+              </div>
+
+              <div>
+                <label className={labelCls} style={{ color: "#64748b" }}>Notas <span className="font-normal normal-case tracking-normal">(opcional)</span></label>
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  rows={2} placeholder="Motivo, disponibilidad horaria..." className={inputCls} style={inputStyle} />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={onClose}
+                  className="px-4 py-2 text-sm rounded-lg transition-colors hover:bg-slate-100"
+                  style={{ color: "#64748b", border: "1px solid #e2e8f0" }}>
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving}
+                  className="px-5 py-2 text-sm font-medium rounded-lg transition-opacity"
+                  style={{ backgroundColor: saving ? "#93c5fd" : "#2563eb", color: "#fff", opacity: saving ? 0.7 : 1 }}>
+                  {saving ? "Guardando..." : "Agregar a la lista"}
+                </button>
+              </div>
+            </>
+          )}
         </form>
       </div>
     </div>
