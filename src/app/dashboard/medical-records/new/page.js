@@ -85,11 +85,13 @@ export default function NewMedicalRecordPage() {
   const { organization } = useAuth();
   const config = getConfig(organization?.clinic_type);
 
-  const [appointment, setAppointment] = useState(null);
-  const [loading,     setLoading]     = useState(!!appointmentId);
-  const [submitting,  setSubmitting]  = useState(false);
-  const [errors,      setErrors]      = useState([]);
-  const [form,        setForm]        = useState({ ...EMPTY_FORM, appointment_id: appointmentId || "" });
+  const [appointment,   setAppointment]   = useState(null);
+  const [loading,       setLoading]       = useState(!!appointmentId);
+  const [submitting,    setSubmitting]    = useState(false);
+  const [errors,        setErrors]        = useState([]);
+  const [form,          setForm]          = useState({ ...EMPTY_FORM, appointment_id: appointmentId || "" });
+  const [scheduleNext,  setScheduleNext]  = useState(false);
+  const [nextVisitTime, setNextVisitTime] = useState("09:00");
 
   useEffect(() => {
     if (appointmentId) fetchAppointment();
@@ -115,11 +117,33 @@ export default function NewMedicalRecordPage() {
       setErrors(["El campo A (Evaluación / Diagnóstico) es obligatorio"]);
       return;
     }
+    if (scheduleNext && !nextVisitTime) {
+      setErrors(["Ingresa la hora para la próxima cita"]);
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post("/api/v1/medical_records", { medical_record: form });
-      toast.success("Expediente registrado correctamente");
-      router.push("/dashboard/appointments");
+
+      // Si el usuario eligió agendar la próxima cita de inmediato
+      if (scheduleNext && form.next_visit_date && appointment) {
+        const scheduledAt = `${form.next_visit_date}T${nextVisitTime}:00`;
+        const newAppt = await api.post("/api/v1/appointments", {
+          appointment: {
+            doctor_id:        appointment.doctor?.id,
+            patient_id:       appointment.patient?.id,
+            owner_id:         appointment.owner?.id,
+            scheduled_at:     scheduledAt,
+            appointment_type: "follow_up",
+            reason:           "Control post-consulta",
+          },
+        });
+        toast.success("Expediente guardado y cita de seguimiento agendada");
+        router.push(`/dashboard/appointments/${newAppt.data.id}`);
+      } else {
+        toast.success("Expediente registrado correctamente");
+        router.push("/dashboard/appointments");
+      }
     } catch (err) {
       const errs = err.response?.data?.errors || ["Error al registrar el expediente"];
       setErrors(errs);
@@ -301,10 +325,81 @@ export default function NewMedicalRecordPage() {
               onChange={(e) => set("notes", e.target.value)}
               style={{ ...inp, resize: "none", lineHeight: "1.6" }}
             />
-            <div className="mt-4">
-              <label style={lbl}>Próxima visita recomendada</label>
-              <input type="date" style={inp}
-                value={form.next_visit_date} onChange={(e) => set("next_visit_date", e.target.value)} />
+            <div className="mt-4 space-y-3">
+              <div>
+                <label style={lbl}>Próxima visita recomendada</label>
+                <input
+                  type="date"
+                  style={inp}
+                  value={form.next_visit_date}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => {
+                    set("next_visit_date", e.target.value);
+                    if (!e.target.value) setScheduleNext(false);
+                  }}
+                />
+              </div>
+
+              {/* Prompt para agendar de inmediato — solo si hay fecha Y hay contexto de cita */}
+              {form.next_visit_date && appointment && (
+                <div
+                  className="rounded-xl p-4 space-y-3"
+                  style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: "#15803d" }}>
+                        ¿Agendar esta cita ahora?
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: "#16a34a" }}>
+                        Se creará una cita de seguimiento para {appointment.patient?.name} con {appointment.doctor?.full_name}
+                      </p>
+                    </div>
+                    {/* Toggle Sí/No */}
+                    <div className="flex rounded-lg overflow-hidden flex-shrink-0" style={{ border: "1px solid #bbf7d0" }}>
+                      {[{ val: true, label: "Sí" }, { val: false, label: "No" }].map(({ val, label }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setScheduleNext(val)}
+                          className="px-4 py-1.5 text-xs font-semibold transition-colors"
+                          style={{
+                            backgroundColor: scheduleNext === val ? "#16a34a" : "#ffffff",
+                            color:           scheduleNext === val ? "#ffffff" : "#64748b",
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {scheduleNext && (
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="flex-1">
+                        <label style={{ ...lbl, color: "#15803d" }}>Hora de la cita</label>
+                        <input
+                          type="time"
+                          value={nextVisitTime}
+                          onChange={(e) => setNextVisitTime(e.target.value)}
+                          style={{ ...inp, borderColor: "#bbf7d0" }}
+                        />
+                      </div>
+                      <div className="pt-5">
+                        <div
+                          className="rounded-lg px-3 py-2 text-xs"
+                          style={{ backgroundColor: "#dcfce7", color: "#15803d" }}
+                        >
+                          {new Date(`${form.next_visit_date}T${nextVisitTime}`).toLocaleDateString("es-GT", {
+                            weekday: "short", day: "numeric", month: "short",
+                          })}{" "}
+                          · {nextVisitTime}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -317,7 +412,11 @@ export default function NewMedicalRecordPage() {
             className="flex-1 py-3 rounded-xl text-sm font-semibold"
             style={{ backgroundColor: submitting ? "#93c5fd" : "#2563eb", color: "#ffffff", cursor: submitting ? "not-allowed" : "pointer" }}
           >
-            {submitting ? "Guardando..." : "Guardar expediente"}
+            {submitting
+            ? "Guardando..."
+            : scheduleNext
+              ? "Guardar expediente y agendar cita →"
+              : "Guardar expediente"}
           </button>
           <Link href="/dashboard/appointments">
             <button type="button" className="px-6 py-3 rounded-xl text-sm font-medium"
