@@ -95,6 +95,12 @@ const getNavigation = (clinicType, role, features) => {
   });
 
   base.push({
+    name:    "Lista de espera",
+    href:    "/dashboard/waitlist",
+    icon:    "⏳",
+  });
+
+  base.push({
     name:    "Reportes",
     href:    "/dashboard/reports",
     icon:    "◈",
