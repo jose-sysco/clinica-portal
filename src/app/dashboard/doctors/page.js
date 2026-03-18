@@ -356,7 +356,7 @@ export default function DoctorsPage() {
         >
           <p className="text-xs" style={{ color: "#94a3b8" }}>
             Página {pagination.page} de {pagination.pages} — {pagination.count}{" "}
-            citas
+            doctores
           </p>
           <div className="flex items-center gap-2">
             <button

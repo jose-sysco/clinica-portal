@@ -41,17 +41,17 @@ export default function PatientsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, []);
+  }, [search]);
 
   useEffect(() => {
     fetchPatients();
-  }, [page]);
+  }, [page, search]);
 
-  const fetchPatients = async (q = "") => {
+  const fetchPatients = async () => {
     setLoading(true);
     try {
       const params = { page };
-      if (q) params.q = q;
+      if (search) params.q = search;
       const response = await api.get("/api/v1/patients", { params });
       setPatients(response.data.data);
       setPagination(response.data.pagination);
@@ -63,9 +63,7 @@ export default function PatientsPage() {
   };
 
   const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearch(value);
-    if (value.length === 0 || value.length >= 3) fetchPatients(value);
+    setSearch(e.target.value);
   };
 
   if (error) {
@@ -360,7 +358,7 @@ export default function PatientsPage() {
         >
           <p className="text-xs" style={{ color: "#94a3b8" }}>
             Página {pagination.page} de {pagination.pages} — {pagination.count}{" "}
-            citas
+            {config.patientsLabel.toLowerCase()}
           </p>
           <div className="flex items-center gap-2">
             <button
