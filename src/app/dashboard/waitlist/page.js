@@ -44,20 +44,21 @@ function AddWaitlistModal({ onClose, onSaved }) {
 
   useEffect(() => {
     Promise.all([
-      api.get("/api/v1/doctors"),
-      api.get("/api/v1/patients"),
-      api.get("/api/v1/owners"),
+      api.get("/api/v1/doctors",  { params: { per_page: 200 } }),
+      api.get("/api/v1/patients", { params: { per_page: 200 } }),
+      api.get("/api/v1/owners",   { params: { per_page: 200 } }),
     ]).then(([d, p, o]) => {
-      setDoctors(d.data?.doctors || d.data || []);
-      setPatients(p.data?.patients || p.data || []);
-      setOwners(o.data?.owners || o.data || []);
+      const toArr = (v) => (Array.isArray(v) ? v : []);
+      setDoctors(toArr(d.data?.data));
+      setPatients(toArr(p.data?.data));
+      setOwners(toArr(o.data?.data));
     });
   }, []);
 
   // Auto-fill owner when patient is selected
   const handlePatientChange = (patientId) => {
     const patient = patients.find(p => String(p.id) === String(patientId));
-    setForm(f => ({ ...f, patient_id: patientId, owner_id: patient?.owner_id ? String(patient.owner_id) : f.owner_id }));
+    setForm(f => ({ ...f, patient_id: patientId, owner_id: patient?.owner?.id ? String(patient.owner.id) : f.owner_id }));
   };
 
   const handleSubmit = async (e) => {
@@ -191,7 +192,9 @@ export default function WaitlistPage() {
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
   useEffect(() => {
-    api.get("/api/v1/doctors").then(r => setDoctors(r.data?.doctors || r.data || []));
+    api.get("/api/v1/doctors", { params: { per_page: 200 } }).then(r => {
+      setDoctors(Array.isArray(r.data?.data) ? r.data.data : []);
+    });
   }, []);
 
   const handleStatusChange = async (entry, newStatus) => {
