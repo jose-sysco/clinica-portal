@@ -6,6 +6,68 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { getConfig } from "@/lib/clinicConfig";
 
+function TrialBanner({ organization }) {
+  const expired = organization.trial_expired;
+  const days = organization.trial_days_remaining;
+  const urgent = expired || days <= 3;
+
+  const expiryDate = organization.trial_ends_at
+    ? new Date(organization.trial_ends_at).toLocaleDateString("es-GT", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "America/Guatemala",
+      })
+    : null;
+
+  return (
+    <div
+      className="px-8 py-2.5 flex items-center justify-between gap-4"
+      style={{
+        backgroundColor: urgent ? "#fef2f2" : "#fffbeb",
+        borderBottom: `1px solid ${urgent ? "#fecaca" : "#fde68a"}`,
+      }}
+    >
+      <p className="text-sm" style={{ color: urgent ? "#dc2626" : "#92400e" }}>
+        {expired ? (
+          <>
+            <span className="font-semibold">Tu período de prueba venció</span>
+            {expiryDate && (
+              <span style={{ color: urgent ? "#ef4444" : "#b45309" }}>
+                {" "}el {expiryDate}
+              </span>
+            )}
+            . El sistema está en modo solo lectura.
+          </>
+        ) : (
+          <>
+            <span className="font-semibold">
+              {days === 1 ? "Te queda 1 día" : `Te quedan ${days} días`}
+            </span>{" "}
+            de prueba gratuita
+            {expiryDate && (
+              <span style={{ color: urgent ? "#ef4444" : "#b45309" }}>
+                {" "}— vence el {expiryDate}
+              </span>
+            )}
+            .
+          </>
+        )}
+      </p>
+      <a
+        href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0 transition-colors"
+        style={{
+          backgroundColor: urgent ? "#dc2626" : "#d97706",
+          color: "#ffffff",
+        }}
+      >
+        Activar suscripción →
+      </a>
+    </div>
+  );
+}
+
 const getNavigation = (clinicType, role) => {
   const config = getConfig(clinicType);
   const base = [
@@ -232,45 +294,37 @@ export default function DashboardLayout({ children }) {
 
         {/* Banner de trial */}
         {organization?.on_trial && (
-          <div
-            className="px-8 py-3 flex items-center justify-between"
-            style={{
-              backgroundColor: organization.trial_days_remaining <= 3 ? "#fef2f2" : "#fffbeb",
-              borderBottom: `1px solid ${organization.trial_days_remaining <= 3 ? "#fecaca" : "#fde68a"}`,
-            }}
-          >
-            <p
-              className="text-sm"
-              style={{ color: organization.trial_days_remaining <= 3 ? "#dc2626" : "#92400e" }}
-            >
-              {organization.trial_days_remaining > 0 ? (
-                <>
-                  <span className="font-semibold">
-                    {organization.trial_days_remaining === 1
-                      ? "Te queda 1 día"
-                      : `Te quedan ${organization.trial_days_remaining} días`}
-                  </span>{" "}
-                  de período de prueba gratuita.
-                </>
-              ) : (
-                <span className="font-semibold">Tu período de prueba ha expirado.</span>
-              )}
-            </p>
-            <a
-              href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
-              style={{
-                backgroundColor: organization.trial_days_remaining <= 3 ? "#dc2626" : "#d97706",
-                color: "#ffffff",
-              }}
-            >
-              Activar suscripción →
-            </a>
-          </div>
+          <TrialBanner organization={organization} />
         )}
 
-        {/* Content */}
-        <div className="flex-1 p-8" style={{ backgroundColor: "#f1f5f9" }}>
+        {/* Content — bloqueado si el trial venció */}
+        <div className="flex-1 p-8 relative" style={{ backgroundColor: "#f1f5f9" }}>
+          {organization?.trial_expired && (
+            <div
+              className="absolute inset-0 z-20 flex items-start justify-center pt-24"
+              style={{ backgroundColor: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)" }}
+            >
+              <div
+                className="rounded-2xl p-8 text-center max-w-sm mx-4 shadow-xl"
+                style={{ backgroundColor: "#ffffff" }}
+              >
+                <div className="text-4xl mb-4">⏰</div>
+                <p className="text-base font-bold mb-2" style={{ color: "#0f172a" }}>
+                  Período de prueba vencido
+                </p>
+                <p className="text-sm mb-5" style={{ color: "#64748b" }}>
+                  Para continuar usando el sistema adquiere una suscripción.
+                </p>
+                <a
+                  href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
+                  className="inline-block text-sm font-semibold px-5 py-2.5 rounded-xl"
+                  style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+                >
+                  Contactar para activar →
+                </a>
+              </div>
+            </div>
+          )}
           {children}
         </div>
       </main>
