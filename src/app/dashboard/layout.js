@@ -214,11 +214,17 @@ function NavItem({ item, pathname }) {
 // ── Labels ────────────────────────────────────────────────────────────────────
 
 const clinicTypeLabel = {
-  veterinary: "Veterinaria",
-  pediatric:  "Pediatría",
-  general:    "Medicina General",
-  dental:     "Odontología",
-  psychology: "Psicología",
+  veterinary:     "Veterinaria",
+  pediatric:      "Pediatría",
+  general:        "Medicina General",
+  dental:         "Odontología",
+  psychology:     "Psicología",
+  physiotherapy:  "Fisioterapia",
+  nutrition:      "Nutrición",
+  fitness:        "Fitness",
+  beauty:         "Belleza & Estética",
+  coaching:       "Coaching",
+  legal:          "Asesoría Legal",
 };
 
 const roleLabel = {

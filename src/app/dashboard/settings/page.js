@@ -8,11 +8,25 @@ import { toast } from "sonner";
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CLINIC_TYPES = [
-  { value: "veterinary", label: "Clínica Veterinaria" },
-  { value: "pediatric",  label: "Pediatría" },
-  { value: "general",    label: "Medicina General" },
-  { value: "dental",     label: "Odontología" },
-  { value: "psychology", label: "Psicología" },
+  { group: "Salud médica",       options: [
+    { value: "general",       label: "Medicina General" },
+    { value: "pediatric",     label: "Pediatría" },
+    { value: "dental",        label: "Odontología" },
+    { value: "psychology",    label: "Psicología" },
+    { value: "physiotherapy", label: "Fisioterapia / Rehabilitación" },
+    { value: "nutrition",     label: "Nutrición y Dietética" },
+  ]},
+  { group: "Animales",           options: [
+    { value: "veterinary",    label: "Clínica Veterinaria" },
+  ]},
+  { group: "Bienestar y fitness",options: [
+    { value: "fitness",       label: "Fitness / Entrenamiento personal" },
+    { value: "beauty",        label: "Salón de belleza / Estética" },
+    { value: "coaching",      label: "Coaching" },
+  ]},
+  { group: "Servicios profesionales", options: [
+    { value: "legal",         label: "Asesoría Legal / Abogados" },
+  ]},
 ];
 
 const TIMEZONES = [
@@ -203,7 +217,11 @@ export default function SettingsPage() {
           <Field label="Tipo de clínica / negocio">
             <select value={form.clinic_type} onChange={e => set("clinic_type", e.target.value)}
               className={inputCls} style={inputStyle}>
-              {CLINIC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {CLINIC_TYPES.map(g => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.options.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </optgroup>
+              ))}
             </select>
           </Field>
 
