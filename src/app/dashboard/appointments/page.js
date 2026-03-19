@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import { APPOINTMENTS_CSV, prepareAppointments } from "@/lib/exportCSV";
 
 const statusLabel = {
   pending: {
@@ -145,20 +147,34 @@ export default function AppointmentsPage() {
             )}
           </p>
         </div>
-        <Link href="/dashboard/appointments/new">
-          <button
-            className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#1d4ed8")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#2563eb")
-            }
-          >
-            + Nueva cita
-          </button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ExportCSVButton
+            filename="citas"
+            endpoint="/api/v1/appointments"
+            params={{
+              ...(filters.status && { status: filters.status }),
+              ...(filters.date   && { date:   filters.date   }),
+              ...(filters.today  && { today:  "true"         }),
+            }}
+            headers={APPOINTMENTS_CSV.headers}
+            keys={APPOINTMENTS_CSV.keys}
+            prepare={prepareAppointments}
+          />
+          <Link href="/dashboard/appointments/new">
+            <button
+              className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#1d4ed8")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#2563eb")
+              }
+            >
+              + Nueva cita
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Filtros */}

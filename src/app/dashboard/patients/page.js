@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import { PATIENTS_CSV, preparePatients } from "@/lib/exportCSV";
 
 const statusLabel = {
   active: {
@@ -102,20 +104,29 @@ export default function PatientsPage() {
             )}
           </p>
         </div>
-        <Link href="/dashboard/patients/new">
-          <button
-            className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#1d4ed8")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#2563eb")
-            }
-          >
-            + Nuevo {config.patientLabel.toLowerCase()}
-          </button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ExportCSVButton
+            filename="pacientes"
+            endpoint="/api/v1/patients"
+            headers={PATIENTS_CSV.headers}
+            keys={PATIENTS_CSV.keys}
+            prepare={preparePatients}
+          />
+          <Link href="/dashboard/patients/new">
+            <button
+              className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#1d4ed8")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#2563eb")
+              }
+            >
+              + Nuevo {config.patientLabel.toLowerCase()}
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Búsqueda */}

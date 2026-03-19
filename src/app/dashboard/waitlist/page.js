@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import { WAITLIST_CSV, prepareWaitlist } from "@/lib/exportCSV";
 
 const STATUS_META = {
   waiting:  { label: "En espera",   color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
@@ -247,12 +249,22 @@ export default function WaitlistPage() {
             Pacientes esperando un espacio disponible con un doctor.
           </p>
         </div>
-        <button onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "#2563eb", color: "#fff" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-          Agregar paciente
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportCSVButton
+            filename="lista_espera"
+            endpoint="/api/v1/waitlist_entries"
+            params={{ ...(doctorFilter && { doctor_id: doctorFilter }) }}
+            headers={WAITLIST_CSV.headers}
+            keys={WAITLIST_CSV.keys}
+            prepare={prepareWaitlist}
+          />
+          <button onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
+            style={{ backgroundColor: "#2563eb", color: "#fff" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Agregar paciente
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

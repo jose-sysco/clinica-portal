@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import { APPOINTMENTS_CSV, prepareAppointments } from "@/lib/exportCSV";
 import {
   BarChart,
   Bar,
@@ -175,6 +177,22 @@ export default function ReportsPage() {
         <p style={{ fontSize: "14px", color: "#64748b", marginTop: "4px" }}>
           Estadísticas generales de la clínica
         </p>
+      </div>
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <ExportCSVButton
+          filename="reporte_citas"
+          endpoint="/api/v1/appointments"
+          headers={APPOINTMENTS_CSV.headers}
+          keys={APPOINTMENTS_CSV.keys}
+          prepare={prepareAppointments}
+        />
+        <ExportCSVButton
+          filename="reporte_pacientes"
+          endpoint="/api/v1/patients"
+          headers={["ID", "Nombre", "Tipo", "Género", "Responsable", "Estado"]}
+          keys={["id", "name", "patient_type", "gender", "owner.full_name", "status"]}
+          prepare={rows => rows.map(r => ({ ...r, status: r.status === "active" ? "Activo" : "Inactivo" }))}
+        />
       </div>
 
       {/* Stat Cards */}
