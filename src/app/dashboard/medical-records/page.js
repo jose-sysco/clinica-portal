@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
+import { TableSkeleton } from "@/components/Skeleton";
+import EmptyState from "@/components/EmptyState";
 
 export default function MedicalRecordsPage() {
   const [records,    setRecords]    = useState([]);
@@ -63,13 +65,14 @@ export default function MedicalRecordsPage() {
 
       {/* Tabla */}
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <TableSkeleton rows={6} cols={5} />
       ) : records.length === 0 ? (
-        <div className="rounded-xl p-12 text-center" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
-          <p className="text-sm font-medium mb-1" style={{ color: "#0f172a" }}>Sin expedientes registrados</p>
-          <p className="text-xs" style={{ color: "#94a3b8" }}>Los expedientes se crean al completar una cita médica</p>
+        <div className="rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <EmptyState
+            icon="records"
+            title="Sin expedientes aún"
+            description="Los expedientes se crean al registrar una consulta desde una cita completada."
+          />
         </div>
       ) : (
         <div className="rounded-xl overflow-x-auto" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>

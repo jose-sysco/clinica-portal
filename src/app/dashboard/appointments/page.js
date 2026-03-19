@@ -6,6 +6,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import { APPOINTMENTS_CSV, prepareAppointments } from "@/lib/exportCSV";
+import { TableSkeleton } from "@/components/Skeleton";
+import EmptyState from "@/components/EmptyState";
 
 const statusLabel = {
   pending: {
@@ -245,31 +247,21 @@ export default function AppointmentsPage() {
 
       {/* Lista */}
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <TableSkeleton rows={7} cols={6} />
       ) : error ? (
-        <div
-          className="rounded-xl p-4 text-sm"
-          style={{
-            backgroundColor: "#fef2f2",
-            color: "#dc2626",
-            border: "1px solid #fecaca",
-          }}
-        >
+        <div className="rounded-xl p-4 text-sm"
+          style={{ backgroundColor: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
           {error}
         </div>
       ) : appointments.length === 0 ? (
-        <div
-          className="rounded-xl p-12 text-center"
-          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
-        >
-          <p className="text-sm font-medium mb-1" style={{ color: "#0f172a" }}>
-            No hay citas
-          </p>
-          <p className="text-xs" style={{ color: "#94a3b8" }}>
-            No se encontraron citas con los filtros aplicados
-          </p>
+        <div className="rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <EmptyState
+            icon="calendar"
+            title="Sin citas registradas"
+            description={filters.status || filters.date || filters.today ? "No hay citas con los filtros aplicados. Prueba con otros criterios." : "Agenda tu primera cita para comenzar."}
+            action={!filters.status && !filters.date && !filters.today ? "+ Nueva cita" : undefined}
+            href="/dashboard/appointments/new"
+          />
         </div>
       ) : (
         <div

@@ -7,6 +7,8 @@ import api from "@/lib/api";
 import Link from "next/link";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import { PATIENTS_CSV, preparePatients } from "@/lib/exportCSV";
+import { TableSkeleton } from "@/components/Skeleton";
+import EmptyState from "@/components/EmptyState";
 
 const statusLabel = {
   active: {
@@ -146,17 +148,16 @@ export default function PatientsPage() {
 
       {/* Lista */}
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <TableSkeleton rows={6} cols={5} />
       ) : patients.length === 0 ? (
-        <div
-          className="rounded-xl p-12 text-center"
-          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
-        >
-          <p className="text-sm" style={{ color: "#94a3b8" }}>
-            No se encontraron {config.patientsLabel.toLowerCase()}
-          </p>
+        <div className="rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <EmptyState
+            icon="patients"
+            title={`Sin ${config.patientsLabel.toLowerCase()} aún`}
+            description={search ? `No se encontraron resultados para "${search}".` : `Agrega tu primer ${config.patientLabel.toLowerCase()} para comenzar.`}
+            action={!search ? `+ Nuevo ${config.patientLabel.toLowerCase()}` : undefined}
+            href="/dashboard/patients/new"
+          />
         </div>
       ) : (
         <div

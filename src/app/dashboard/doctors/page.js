@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
+import { CardGridSkeleton } from "@/components/Skeleton";
+import EmptyState from "@/components/EmptyState";
 
 const STATUS_CONFIG = {
   active:   { label: "Activo",     color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
@@ -102,14 +104,16 @@ export default function DoctorsPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <CardGridSkeleton cards={6} cols="grid-cols-1 md:grid-cols-2 xl:grid-cols-3" />
       ) : doctors.length === 0 ? (
-        <div className="rounded-xl p-12 text-center" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
-          <p className="text-sm" style={{ color: "#94a3b8" }}>
-            {search ? `Sin resultados para "${search}"` : "No hay doctores registrados"}
-          </p>
+        <div className="rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <EmptyState
+            icon="doctors"
+            title="Sin doctores registrados"
+            description={search ? `No se encontraron resultados para "${search}".` : "Agrega tu primer doctor para poder gestionar citas."}
+            action={!search ? "+ Nuevo doctor" : undefined}
+            href="/dashboard/doctors/new"
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">

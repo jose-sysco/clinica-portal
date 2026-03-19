@@ -4,8 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
+import { toast } from "sonner";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import { WAITLIST_CSV, prepareWaitlist } from "@/lib/exportCSV";
+import { TableSkeleton } from "@/components/Skeleton";
+import EmptyState from "@/components/EmptyState";
 
 const STATUS_META = {
   waiting:  { label: "En espera",   color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
@@ -213,11 +216,16 @@ export default function WaitlistPage() {
     });
   }, []);
 
+  const STATUS_LABEL = { notified: "Notificado", booked: "Agendado" };
+
   const handleStatusChange = async (entry, newStatus) => {
     setActionId(entry.id);
     try {
       await api.patch(`/api/v1/waitlist_entries/${entry.id}`, { waitlist_entry: { status: newStatus } });
+      toast.success(`${entry.patient?.name} marcado como ${STATUS_LABEL[newStatus] || newStatus}`);
       fetchEntries();
+    } catch {
+      toast.error("Error al actualizar el estado");
     } finally {
       setActionId(null);
     }
@@ -228,7 +236,10 @@ export default function WaitlistPage() {
     setActionId(id);
     try {
       await api.delete(`/api/v1/waitlist_entries/${id}`);
+      toast.success("Eliminado de la lista de espera");
       fetchEntries();
+    } catch {
+      toast.error("Error al eliminar");
     } finally {
       setActionId(null);
     }
@@ -305,23 +316,20 @@ export default function WaitlistPage() {
       </div>
 
       {/* Table */}
+      {loading ? (
+        <TableSkeleton rows={5} cols={7} />
+      ) : entries.length === 0 ? (
+        <div className="rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <EmptyState
+            icon="waitlist"
+            title="Lista de espera vacía"
+            description="Agrega pacientes aquí cuando un doctor no tenga disponibilidad inmediata."
+            action="+ Agregar paciente"
+            onClick={() => setShowModal(true)}
+          />
+        </div>
+      ) : (
       <div className="rounded-xl overflow-x-auto shadow-sm" style={{ border: "1px solid #e2e8f0" }}>
-        {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: "#f1f5f9" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </div>
-            <p className="font-semibold mb-1" style={{ color: "#334155" }}>Lista de espera vacía</p>
-            <p className="text-sm" style={{ color: "#94a3b8" }}>Agrega pacientes cuando un doctor esté completo.</p>
-          </div>
-        ) : (
           <table className="w-full text-sm">
             <thead>
               <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
@@ -405,8 +413,8 @@ export default function WaitlistPage() {
               ))}
             </tbody>
           </table>
-        )}
       </div>
+      )}
     </div>
   );
 }

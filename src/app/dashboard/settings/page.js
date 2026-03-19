@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
+import { toast } from "sonner";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -91,7 +92,6 @@ export default function SettingsPage() {
   const [form,    setForm]    = useState(null);
   const [original, setOriginal] = useState(null);
   const [saving,  setSaving]  = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState(null);
 
   useEffect(() => {
@@ -120,15 +120,15 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    setSuccess(false);
     try {
       await api.patch("/api/v1/organization", { organization: form });
       await fetchMe();
       setOriginal(form);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      toast.success("Configuración guardada correctamente");
     } catch (err) {
-      setError(err.response?.data?.errors?.join(", ") || "Error al guardar la configuración.");
+      const msg = err.response?.data?.errors?.join(", ") || "Error al guardar la configuración.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -153,15 +153,6 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>Configuración</h1>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>Administra la información y preferencias de tu organización.</p>
         </div>
-        {success && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ backgroundColor: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            Cambios guardados
-          </div>
-        )}
       </div>
 
       {error && (

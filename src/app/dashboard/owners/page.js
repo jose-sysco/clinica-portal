@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
+import { TableSkeleton } from "@/components/Skeleton";
+import EmptyState from "@/components/EmptyState";
 
 export default function OwnersPage() {
   const { organization } = useAuth();
@@ -114,17 +116,16 @@ export default function OwnersPage() {
 
       {/* Tabla */}
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <TableSkeleton rows={5} cols={4} />
       ) : owners.length === 0 ? (
-        <div
-          className="rounded-xl p-12 text-center"
-          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
-        >
-          <p className="text-sm" style={{ color: "#94a3b8" }}>
-            No se encontraron {config.ownersLabel.toLowerCase()}
-          </p>
+        <div className="rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <EmptyState
+            icon="owners"
+            title={`Sin ${config.ownersLabel.toLowerCase()} aún`}
+            description={`Registra un ${config.ownerLabel.toLowerCase()} para comenzar a gestionar pacientes.`}
+            action={`+ Nuevo ${config.ownerLabel.toLowerCase()}`}
+            href="/dashboard/owners/new"
+          />
         </div>
       ) : (
         <div
