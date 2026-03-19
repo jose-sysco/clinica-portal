@@ -109,7 +109,8 @@ const getNavigation = (clinicType, role, features) => {
   });
 
   if (role === "admin") {
-    base.push({ name: "Usuarios", href: "/dashboard/users", icon: "👥" });
+    base.push({ name: "Usuarios",      href: "/dashboard/users",    icon: "👥" });
+    base.push({ name: "Configuración", href: "/dashboard/settings", icon: "⚙" });
   }
 
   return base;
