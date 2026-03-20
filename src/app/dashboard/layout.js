@@ -116,7 +116,7 @@ const getNavGroups = (clinicType, role, features) => {
       label: "Análisis",
       items: [
         { name: "Reportes", href: "/dashboard/reports", icon: Icon.reports,
-          locked: features.length > 0 && !has("reporting") },
+          locked: features.length > 0 && !has("reports") },
       ],
     },
   ];

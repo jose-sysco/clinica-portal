@@ -68,7 +68,7 @@ const monthNames = [
 export default function ReportsPage() {
   const features       = useFeatures();
   const featuresLoaded = features.length > 0;
-  const isLocked       = featuresLoaded && !features.includes("reporting");
+  const isLocked       = featuresLoaded && !features.includes("reports");
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
