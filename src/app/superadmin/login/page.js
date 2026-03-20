@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import axios from "axios";
 
@@ -10,8 +9,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3010";
 const SUPERADMIN_SLUG = "clinicaportal-admin";
 
 export default function SuperadminLoginPage() {
-  const router = useRouter();
-
   const [form,    setForm]    = useState({ email: "", password: "" });
   const [error,   setError]   = useState(null);
   const [loading, setLoading] = useState(false);
@@ -35,13 +32,14 @@ export default function SuperadminLoginPage() {
         return;
       }
 
-      // Guardamos token y refresh — NO guardamos organization_slug
-      Cookies.set("token",         token,         { expires: 1 / 24 });
-      Cookies.set("refresh_token", refresh_token, { expires: 30 });
-      // Limpiamos cualquier slug de sesión anterior
-      Cookies.remove("organization_slug");
+      // Guardamos token, refresh y slug fijo del superadmin.
+      // El slug es necesario para que AuthContext.fetchMe() pueda llamar /api/v1/me.
+      Cookies.set("token",             token,         { expires: 1 / 24 });
+      Cookies.set("refresh_token",     refresh_token, { expires: 30 });
+      Cookies.set("organization_slug", SUPERADMIN_SLUG, { expires: 30 });
 
-      router.push("/superadmin");
+      // Recarga completa para que AuthContext re-inicialice con el token ya guardado
+      window.location.href = "/superadmin";
     } catch (err) {
       const msg = err.response?.data?.error;
       if (msg === "Organización no encontrada") {
