@@ -16,8 +16,10 @@ export default function SuperadminLayout({ children }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const isLoginPage = pathname === "/superadmin/login";
 
   useEffect(() => {
+    if (isLoginPage) return;
     if (!loading && !user) {
       router.push("/superadmin/login");
       return;
@@ -25,7 +27,12 @@ export default function SuperadminLayout({ children }) {
     if (!loading && user && user.role !== "superadmin") {
       router.push("/dashboard");
     }
-  }, [user, loading]);
+  }, [user, loading, isLoginPage]);
+
+  // La página de login no necesita sidebar ni auth check
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   if (loading || !user) {
     return (
