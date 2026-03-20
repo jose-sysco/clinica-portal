@@ -96,7 +96,7 @@ export default function NewAppointmentPage() {
 
   const fetchDoctors = async () => {
     try {
-      const res = await api.get("/api/v1/doctors");
+      const res = await api.get("/api/v1/doctors", { params: { per_page: 200 } });
       setDoctors(res.data.data.filter((d) => d.status === "active"));
     } catch (err) {}
   };

@@ -5,7 +5,19 @@ import { useParams, useRouter } from "next/navigation";
 import superadminApi from "@/lib/superadminApi";
 import { toast } from "sonner";
 
-const clinicTypeLabel = { veterinary: "Veterinaria", pediatric: "Pediatría", general: "Medicina General", dental: "Odontología", psychology: "Psicología" };
+const clinicTypeLabel = {
+  veterinary:    "Veterinaria",
+  pediatric:     "Pediatría",
+  general:       "Medicina General",
+  dental:        "Odontología",
+  psychology:    "Psicología",
+  physiotherapy: "Fisioterapia",
+  nutrition:     "Nutrición",
+  beauty:        "Estética y Belleza",
+  coaching:      "Coaching",
+  legal:         "Servicios Legales",
+  fitness:       "Fitness y Deporte",
+};
 const roleLabel = { admin: "Admin", doctor: "Doctor", receptionist: "Recepcionista", patient: "Paciente", superadmin: "Super Admin" };
 const statusConfig = {
   active:    { label: "Activa",     color: "#22c55e" },

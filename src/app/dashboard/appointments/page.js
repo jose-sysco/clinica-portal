@@ -50,9 +50,11 @@ const statusLabel = {
 
 const typeLabel = {
   first_visit: "Primera visita",
-  follow_up: "Seguimiento",
-  emergency: "Emergencia",
-  routine: "Rutina",
+  follow_up:   "Seguimiento",
+  emergency:   "Urgencia",
+  routine:     "Rutina",
+  checkup:     "Control",
+  procedure:   "Procedimiento",
 };
 
 export default function AppointmentsPage() {
@@ -126,7 +128,8 @@ export default function AppointmentsPage() {
     });
   };
 
-  const formatTime = (datetime) => datetime.substring(11, 16);
+  const formatTime = (datetime) =>
+    new Date(datetime).toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="space-y-6">

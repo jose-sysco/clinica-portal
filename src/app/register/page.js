@@ -50,6 +50,12 @@ export default function RegisterPage() {
     setErrors([]);
     setLoading(true);
 
+    if (form.user.password !== form.user.password_confirmation) {
+      setError("Las contraseñas no coinciden");
+      setLoading(false);
+      return;
+    }
+
     try {
       await api.post("/api/v1/auth/sign_up", form);
       router.push("/login?registered=true");
@@ -157,11 +163,23 @@ export default function RegisterPage() {
                     style={inputStyle}
                     required
                   >
-                    <option value="veterinary">Veterinaria</option>
-                    <option value="pediatric">Pediatría</option>
-                    <option value="general">Medicina General</option>
-                    <option value="dental">Odontología</option>
-                    <option value="psychology">Psicología</option>
+                    <optgroup label="Salud médica">
+                      <option value="general">Medicina General</option>
+                      <option value="pediatric">Pediatría</option>
+                      <option value="dental">Odontología</option>
+                      <option value="psychology">Psicología</option>
+                      <option value="physiotherapy">Fisioterapia</option>
+                      <option value="nutrition">Nutrición</option>
+                    </optgroup>
+                    <optgroup label="Bienestar y servicios">
+                      <option value="beauty">Estética y Belleza</option>
+                      <option value="coaching">Coaching</option>
+                      <option value="fitness">Fitness y Deporte</option>
+                      <option value="legal">Servicios Legales</option>
+                    </optgroup>
+                    <optgroup label="Veterinaria">
+                      <option value="veterinary">Veterinaria</option>
+                    </optgroup>
                   </select>
                 </div>
 

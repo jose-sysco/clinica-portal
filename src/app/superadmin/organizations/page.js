@@ -18,11 +18,17 @@ const planConfig = {
 };
 
 const clinicTypeLabel = {
-  veterinary: "Veterinaria",
-  pediatric:  "Pediatría",
-  general:    "Medicina General",
-  dental:     "Odontología",
-  psychology: "Psicología",
+  veterinary:    "Veterinaria",
+  pediatric:     "Pediatría",
+  general:       "Medicina General",
+  dental:        "Odontología",
+  psychology:    "Psicología",
+  physiotherapy: "Fisioterapia",
+  nutrition:     "Nutrición",
+  beauty:        "Estética y Belleza",
+  coaching:      "Coaching",
+  legal:         "Servicios Legales",
+  fitness:       "Fitness y Deporte",
 };
 
 function formatDate(d) {

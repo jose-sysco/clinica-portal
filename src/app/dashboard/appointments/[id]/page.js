@@ -247,11 +247,17 @@ export default function AppointmentDetailPage() {
         {/* Responsable */}
         <div className="rounded-xl p-5" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>{config.ownerLabel}</p>
-          <Link href={`/dashboard/owners/${appt.owner?.id}`}>
-            <p className="text-sm font-medium hover:underline" style={{ color: "#2563eb", cursor: "pointer" }}>{appt.owner?.full_name}</p>
-          </Link>
-          {appt.owner?.phone && (
-            <p className="text-xs mt-1" style={{ color: "#64748b" }}>{appt.owner.phone}</p>
+          {appt.owner?.id ? (
+            <>
+              <Link href={`/dashboard/owners/${appt.owner.id}`}>
+                <p className="text-sm font-medium hover:underline" style={{ color: "#2563eb", cursor: "pointer" }}>{appt.owner.full_name}</p>
+              </Link>
+              {appt.owner.phone && (
+                <p className="text-xs mt-1" style={{ color: "#64748b" }}>{appt.owner.phone}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm" style={{ color: "#94a3b8" }}>—</p>
           )}
         </div>
       </div>
