@@ -61,6 +61,10 @@ export default function NewAppointmentPage() {
     reason: "",
   });
 
+  const [recurring,          setRecurring]          = useState(false);
+  const [recurrenceType,     setRecurrenceType]      = useState("weekly");
+  const [recurrenceSessions, setRecurrenceSessions]  = useState(4);
+
   useEffect(() => {
     fetchDoctors();
     if (searchParams.get("owner_id"))
@@ -244,17 +248,29 @@ export default function NewAppointmentPage() {
     }
     setSubmitting(true);
     try {
-      await api.post("/api/v1/appointments", {
+      const payload = {
         appointment: {
-          doctor_id: parseInt(form.doctor_id),
-          patient_id: parseInt(form.patient_id),
-          owner_id: parseInt(form.owner_id),
-          scheduled_at: `${form.date}T${form.time}:00`,
+          doctor_id:        parseInt(form.doctor_id),
+          patient_id:       parseInt(form.patient_id),
+          owner_id:         parseInt(form.owner_id),
+          scheduled_at:     `${form.date}T${form.time}:00`,
           appointment_type: form.appointment_type,
-          reason: form.reason,
+          reason:           form.reason,
         },
-      });
-      toast.success("Cita creada correctamente");
+      };
+
+      if (recurring && recurrenceSessions > 1) {
+        payload.recurrence_type     = recurrenceType;
+        payload.recurrence_sessions = recurrenceSessions;
+      }
+
+      const res = await api.post("/api/v1/appointments", payload);
+
+      if (res.data.series_id) {
+        toast.success(`Serie creada: ${res.data.total} citas agendadas correctamente`);
+      } else {
+        toast.success("Cita creada correctamente");
+      }
       router.push("/dashboard/appointments");
     } catch (err) {
       setError(err.response?.data?.errors?.[0] || "Error al crear la cita");
@@ -895,6 +911,79 @@ export default function NewAppointmentPage() {
               />
             </div>
 
+            {/* ── Recurrencia ── */}
+            <div className="rounded-xl p-4" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "#0f172a" }}>Cita recurrente</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>Genera una serie de citas automáticamente</p>
+                </div>
+                <button type="button" onClick={() => setRecurring(v => !v)}
+                  className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+                  style={{ backgroundColor: recurring ? "#2563eb" : "#e2e8f0" }}>
+                  <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+                    style={{ transform: recurring ? "translateX(22px)" : "translateX(2px)" }} />
+                </button>
+              </div>
+
+              {recurring && (
+                <div className="space-y-3 pt-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: "#64748b" }}>Frecuencia</label>
+                      <select value={recurrenceType} onChange={e => setRecurrenceType(e.target.value)}
+                        className="w-full text-sm rounded-lg px-3 py-2 outline-none"
+                        style={{ border: "1px solid #e2e8f0", color: "#0f172a", backgroundColor: "#fff" }}>
+                        <option value="weekly">Cada semana</option>
+                        <option value="biweekly">Cada 2 semanas</option>
+                        <option value="monthly">Cada mes</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: "#64748b" }}>Número de sesiones</label>
+                      <input type="number" min={2} max={52} value={recurrenceSessions}
+                        onChange={e => setRecurrenceSessions(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))}
+                        className="w-full text-sm rounded-lg px-3 py-2 outline-none"
+                        style={{ border: "1px solid #e2e8f0", color: "#0f172a", backgroundColor: "#fff" }} />
+                    </div>
+                  </div>
+
+                  {/* Preview de fechas */}
+                  {form.date && form.time && (
+                    <div>
+                      <p className="text-xs font-medium mb-2" style={{ color: "#64748b" }}>
+                        Fechas a generar ({recurrenceSessions} sesiones):
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Array.from({ length: Math.min(recurrenceSessions, 8) }).map((_, i) => {
+                          const base = new Date(`${form.date}T${form.time}:00`);
+                          let d;
+                          if (recurrenceType === "weekly")   d = new Date(base.getTime() + i * 7  * 86400000);
+                          if (recurrenceType === "biweekly") d = new Date(base.getTime() + i * 14 * 86400000);
+                          if (recurrenceType === "monthly") {
+                            d = new Date(base);
+                            d.setMonth(d.getMonth() + i);
+                          }
+                          const label = d.toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short" });
+                          return (
+                            <span key={i} className="text-xs px-2 py-1 rounded-lg font-medium"
+                              style={{ backgroundColor: i === 0 ? "#eff6ff" : "#f1f5f9", color: i === 0 ? "#2563eb" : "#64748b", border: `1px solid ${i === 0 ? "#bfdbfe" : "#e2e8f0"}` }}>
+                              {i + 1}. {label}
+                            </span>
+                          );
+                        })}
+                        {recurrenceSessions > 8 && (
+                          <span className="text-xs px-2 py-1 rounded-lg" style={{ color: "#94a3b8" }}>
+                            +{recurrenceSessions - 8} más...
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
@@ -906,7 +995,11 @@ export default function NewAppointmentPage() {
                   cursor: submitting ? "not-allowed" : "pointer",
                 }}
               >
-                {submitting ? "Creando cita..." : "Crear cita"}
+                {submitting
+                  ? "Creando..."
+                  : recurring
+                  ? `Crear ${recurrenceSessions} citas`
+                  : "Crear cita"}
               </button>
               <Link href="/dashboard/appointments">
                 <button

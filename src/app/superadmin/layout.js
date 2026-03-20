@@ -19,7 +19,7 @@ export default function SuperadminLayout({ children }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      router.push("/superadmin/login");
       return;
     }
     if (!loading && user && user.role !== "superadmin") {

@@ -314,14 +314,27 @@ export default function AppointmentsPage() {
                     }
                   >
                     <td className="px-6 py-4">
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: "#0f172a" }}
-                      >
-                        {apt.patient?.name}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium" style={{ color: "#0f172a" }}>
+                          {apt.patient?.name}
+                        </p>
+                        {apt.recurrence_group_id && (
+                          <span
+                            title={`Serie recurrente · Sesión ${apt.recurrence_index}/${apt.recurrence_total}`}
+                            className="inline-flex items-center justify-center w-4 h-4 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: "#faf5ff", color: "#7c3aed" }}
+                          >
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+                            </svg>
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs" style={{ color: "#94a3b8" }}>
                         {apt.owner?.full_name}
+                        {apt.recurrence_group_id && (
+                          <span style={{ color: "#a78bfa" }}> · {apt.recurrence_index}/{apt.recurrence_total}</span>
+                        )}
                       </p>
                     </td>
                     <td className="px-6 py-4">

@@ -80,8 +80,9 @@ export default function DashboardPage() {
   const card = {
     backgroundColor: "#ffffff",
     border: "1px solid #e2e8f0",
-    borderRadius: "14px",
+    borderRadius: "16px",
     padding: "24px",
+    boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
   };
 
   return (
@@ -90,7 +91,7 @@ export default function DashboardPage() {
       {/* ── Greeting ─────────────────────────────────────────────────── */}
       <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>
+          <h1 className="text-2xl font-black tracking-tight" style={{ color: "#0f172a" }}>
             {greeting}, {user?.first_name} 👋
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
@@ -147,24 +148,36 @@ export default function DashboardPage() {
       {/* ── Stat cards ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
 
-        {/* Citas hoy */}
-        <div style={card}>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Citas hoy</p>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#eff6ff" }}>
-              <span style={{ color: "#2563eb", fontSize: "14px" }}>◷</span>
+        {/* Citas hoy — hero card */}
+        <div
+          className="relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%)",
+            borderRadius: "16px",
+            padding: "24px",
+            boxShadow: "0 8px 28px rgba(37,99,235,0.32)",
+          }}
+        >
+          {/* decorative circle */}
+          <div style={{ position: "absolute", top: "-20px", right: "-20px", width: "100px", height: "100px", borderRadius: "50%", background: "rgba(255,255,255,0.07)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: "-30px", right: "30px", width: "70px", height: "70px", borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+
+          <div className="flex items-center justify-between mb-3 relative">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.65)" }}>Citas hoy</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+              <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "14px" }}>◷</span>
             </div>
           </div>
           {loading ? <Skeleton h={40} w={80} /> : (
-            <p className="text-4xl font-bold mb-3" style={{ color: "#0f172a" }}>{stats?.appointments_today ?? "—"}</p>
+            <p className="text-5xl font-black mb-3 relative" style={{ color: "#ffffff" }}>{stats?.appointments_today ?? "—"}</p>
           )}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap relative">
             {loading ? <Skeleton h={20} w={160} /> : (
               <>
-                {stats?.today_pending   > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#fffbeb", color: "#d97706", border: "1px solid #fde68a" }}>{stats.today_pending} pend.</span>}
-                {stats?.today_confirmed > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>{stats.today_confirmed} conf.</span>}
-                {stats?.today_completed > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}>{stats.today_completed} comp.</span>}
-                {stats?.appointments_today === 0 && <span className="text-xs" style={{ color: "#cbd5e1" }}>Sin citas</span>}
+                {stats?.today_pending   > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fde68a" }}>{stats.today_pending} pend.</span>}
+                {stats?.today_confirmed > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#bfdbfe" }}>{stats.today_confirmed} conf.</span>}
+                {stats?.today_completed > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#bbf7d0" }}>{stats.today_completed} comp.</span>}
+                {stats?.appointments_today === 0 && <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Sin citas programadas</span>}
               </>
             )}
           </div>
@@ -179,7 +192,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {loading ? <Skeleton h={40} w={80} /> : (
-            <p className="text-4xl font-bold mb-1" style={{ color: "#0f172a" }}>{stats?.appointments_this_week ?? "—"}</p>
+            <p className="text-4xl font-black mb-1" style={{ color: "#0f172a" }}>{stats?.appointments_this_week ?? "—"}</p>
           )}
           {loading ? <Skeleton h={16} w={100} /> : (
             <div className="flex items-center gap-1.5 mt-2">
@@ -198,7 +211,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {loading ? <Skeleton h={40} w={80} /> : (
-            <p className="text-4xl font-bold mb-1" style={{ color: "#0f172a" }}>{stats?.patients_this_week ?? "—"}</p>
+            <p className="text-4xl font-black mb-1" style={{ color: "#0f172a" }}>{stats?.patients_this_week ?? "—"}</p>
           )}
           {loading ? <Skeleton h={16} w={100} /> : (
             <div className="flex items-center gap-1.5 mt-2">
@@ -217,7 +230,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {loading ? <Skeleton h={40} w={80} /> : (
-            <p className="text-4xl font-bold mb-1" style={{ color: stats?.attendance_rate >= 80 ? "#16a34a" : stats?.attendance_rate >= 60 ? "#d97706" : "#dc2626" }}>
+            <p className="text-4xl font-black mb-1" style={{ color: stats?.attendance_rate >= 80 ? "#16a34a" : stats?.attendance_rate >= 60 ? "#d97706" : "#dc2626" }}>
               {stats?.attendance_rate != null ? `${stats.attendance_rate}%` : "—"}
             </p>
           )}
@@ -354,20 +367,30 @@ export default function DashboardPage() {
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>Accesos rápidos</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { title: "Nueva cita",          description: "Agenda una cita para un paciente", href: "/dashboard/appointments/new", color: "#2563eb", bg: "#eff6ff" },
-            { title: "Registrar paciente",  description: "Agrega un nuevo paciente al sistema", href: "/dashboard/patients/new",      color: "#7c3aed", bg: "#faf5ff" },
-            { title: "Ver disponibilidad",  description: "Consulta horarios de doctores",       href: "/dashboard/doctors",           color: "#16a34a", bg: "#f0fdf4" },
+            { title: "Nueva cita",         description: "Agenda una cita para un paciente",    href: "/dashboard/appointments/new", color: "#2563eb", bg: "#eff6ff", icon: "📅" },
+            { title: "Registrar paciente", description: "Agrega un nuevo paciente al sistema",  href: "/dashboard/patients/new",      color: "#7c3aed", bg: "#faf5ff", icon: "👤" },
+            { title: "Ver disponibilidad", description: "Consulta horarios de doctores",        href: "/dashboard/doctors",           color: "#16a34a", bg: "#f0fdf4", icon: "🩺" },
           ].map((action) => (
             <Link key={action.title} href={action.href}>
-              <div style={{ ...card, cursor: "pointer", transition: "all 0.15s ease" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = action.color; e.currentTarget.style.boxShadow = `0 4px 14px ${action.color}18`; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; }}
+              <div
+                style={{ ...card, cursor: "pointer", transition: "all 0.18s ease" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = action.color;
+                  e.currentTarget.style.boxShadow   = `0 8px 24px ${action.color}22`;
+                  e.currentTarget.style.transform   = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.boxShadow   = "0 1px 4px rgba(15,23,42,0.06)";
+                  e.currentTarget.style.transform   = "translateY(0)";
+                }}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: action.bg }}>
-                  <span style={{ color: action.color, fontSize: "16px" }}>→</span>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 text-xl" style={{ backgroundColor: action.bg }}>
+                  {action.icon}
                 </div>
-                <p className="text-sm font-semibold mb-1" style={{ color: "#0f172a" }}>{action.title}</p>
+                <p className="text-sm font-bold mb-1" style={{ color: "#0f172a" }}>{action.title}</p>
                 <p className="text-xs" style={{ color: "#94a3b8" }}>{action.description}</p>
+                <p className="text-xs font-semibold mt-3" style={{ color: action.color }}>Ir →</p>
               </div>
             </Link>
           ))}

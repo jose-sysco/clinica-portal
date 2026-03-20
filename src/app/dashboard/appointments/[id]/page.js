@@ -9,11 +9,12 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 const STATUS_CONFIG = {
-  pending:   { label: "Pendiente",   color: "#d97706", bg: "#fffbeb", border: "#fde68a" },
-  confirmed: { label: "Confirmada",  color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
-  completed: { label: "Completada",  color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
-  cancelled: { label: "Cancelada",   color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
-  no_show:   { label: "No asistió",  color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
+  pending:     { label: "Pendiente",   color: "#d97706", bg: "#fffbeb", border: "#fde68a" },
+  confirmed:   { label: "Confirmada",  color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
+  in_progress: { label: "En curso",    color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc" },
+  completed:   { label: "Completada",  color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
+  cancelled:   { label: "Cancelada",   color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+  no_show:     { label: "No asistió",  color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
 };
 
 const TYPE_LABEL = {
@@ -32,10 +33,16 @@ export default function AppointmentDetailPage() {
 
   const [appt,         setAppt]         = useState(null);
   const [loading,      setLoading]      = useState(true);
-  const [cancelling,   setCancelling]   = useState(false);
-  const [confirming,   setConfirming]   = useState(false);
-  const [showCancel,   setShowCancel]   = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling,        setCancelling]        = useState(false);
+  const [confirming,        setConfirming]        = useState(false);
+  const [starting,          setStarting]          = useState(false);
+  const [markingNoShow,     setMarkingNoShow]     = useState(false);
+  const [showNoShow,        setShowNoShow]        = useState(false);
+  const [showCancel,        setShowCancel]        = useState(false);
+  const [cancelReason,      setCancelReason]      = useState("");
+  const [showCancelSeries,  setShowCancelSeries]  = useState(false);
+  const [cancelSeriesReason,setCancelSeriesReason]= useState("");
+  const [cancellingSerices, setCancellingSerices] = useState(false);
 
   useEffect(() => { fetchAppointment(); }, []);
 
@@ -60,6 +67,49 @@ export default function AppointmentDetailPage() {
       toast.error(err.response?.data?.error || "Error al confirmar");
     } finally {
       setConfirming(false);
+    }
+  };
+
+  const handleStart = async () => {
+    setStarting(true);
+    try {
+      await api.patch(`/api/v1/appointments/${id}/start`);
+      toast.success("Cita iniciada");
+      fetchAppointment();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al iniciar la cita");
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleNoShow = async () => {
+    setMarkingNoShow(true);
+    try {
+      await api.patch(`/api/v1/appointments/${id}/no_show`);
+      toast.success("Registrada como no presentada");
+      setShowNoShow(false);
+      fetchAppointment();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al registrar");
+    } finally {
+      setMarkingNoShow(false);
+    }
+  };
+
+  const handleCancelSeries = async () => {
+    setCancellingSerices(true);
+    try {
+      await api.patch(`/api/v1/appointments/${id}/cancel_series`, {
+        cancellation_reason: cancelSeriesReason || "Serie cancelada",
+      });
+      toast.success("Serie de citas cancelada");
+      setShowCancelSeries(false);
+      fetchAppointment();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al cancelar la serie");
+    } finally {
+      setCancellingSerices(false);
     }
   };
 
@@ -110,9 +160,11 @@ export default function AppointmentDetailPage() {
   }
 
   const status = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending;
-  const canConfirm = appt.status === "pending";
-  const canCancel  = !["cancelled", "completed"].includes(appt.status);
-  const canRecord  = ["confirmed", "completed"].includes(appt.status);
+  const canConfirm   = appt.status === "pending";
+  const canStart     = appt.status === "confirmed";
+  const canNoShow    = ["pending", "confirmed", "in_progress"].includes(appt.status);
+  const canCancel    = !["cancelled", "completed", "no_show"].includes(appt.status);
+  const canRecord    = ["confirmed", "in_progress", "completed"].includes(appt.status);
 
   return (
     <div className="space-y-6">
@@ -135,12 +187,25 @@ export default function AppointmentDetailPage() {
             </p>
           </div>
         </div>
-        <span
-          className="text-sm font-medium px-3 py-1.5 rounded-full"
-          style={{ color: status.color, backgroundColor: status.bg, border: `1px solid ${status.border}` }}
-        >
-          {status.label}
-        </span>
+        <div className="flex items-center gap-2">
+          {appt.recurrence_group_id && (
+            <span
+              className="text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1"
+              style={{ color: "#7c3aed", backgroundColor: "#faf5ff", border: "1px solid #e9d5ff" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+              </svg>
+              Sesión {appt.recurrence_index} de {appt.recurrence_total}
+            </span>
+          )}
+          <span
+            className="text-sm font-medium px-3 py-1.5 rounded-full"
+            style={{ color: status.color, backgroundColor: status.bg, border: `1px solid ${status.border}` }}
+          >
+            {status.label}
+          </span>
+        </div>
       </div>
 
       {/* Meta cards */}
@@ -182,7 +247,9 @@ export default function AppointmentDetailPage() {
         {/* Responsable */}
         <div className="rounded-xl p-5" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>{config.ownerLabel}</p>
-          <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{appt.owner?.full_name}</p>
+          <Link href={`/dashboard/owners/${appt.owner?.id}`}>
+            <p className="text-sm font-medium hover:underline" style={{ color: "#2563eb", cursor: "pointer" }}>{appt.owner?.full_name}</p>
+          </Link>
           {appt.owner?.phone && (
             <p className="text-xs mt-1" style={{ color: "#64748b" }}>{appt.owner.phone}</p>
           )}
@@ -237,6 +304,17 @@ export default function AppointmentDetailPage() {
 
       {/* Acciones */}
       <div className="flex flex-wrap items-center gap-3">
+        {canCancel && (
+          <Link href={`/dashboard/appointments/${id}/edit`}>
+            <button
+              className="text-sm font-medium px-5 py-2.5 rounded-xl"
+              style={{ backgroundColor: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0" }}
+            >
+              Editar cita
+            </button>
+          </Link>
+        )}
+
         {canConfirm && (
           <button
             onClick={handleConfirm}
@@ -245,6 +323,27 @@ export default function AppointmentDetailPage() {
             style={{ backgroundColor: "#2563eb", color: "#ffffff", cursor: confirming ? "not-allowed" : "pointer" }}
           >
             {confirming ? "Confirmando..." : "✓ Confirmar cita"}
+          </button>
+        )}
+
+        {canStart && (
+          <button
+            onClick={handleStart}
+            disabled={starting}
+            className="text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
+            style={{ backgroundColor: "#0891b2", color: "#ffffff", cursor: starting ? "not-allowed" : "pointer" }}
+          >
+            {starting ? "Iniciando..." : "▶ Iniciar consulta"}
+          </button>
+        )}
+
+        {canNoShow && (
+          <button
+            onClick={() => setShowNoShow(true)}
+            className="text-sm font-medium px-5 py-2.5 rounded-xl"
+            style={{ backgroundColor: "#faf5ff", color: "#7c3aed", border: "1px solid #ddd6fe" }}
+          >
+            No asistió
           </button>
         )}
 
@@ -279,7 +378,122 @@ export default function AppointmentDetailPage() {
             Cancelar cita
           </button>
         )}
+
+        {canCancel && appt.recurrence_group_id && (
+          <button
+            onClick={() => setShowCancelSeries(true)}
+            className="text-sm font-medium px-5 py-2.5 rounded-xl"
+            style={{ backgroundColor: "#fdf4ff", color: "#7c3aed", border: "1px solid #e9d5ff" }}
+          >
+            Cancelar toda la serie
+          </button>
+        )}
       </div>
+
+      {/* Modal no asistió */}
+      {showNoShow && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(15,23,42,0.5)" }}
+          onClick={() => setShowNoShow(false)}
+        >
+          <div
+            className="rounded-2xl p-6 w-full max-w-md mx-4 space-y-4"
+            style={{ backgroundColor: "#ffffff" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold" style={{ color: "#0f172a" }}>Registrar como no presentado</h2>
+              <button
+                onClick={() => setShowNoShow(false)}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm" style={{ color: "#64748b" }}>
+              ¿El paciente <strong>{appt.patient?.name}</strong> no se presentó a la cita? Esto registrará el estado como <strong>No asistió</strong> y no se puede deshacer.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleNoShow}
+                disabled={markingNoShow}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#7c3aed", color: "#ffffff", cursor: markingNoShow ? "not-allowed" : "pointer" }}
+              >
+                {markingNoShow ? "Registrando..." : "Sí, no asistió"}
+              </button>
+              <button
+                onClick={() => setShowNoShow(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cancelar serie */}
+      {showCancelSeries && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(15,23,42,0.5)" }}
+          onClick={() => setShowCancelSeries(false)}
+        >
+          <div
+            className="rounded-2xl p-6 w-full max-w-md mx-4 space-y-4"
+            style={{ backgroundColor: "#ffffff" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold" style={{ color: "#0f172a" }}>Cancelar toda la serie</h2>
+              <button
+                onClick={() => setShowCancelSeries(false)}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="rounded-xl p-4 text-sm" style={{ backgroundColor: "#fdf4ff", border: "1px solid #e9d5ff", color: "#7c3aed" }}>
+              Esto cancelará <strong>todas las citas pendientes o confirmadas</strong> de la serie ({appt.recurrence_total} sesiones en total). Esta acción no se puede deshacer.
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>
+                Motivo de cancelación (opcional)
+              </label>
+              <textarea
+                rows={3}
+                value={cancelSeriesReason}
+                onChange={(e) => setCancelSeriesReason(e.target.value)}
+                placeholder="Motivo por el que se cancela la serie..."
+                className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                style={{ border: "1px solid #e2e8f0", backgroundColor: "#ffffff", color: "#0f172a", resize: "none" }}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelSeries}
+                disabled={cancellingSerices}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#7c3aed", color: "#ffffff", cursor: cancellingSerices ? "not-allowed" : "pointer" }}
+              >
+                {cancellingSerices ? "Cancelando..." : "Cancelar toda la serie"}
+              </button>
+              <button
+                onClick={() => setShowCancelSeries(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}
+              >
+                Mantener
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal cancelación */}
       {showCancel && (

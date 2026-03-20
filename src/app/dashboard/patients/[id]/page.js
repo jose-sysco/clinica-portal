@@ -383,17 +383,22 @@ export default function PatientProfilePage() {
             <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#94a3b8" }}>
               {config.ownerLabel}
             </p>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#f1f5f9" }}>
-                <span className="text-xs font-bold" style={{ color: "#64748b" }}>
-                  {patient.owner?.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                </span>
+            <Link href={`/dashboard/owners/${patient.owner?.id}`}>
+              <div className="flex items-center gap-3 mb-3 cursor-pointer rounded-lg p-2 -mx-2 transition-colors"
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
+                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#f1f5f9" }}>
+                  <span className="text-xs font-bold" style={{ color: "#64748b" }}>
+                    {patient.owner?.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium hover:underline" style={{ color: "#2563eb" }}>{patient.owner?.full_name}</p>
+                  <p className="text-xs" style={{ color: "#64748b" }}>{patient.owner?.phone}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{patient.owner?.full_name}</p>
-                <p className="text-xs" style={{ color: "#64748b" }}>{patient.owner?.phone}</p>
-              </div>
-            </div>
+            </Link>
           </div>
 
           {/* Accesos rápidos */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -103,10 +103,13 @@ function SaveBar({ dirty, saving, onSave, onReset }) {
 export default function SettingsPage() {
   const { organization, fetchMe } = useAuth();
 
-  const [form,    setForm]    = useState(null);
-  const [original, setOriginal] = useState(null);
-  const [saving,  setSaving]  = useState(false);
-  const [error,   setError]   = useState(null);
+  const [form,         setForm]         = useState(null);
+  const [original,     setOriginal]     = useState(null);
+  const [saving,       setSaving]       = useState(false);
+  const [error,        setError]        = useState(null);
+  const [logoPreview,  setLogoPreview]  = useState(null);
+  const [uploadingLogo,setUploadingLogo]= useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!organization) return;
@@ -119,7 +122,6 @@ export default function SettingsPage() {
       country:     organization.country     || "",
       timezone:    organization.timezone    || "UTC",
       clinic_type: organization.clinic_type || "general",
-      logo:        organization.logo        || "",
     };
     setForm(initial);
     setOriginal(initial);
@@ -130,6 +132,42 @@ export default function SettingsPage() {
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
   const handleReset = () => setForm(original);
+
+  const handleLogoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validaciones en cliente
+    if (!file.type.startsWith("image/")) {
+      toast.error("El archivo debe ser una imagen (PNG, JPG, SVG, WebP)");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("La imagen no puede superar los 2 MB");
+      return;
+    }
+
+    // Preview instantáneo
+    setLogoPreview(URL.createObjectURL(file));
+    setUploadingLogo(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("logo", file);
+      const res = await api.patch("/api/v1/organization/upload_logo", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await fetchMe();
+      toast.success("Logo actualizado correctamente");
+    } catch (err) {
+      setLogoPreview(null);
+      toast.error(err.response?.data?.error || "Error al subir el logo");
+    } finally {
+      setUploadingLogo(false);
+      // Limpia el input para permitir seleccionar el mismo archivo de nuevo
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -239,28 +277,88 @@ export default function SettingsPage() {
 
       {/* ── Identidad visual ── */}
       <Section title="Identidad visual" description="Logo que aparece en el PDF de expedientes y en el encabezado del sistema.">
-        <div className="flex items-start gap-6">
-          {/* Preview */}
-          <div className="flex-shrink-0">
-            {form.logo ? (
-              <img src={form.logo} alt="Logo" className="w-16 h-16 rounded-xl object-cover"
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/svg+xml,image/webp"
+          onChange={handleLogoSelect}
+          style={{ display: "none" }}
+        />
+
+        <div className="flex items-center gap-6">
+          {/* Preview actual */}
+          <div className="flex-shrink-0 relative">
+            {(logoPreview || organization?.logo_url) ? (
+              <img
+                src={logoPreview || organization?.logo_url}
+                alt="Logo"
+                className="w-20 h-20 rounded-2xl object-cover"
                 style={{ border: "1px solid #e2e8f0" }}
-                onError={e => { e.target.style.display = "none"; }} />
+                onError={e => { e.target.style.display = "none"; }}
+              />
             ) : (
-              <div className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold"
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold"
                 style={{ backgroundColor: "#2563eb", color: "#fff" }}>
                 {form.name?.[0] || "C"}
               </div>
             )}
+            {uploadingLogo && (
+              <div className="absolute inset-0 rounded-2xl flex items-center justify-center"
+                style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </div>
-          <div className="flex-1">
-            <Field label="URL del logo" hint="Pega la URL de una imagen (PNG, JPG o SVG). Recomendado: 200×200 px o mayor.">
-              <input type="url" value={form.logo} onChange={e => set("logo", e.target.value)}
-                className={inputCls} style={inputStyle} placeholder="https://..." />
-            </Field>
-            {!form.logo && (
-              <p className="text-xs mt-2" style={{ color: "#94a3b8" }}>
-                Sin logo configurado — se usará la inicial del nombre de la organización.
+
+          {/* Controles */}
+          <div className="flex-1 space-y-3">
+            <div>
+              <p className="text-sm font-medium mb-1" style={{ color: "#374151" }}>Logo de la organización</p>
+              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                PNG, JPG, SVG o WebP · Máximo 2 MB · Recomendado: 400×400 px o mayor
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingLogo}
+                className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                style={{
+                  backgroundColor: uploadingLogo ? "#f1f5f9" : "#ffffff",
+                  color: uploadingLogo ? "#94a3b8" : "#374151",
+                  border: "1px solid #e2e8f0",
+                  cursor: uploadingLogo ? "not-allowed" : "pointer",
+                }}
+              >
+                {uploadingLogo ? "Subiendo…" : "Subir imagen"}
+              </button>
+
+              {(logoPreview || organization?.logo_url) && !uploadingLogo && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await api.patch("/api/v1/organization", { organization: { logo: "" } });
+                      setLogoPreview(null);
+                      await fetchMe();
+                      toast.success("Logo eliminado");
+                    } catch {
+                      toast.error("Error al eliminar el logo");
+                    }
+                  }}
+                  className="text-sm px-3 py-2 rounded-xl transition-colors"
+                  style={{ color: "#dc2626", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}
+                >
+                  Eliminar
+                </button>
+              )}
+            </div>
+
+            {!logoPreview && !organization?.logo_url && (
+              <p className="text-xs" style={{ color: "#cbd5e1" }}>
+                Sin logo — se mostrará la inicial del nombre de tu organización.
               </p>
             )}
           </div>
