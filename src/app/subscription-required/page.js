@@ -32,6 +32,7 @@ function SubscriptionContent() {
 
   const handleLogout = () => {
     Cookies.remove("token");
+    Cookies.remove("refresh_token");
     Cookies.remove("organization_slug");
     window.location.href = "/login";
   };

@@ -55,7 +55,8 @@ export function AuthProvider({ children }) {
     return response.data
   }
 
-  const logout = async () => {
+  const logout = async (currentUser) => {
+    const isSuperadmin = (currentUser || user)?.role === 'superadmin'
     try {
       await api.delete('/api/v1/auth/sign_out', {
         data: { refresh_token: Cookies.get('refresh_token') }
@@ -66,7 +67,7 @@ export function AuthProvider({ children }) {
       Cookies.remove('organization_slug')
       setUser(null)
       setOrganization(null)
-      window.location.href = '/login'
+      window.location.href = isSuperadmin ? '/superadmin/login' : '/login'
     }
   }
 

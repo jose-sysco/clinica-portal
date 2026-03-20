@@ -10,18 +10,21 @@ export function middleware(request) {
     "/forgot-password",
     "/reset-password",
     "/subscription-required",
+    "/superadmin/login",
   ];
 
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
-  // Sin token y en ruta protegida → login
+  // Sin token y en ruta protegida → login correspondiente
   if (!token && !isPublicRoute) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const dest = pathname.startsWith("/superadmin") ? "/superadmin/login" : "/login";
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
-  // Con token y en ruta pública → dashboard (la propia página decidirá si va a /superadmin)
+  // Con token y en ruta pública → destino correspondiente
   if (token && isPublicRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const dest = pathname.startsWith("/superadmin") ? "/superadmin" : "/dashboard";
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
   return NextResponse.next();

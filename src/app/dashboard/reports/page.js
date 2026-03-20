@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { useFeatures } from "@/lib/useFeature";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import { APPOINTMENTS_CSV, prepareAppointments } from "@/lib/exportCSV";
 import {
@@ -65,11 +66,16 @@ const monthNames = [
 ];
 
 export default function ReportsPage() {
+  const features       = useFeatures();
+  const featuresLoaded = features.length > 0;
+  const isLocked       = featuresLoaded && !features.includes("reporting");
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (isLocked) { setLoading(false); return; }
     api
       .get("/api/v1/dashboard/reports")
       .then((res) => setData(res.data))
@@ -78,7 +84,37 @@ export default function ReportsPage() {
         setError("No se pudieron cargar los reportes");
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isLocked]);
+
+  if (isLocked) {
+    return (
+      <div
+        style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          justifyContent: "center", minHeight: "400px", textAlign: "center", gap: "16px",
+        }}
+      >
+        <div style={{ fontSize: "48px" }}>🔒</div>
+        <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+          Función no disponible en tu plan
+        </h2>
+        <p style={{ fontSize: "14px", color: "#64748b", maxWidth: "360px", margin: 0 }}>
+          Los reportes avanzados están disponibles en los planes Profesional y Empresarial.
+          Contacta a soporte para actualizar tu suscripción.
+        </p>
+        <a
+          href="mailto:soporte@clinicaportal.com?subject=Actualizar plan"
+          style={{
+            display: "inline-block", padding: "10px 24px", borderRadius: "10px",
+            backgroundColor: "#2563eb", color: "#ffffff",
+            fontSize: "14px", fontWeight: "600", textDecoration: "none",
+          }}
+        >
+          Contactar soporte →
+        </a>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
