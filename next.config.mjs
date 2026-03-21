@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  // Genera imagen Docker mínima (sólo los archivos necesarios para producción)
+  output: "standalone",
 };
 
 export default nextConfig;
