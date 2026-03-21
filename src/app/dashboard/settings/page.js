@@ -263,9 +263,10 @@ export default function SettingsPage() {
           </Field>
 
           <Field label="Correo electrónico" hint="El email de la organización no puede modificarse.">
-            <input type="email" value={organization?.email || ""} readOnly
-              className={inputCls}
-              style={{ ...inputStyle, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }} />
+            <div className={inputCls} style={{ ...inputStyle, backgroundColor: "#f8fafc", color: "#475569", cursor: "not-allowed", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>{organization?.email || "—"}</span>
+              <span className="text-xs" style={{ color: "#cbd5e1", marginLeft: "auto" }}>Solo lectura</span>
+            </div>
           </Field>
 
           <Field label="Teléfono">
