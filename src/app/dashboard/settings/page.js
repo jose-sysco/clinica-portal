@@ -115,7 +115,6 @@ export default function SettingsPage() {
     if (!organization) return;
     const initial = {
       name:        organization.name        || "",
-      email:       organization.email       || "",
       phone:       organization.phone       || "",
       address:     organization.address     || "",
       city:        organization.city        || "",
@@ -263,9 +262,10 @@ export default function SettingsPage() {
             </select>
           </Field>
 
-          <Field label="Correo electrónico" hint="Se usa para notificaciones y recordatorios.">
-            <input type="email" value={form.email} onChange={e => set("email", e.target.value)}
-              className={inputCls} style={inputStyle} placeholder="contacto@miclinica.com" />
+          <Field label="Correo electrónico" hint="El email de la organización no puede modificarse.">
+            <input type="email" value={organization?.email || ""} readOnly
+              className={inputCls}
+              style={{ ...inputStyle, backgroundColor: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }} />
           </Field>
 
           <Field label="Teléfono">
