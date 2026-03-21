@@ -93,6 +93,21 @@ const getNavGroups = (clinicType, role, features) => {
     directory.push({ name: config.ownersLabel, href: "/dashboard/owners", icon: Icon.owners });
   }
 
+  const isAdmin        = role === "admin";
+  const isDoctor       = role === "doctor";
+  const isReceptionist = role === "receptionist";
+
+  const operaciones = [
+    { name: "Citas",           href: "/dashboard/appointments",    icon: Icon.calendar },
+    { name: "Lista de espera", href: "/dashboard/waitlist",        icon: Icon.waitlist },
+  ];
+  if (isAdmin || isDoctor) {
+    operaciones.push({
+      name: "Expedientes", href: "/dashboard/medical-records", icon: Icon.records,
+      locked: features.length > 0 && !has("medical_records"),
+    });
+  }
+
   const groups = [
     {
       items: [
@@ -101,27 +116,25 @@ const getNavGroups = (clinicType, role, features) => {
     },
     {
       label: "Operaciones",
-      items: [
-        { name: "Citas",           href: "/dashboard/appointments",    icon: Icon.calendar },
-        { name: "Lista de espera", href: "/dashboard/waitlist",        icon: Icon.waitlist },
-        { name: "Expedientes",     href: "/dashboard/medical-records", icon: Icon.records,
-          locked: features.length > 0 && !has("medical_records") },
-      ],
+      items: operaciones,
     },
     {
       label: "Directorio",
       items: directory,
     },
-    {
+  ];
+
+  if (isAdmin || isDoctor) {
+    groups.push({
       label: "Análisis",
       items: [
         { name: "Reportes", href: "/dashboard/reports", icon: Icon.reports,
           locked: features.length > 0 && !has("reports") },
       ],
-    },
-  ];
+    });
+  }
 
-  if (role === "admin") {
+  if (isAdmin) {
     groups.push({
       label: "Administración",
       items: [
@@ -263,13 +276,15 @@ const roleBadgeStyle = {
 
 export default function DashboardLayout({ children }) {
   const { user, organization, logout, loading } = useAuth();
-  const features   = useFeatures();
-  const router     = useRouter();
-  const pathname   = usePathname();
+  const features      = useFeatures();
+  const router        = useRouter();
+  const pathname      = usePathname();
   const [searchOpen,  setSearchOpen]  = useState(false);
+  const [logoError,   setLogoError]   = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
+  useEffect(() => { setLogoError(false); }, [organization?.logo_url]);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -334,14 +349,23 @@ export default function DashboardLayout({ children }) {
           style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%)" }}
         >
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
             style={{
               backgroundColor: "rgba(255,255,255,0.18)",
               backdropFilter:  "blur(4px)",
               border:          "1px solid rgba(255,255,255,0.28)",
             }}
           >
-            <span className="text-white font-black text-base">{organization?.name?.[0] || "C"}</span>
+            {organization?.logo_url && !logoError ? (
+              <img
+                src={organization.logo_url}
+                alt={organization.name}
+                className="w-full h-full object-cover"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <span className="text-white font-black text-base">{organization?.name?.[0] || "C"}</span>
+            )}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold truncate" style={{ color: "#ffffff" }}>

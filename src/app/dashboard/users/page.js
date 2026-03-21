@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
+import AccessDenied from "@/components/AccessDenied";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -72,6 +73,8 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [page]);
+
+  if (currentUser && currentUser.role !== "admin") return <AccessDenied />;
 
   const fetchUsers = async () => {
     setLoading(true);

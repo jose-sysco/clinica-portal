@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
 import Link from "next/link";
+import AccessDenied from "@/components/AccessDenied";
 import { TableSkeleton } from "@/components/Skeleton";
 import EmptyState from "@/components/EmptyState";
 
 export default function MedicalRecordsPage() {
+  const { user }                    = useAuth();
   const [records,    setRecords]    = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [pagination, setPagination] = useState(null);
@@ -39,6 +42,8 @@ export default function MedicalRecordsPage() {
       day: "numeric", month: "short", year: "numeric",
     });
   };
+
+  if (user && user.role === "receptionist") return <AccessDenied />;
 
   return (
     <div className="space-y-6">

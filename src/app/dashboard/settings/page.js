@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import AccessDenied from "@/components/AccessDenied";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -101,7 +102,7 @@ function SaveBar({ dirty, saving, onSave, onReset }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { organization, fetchMe } = useAuth();
+  const { user, organization, fetchMe } = useAuth();
 
   const [form,         setForm]         = useState(null);
   const [original,     setOriginal]     = useState(null);
@@ -125,6 +126,8 @@ export default function SettingsPage() {
     setForm(initial);
     setOriginal(initial);
   }, [organization]);
+
+  if (user && user.role !== "admin") return <AccessDenied />;
 
   const dirty = form && original && JSON.stringify(form) !== JSON.stringify(original);
 
