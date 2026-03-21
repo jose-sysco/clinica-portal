@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import { useFeatures } from "@/lib/useFeature";
+import { useAuth } from "@/lib/AuthContext";
+import AccessDenied from "@/components/AccessDenied";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import { APPOINTMENTS_CSV, prepareAppointments } from "@/lib/exportCSV";
 import {
@@ -37,8 +39,6 @@ const TYPE_LABEL = {
   follow_up:   "Seguimiento",
   emergency:   "Urgencia",
   routine:     "Rutina",
-  checkup:     "Control",
-  procedure:   "Procedimiento",
 };
 
 const TYPE_COLORS = ["#3b82f6","#8b5cf6","#f59e0b","#22c55e","#ef4444","#06b6d4"];
@@ -191,6 +191,7 @@ function Funnel({ data }) {
 // ── Página principal ─────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
+  const { user }       = useAuth();
   const features       = useFeatures();
   const featuresLoaded = features.length > 0;
   const isLocked       = featuresLoaded && !features.includes("reports");
@@ -219,6 +220,8 @@ export default function ReportsPage() {
     if (period === "custom" && (!customStart || !customEnd)) return;
     fetchData();
   }, [isLocked, period, customStart, customEnd]);
+
+  if (user && user.role === "receptionist") return <AccessDenied />;
 
   // ── Locked ────────────────────────────────────────────────────────────────
   if (isLocked) {

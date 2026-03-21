@@ -18,11 +18,10 @@ const STATUS_CONFIG = {
 };
 
 const TYPE_LABEL = {
-  first_visit:  "Primera visita",
-  follow_up:    "Seguimiento",
-  emergency:    "Urgencia",
-  checkup:      "Control",
-  procedure:    "Procedimiento",
+  first_visit: "Primera visita",
+  follow_up:   "Seguimiento",
+  emergency:   "Urgencia",
+  routine:     "Rutina",
 };
 
 export default function AppointmentDetailPage() {

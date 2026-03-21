@@ -107,11 +107,15 @@ api.interceptors.response.use(
       }
     }
 
-    // ── 402: licencia suspendida ───────────────────────────────────────────
+    // ── 402: licencia suspendida o trial vencido ──────────────────────────
     if (error.response?.status === 402) {
       const code = error.response?.data?.code
       if (code === 'license_suspended') {
         window.location.href = '/subscription-required?reason=license_suspended'
+      } else if (code === 'trial_expired') {
+        import('sonner').then(({ toast }) =>
+          toast.error('Tu período de prueba ha expirado. Adquiere una suscripción para continuar.')
+        )
       }
     }
 

@@ -53,8 +53,6 @@ const typeLabel = {
   follow_up:   "Seguimiento",
   emergency:   "Urgencia",
   routine:     "Rutina",
-  checkup:     "Control",
-  procedure:   "Procedimiento",
 };
 
 export default function AppointmentsPage() {

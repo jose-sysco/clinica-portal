@@ -12,8 +12,7 @@ const TYPE_OPTIONS = [
   { value: "first_visit", label: "Primera visita" },
   { value: "follow_up",   label: "Seguimiento" },
   { value: "emergency",   label: "Urgencia" },
-  { value: "checkup",     label: "Control" },
-  { value: "procedure",   label: "Procedimiento" },
+  { value: "routine",     label: "Rutina" },
 ];
 
 function toLocalDatetime(iso) {
