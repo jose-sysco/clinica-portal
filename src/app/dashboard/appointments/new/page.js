@@ -11,7 +11,7 @@ import { toast } from "sonner";
 export default function NewAppointmentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { organization } = useAuth();
+  const { organization, user } = useAuth();
   const config = getConfig(organization?.clinic_type);
 
   const [doctors, setDoctors] = useState([]);
@@ -97,7 +97,16 @@ export default function NewAppointmentPage() {
   const fetchDoctors = async () => {
     try {
       const res = await api.get("/api/v1/doctors", { params: { per_page: 200 } });
-      setDoctors(res.data.data.filter((d) => d.status === "active"));
+      const active = res.data.data.filter((d) => d.status === "active");
+      setDoctors(active);
+
+      // Si el usuario es doctor y no hay un doctor pre-seleccionado por URL, auto-seleccionar el suyo
+      if (user?.role === "doctor" && user?.doctor_id && !searchParams.get("doctor_id")) {
+        const myDoctor = active.find((d) => d.id === user.doctor_id);
+        if (myDoctor) {
+          setForm((f) => ({ ...f, doctor_id: myDoctor.id }));
+        }
+      }
     } catch (err) {}
   };
 

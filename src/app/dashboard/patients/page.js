@@ -271,7 +271,7 @@ export default function PatientsPage() {
                         )}
                         {patient.weight && (
                           <p className="text-xs" style={{ color: "#64748b" }}>
-                            {patient.weight} kg
+                            {patient.weight} lb
                           </p>
                         )}
                         {patient.gender && (

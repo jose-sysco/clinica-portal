@@ -126,7 +126,7 @@ export default function MedicalRecordsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
-                      {record.weight      && <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.weight}kg</span>}
+                      {record.weight      && <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.weight}lb</span>}
                       {record.temperature && <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.temperature}°C</span>}
                       {record.heart_rate  && <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.heart_rate}ppm</span>}
                       {!record.weight && !record.temperature && !record.heart_rate && (

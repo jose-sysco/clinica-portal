@@ -227,12 +227,12 @@ export default function PatientProfilePage() {
             </div>
 
             <div>
-              <label style={lbl}>Peso (kg)</label>
+              <label style={lbl}>Peso (lb)</label>
               {editing ? (
                 <input type="number" step="0.01" value={form.weight || ""} onChange={(e) => set("weight", e.target.value)} style={inp} />
               ) : (
                 <p className="text-sm" style={{ color: "#0f172a" }}>
-                  {patient.weight ? `${patient.weight} kg` : "—"}
+                  {patient.weight ? `${patient.weight} lb` : "—"}
                 </p>
               )}
             </div>
@@ -468,7 +468,7 @@ export default function PatientProfilePage() {
                     <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg group"
                       style={{ backgroundColor: "#f8fafc" }}>
                       <div>
-                        <span className="text-sm font-semibold" style={{ color: "#0f172a" }}>{r.weight} kg</span>
+                        <span className="text-sm font-semibold" style={{ color: "#0f172a" }}>{r.weight} lb</span>
                         {diff !== null && (
                           <span className="text-xs ml-2" style={{ color: parseFloat(diff) > 0 ? "#dc2626" : "#16a34a" }}>
                             {parseFloat(diff) > 0 ? `+${diff}` : diff}

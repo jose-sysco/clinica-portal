@@ -35,7 +35,7 @@ const SOAP_COLOR = {
 };
 
 const VITALS_META = [
-  { field: "weight",                   label: "Peso",          unit: "kg"   },
+  { field: "weight",                   label: "Peso",          unit: "lb"   },
   { field: "height",                   label: "Talla",         unit: "cm"   },
   { field: "temperature",              label: "Temperatura",   unit: "°C"   },
   { field: "oxygen_saturation",        label: "SpO₂",          unit: "%"    },

@@ -275,7 +275,7 @@ const roleBadgeStyle = {
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function DashboardLayout({ children }) {
-  const { user, organization, logout, loading } = useAuth();
+  const { user, organization, logout, loading, fetchMe } = useAuth();
   const features      = useFeatures();
   const router        = useRouter();
   const pathname      = usePathname();
@@ -285,10 +285,17 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
   useEffect(() => { setLogoError(false); }, [organization?.logo_url]);
+  useEffect(() => { setLogoError(false); }, [pathname]);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
   }, [user, loading]);
+
+  // If after loading completes the org still has no logo_url, do a fresh fetchMe.
+  // This handles stale AuthProvider state (e.g., provider mounted before logo was added).
+  useEffect(() => {
+    if (!loading && organization && !organization.logo_url) fetchMe();
+  }, [loading]);
 
   useEffect(() => {
     const handler = (e) => {

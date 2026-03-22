@@ -6,19 +6,17 @@ import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 
 export default function NewPatientPage() {
   const router = useRouter();
   const { id } = useParams();
   const { organization } = useAuth();
-
-  const isVetOrPediatric =
-    organization?.clinic_type === "veterinary" ||
-    organization?.clinic_type === "pediatric";
+  const config = getConfig(organization?.clinic_type);
 
   const [form, setForm] = useState({
     name: "",
-    patient_type: isVetOrPediatric ? "animal" : "human",
+    patient_type: config.patientType,
     species: "",
     breed: "",
     gender: "unknown",
@@ -40,7 +38,7 @@ export default function NewPatientPage() {
     setLoading(true);
     try {
       await api.post(`/api/v1/owners/${id}/patients`, { patient: form });
-      toast.success("Paciente creado correctamente");
+      toast.success(`${config.patientLabel} creado correctamente`);
       router.push(`/dashboard/owners/${id}/patients`);
     } catch (err) {
       if (err.response?.data?.errors) {
@@ -93,10 +91,10 @@ export default function NewPatientPage() {
             className="text-2xl font-bold tracking-tight"
             style={{ color: "#0f172a" }}
           >
-            Nuevo paciente
+            Nuevo {config.patientLabel.toLowerCase()}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
-            Registra un nuevo paciente
+            Registra un nuevo {config.patientLabel.toLowerCase()} para este {config.ownerLabel.toLowerCase()}
           </p>
         </div>
       </div>
@@ -127,7 +125,7 @@ export default function NewPatientPage() {
               className="text-xs font-semibold uppercase tracking-widest"
               style={{ color: "#94a3b8" }}
             >
-              Datos del paciente
+              Datos del {config.patientLabel.toLowerCase()}
             </p>
 
             <div>
@@ -136,62 +134,55 @@ export default function NewPatientPage() {
                 type="text"
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                placeholder={isVetOrPediatric ? "Firulais" : "Juan Pérez"}
+                placeholder={config.patientType === "animal" ? "Firulais" : "Juan Pérez"}
                 style={inputStyle}
                 required
               />
             </div>
 
-            {isVetOrPediatric && (
+            {config.showSpecies && (
               <div>
-                <label style={labelStyle}>Tipo de paciente *</label>
-                <select
-                  value={form.patient_type}
-                  onChange={(e) => handleChange("patient_type", e.target.value)}
+                <label style={labelStyle}>Especie *</label>
+                <input
+                  type="text"
+                  value={form.species}
+                  onChange={(e) => handleChange("species", e.target.value)}
+                  placeholder="Perro, Gato, Ave..."
                   style={inputStyle}
-                >
-                  <option value="animal">Animal</option>
-                  <option value="human">Humano</option>
-                </select>
+                  required
+                />
               </div>
             )}
 
-            {form.patient_type === "animal" && (
-              <>
-                <div>
-                  <label style={labelStyle}>Especie *</label>
-                  <input
-                    type="text"
-                    value={form.species}
-                    onChange={(e) => handleChange("species", e.target.value)}
-                    placeholder="Perro, Gato, Ave..."
-                    style={inputStyle}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Raza</label>
-                  <input
-                    type="text"
-                    value={form.breed}
-                    onChange={(e) => handleChange("breed", e.target.value)}
-                    placeholder="Labrador, Siamés..."
-                    style={inputStyle}
-                  />
-                </div>
-              </>
+            {config.showBreed && (
+              <div>
+                <label style={labelStyle}>Raza</label>
+                <input
+                  type="text"
+                  value={form.breed}
+                  onChange={(e) => handleChange("breed", e.target.value)}
+                  placeholder="Labrador, Siamés..."
+                  style={inputStyle}
+                />
+              </div>
             )}
 
             <div>
-              <label style={labelStyle}>Género</label>
+              <label style={labelStyle}>
+                {config.showAnimalGender ? "Sexo" : "Género"}
+              </label>
               <select
                 value={form.gender}
                 onChange={(e) => handleChange("gender", e.target.value)}
                 style={inputStyle}
               >
                 <option value="unknown">No especificado</option>
-                <option value="male">Macho / Masculino</option>
-                <option value="female">Hembra / Femenino</option>
+                <option value="male">
+                  {config.showAnimalGender ? "Macho" : "Masculino"}
+                </option>
+                <option value="female">
+                  {config.showAnimalGender ? "Hembra" : "Femenino"}
+                </option>
               </select>
             </div>
           </div>
@@ -209,7 +200,7 @@ export default function NewPatientPage() {
             </p>
 
             <div>
-              <label style={labelStyle}>Fecha de nacimiento (dd/mm/yyyy)</label>
+              <label style={labelStyle}>Fecha de nacimiento</label>
               <input
                 type="date"
                 value={form.birthdate}
@@ -255,7 +246,7 @@ export default function NewPatientPage() {
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Creando..." : "Crear paciente"}
+            {loading ? "Creando..." : `Crear ${config.patientLabel.toLowerCase()}`}
           </button>
           <Link href={`/dashboard/owners/${id}/patients`}>
             <button

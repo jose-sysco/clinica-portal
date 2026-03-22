@@ -91,7 +91,9 @@ export default function NewMedicalRecordPage() {
   const [errors,        setErrors]        = useState([]);
   const [form,          setForm]          = useState({ ...EMPTY_FORM, appointment_id: appointmentId || "" });
   const [scheduleNext,  setScheduleNext]  = useState(false);
-  const [nextVisitTime, setNextVisitTime] = useState("09:00");
+  const [nextVisitTime, setNextVisitTime] = useState("");
+  const [slots,         setSlots]         = useState([]);
+  const [slotsLoading,  setSlotsLoading]  = useState(false);
 
   useEffect(() => {
     if (appointmentId) fetchAppointment();
@@ -108,6 +110,22 @@ export default function NewMedicalRecordPage() {
     }
   };
 
+  const fetchSlots = async (doctorId, date) => {
+    setSlotsLoading(true);
+    setSlots([]);
+    setNextVisitTime("");
+    try {
+      const res = await api.get(`/api/v1/doctors/${doctorId}/availability`, {
+        params: { date },
+      });
+      setSlots(res.data.slots);
+    } catch {
+      setSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
   const set = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
   const handleSubmit = async (e) => {
@@ -118,7 +136,7 @@ export default function NewMedicalRecordPage() {
       return;
     }
     if (scheduleNext && !nextVisitTime) {
-      setErrors(["Ingresa la hora para la próxima cita"]);
+      setErrors(["Selecciona un horario disponible para la próxima cita"]);
       return;
     }
     setSubmitting(true);
@@ -227,7 +245,7 @@ export default function NewMedicalRecordPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {/* Fila 1 */}
             <div>
-              <label style={lbl}>Peso ({organization?.clinic_type === "veterinary" ? "kg" : "kg"})</label>
+              <label style={lbl}>Peso (lb)</label>
               <input type="number" step="0.01" placeholder="65.5" style={inp}
                 value={form.weight} onChange={(e) => set("weight", e.target.value)} />
             </div>
@@ -334,8 +352,15 @@ export default function NewMedicalRecordPage() {
                   value={form.next_visit_date}
                   min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
-                    set("next_visit_date", e.target.value);
-                    if (!e.target.value) setScheduleNext(false);
+                    const date = e.target.value;
+                    set("next_visit_date", date);
+                    if (!date) {
+                      setScheduleNext(false);
+                      setSlots([]);
+                      setNextVisitTime("");
+                    } else if (scheduleNext && appointment?.doctor?.id) {
+                      fetchSlots(appointment.doctor.id, date);
+                    }
                   }}
                 />
               </div>
@@ -361,7 +386,16 @@ export default function NewMedicalRecordPage() {
                         <button
                           key={label}
                           type="button"
-                          onClick={() => setScheduleNext(val)}
+                          onClick={() => {
+                            setScheduleNext(val);
+                            if (val && form.next_visit_date && appointment?.doctor?.id) {
+                              fetchSlots(appointment.doctor.id, form.next_visit_date);
+                            }
+                            if (!val) {
+                              setSlots([]);
+                              setNextVisitTime("");
+                            }
+                          }}
                           className="px-4 py-1.5 text-xs font-semibold transition-colors"
                           style={{
                             backgroundColor: scheduleNext === val ? "#16a34a" : "#ffffff",
@@ -375,27 +409,44 @@ export default function NewMedicalRecordPage() {
                   </div>
 
                   {scheduleNext && (
-                    <div className="flex items-center gap-3 pt-1">
-                      <div className="flex-1">
-                        <label style={{ ...lbl, color: "#15803d" }}>Hora de la cita</label>
-                        <input
-                          type="time"
-                          value={nextVisitTime}
-                          onChange={(e) => setNextVisitTime(e.target.value)}
-                          style={{ ...inp, borderColor: "#bbf7d0" }}
-                        />
-                      </div>
-                      <div className="pt-5">
-                        <div
-                          className="rounded-lg px-3 py-2 text-xs"
-                          style={{ backgroundColor: "#dcfce7", color: "#15803d" }}
-                        >
+                    <div className="pt-1 space-y-2">
+                      <label style={{ ...lbl, color: "#15803d" }}>Horario disponible</label>
+                      {slotsLoading ? (
+                        <div className="flex items-center gap-2 py-1">
+                          <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                          <span className="text-xs" style={{ color: "#16a34a" }}>Cargando horarios...</span>
+                        </div>
+                      ) : slots.length === 0 ? (
+                        <p className="text-xs" style={{ color: "#94a3b8" }}>
+                          No hay horarios disponibles para esta fecha.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-2">
+                          {slots.map((slot, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setNextVisitTime(slot.starts_at)}
+                              className="py-1.5 rounded-lg text-xs font-medium transition-all"
+                              style={{
+                                backgroundColor: nextVisitTime === slot.starts_at ? "#16a34a" : "#ffffff",
+                                color:           nextVisitTime === slot.starts_at ? "#ffffff" : "#16a34a",
+                                border:          `1px solid ${nextVisitTime === slot.starts_at ? "#16a34a" : "#bbf7d0"}`,
+                              }}
+                            >
+                              {slot.starts_at}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {nextVisitTime && (
+                        <div className="rounded-lg px-3 py-2 text-xs inline-block"
+                          style={{ backgroundColor: "#dcfce7", color: "#15803d" }}>
                           {new Date(`${form.next_visit_date}T${nextVisitTime}`).toLocaleDateString("es-GT", {
                             weekday: "short", day: "numeric", month: "short",
-                          })}{" "}
-                          · {nextVisitTime}
+                          })}{" "}· {nextVisitTime}
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>

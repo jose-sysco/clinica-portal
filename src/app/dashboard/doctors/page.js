@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import Link from "next/link";
 import { CardGridSkeleton } from "@/components/Skeleton";
 import EmptyState from "@/components/EmptyState";
+import { toast } from "sonner";
 
 const STATUS_CONFIG = {
   active:   { label: "Activo",     color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
@@ -27,11 +28,13 @@ function formatNextAppt(iso) {
 }
 
 export default function DoctorsPage() {
-  const [doctors,    setDoctors]    = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [pagination, setPagination] = useState(null);
-  const [page,       setPage]       = useState(1);
-  const [search,     setSearch]     = useState("");
+  const [doctors,        setDoctors]        = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [pagination,     setPagination]     = useState(null);
+  const [page,           setPage]           = useState(1);
+  const [search,         setSearch]         = useState("");
+  const [deletingId,     setDeletingId]     = useState(null);
+  const [confirmDelete,  setConfirmDelete]  = useState(null);
   const debounceRef = useRef(null);
 
   useEffect(() => { fetchDoctors(); }, [page]);
@@ -58,8 +61,62 @@ export default function DoctorsPage() {
     finally { setLoading(false); }
   };
 
+  const handleDelete = async (doctor) => {
+    setDeletingId(doctor.id);
+    try {
+      await api.delete(`/api/v1/doctors/${doctor.id}`);
+      toast.success(`${doctor.full_name} desactivado correctamente`);
+      setConfirmDelete(null);
+      fetchDoctors();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al desactivar el doctor");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Modal de confirmación de desactivación */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={() => setConfirmDelete(null)}>
+          <div className="rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4"
+            style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+            onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-base font-semibold mb-2" style={{ color: "#0f172a" }}>
+              ¿Desactivar doctor?
+            </h2>
+            <p className="text-sm mb-5" style={{ color: "#64748b" }}>
+              <span className="font-medium" style={{ color: "#0f172a" }}>{confirmDelete.full_name}</span> quedará
+              inactivo y no aparecerá en el listado ni podrá recibir citas nuevas.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDelete)}
+                disabled={deletingId === confirmDelete.id}
+                className="flex-1 py-2 rounded-xl text-sm font-medium"
+                style={{
+                  backgroundColor: deletingId === confirmDelete.id ? "#fca5a5" : "#dc2626",
+                  color: "#ffffff",
+                  cursor: deletingId === confirmDelete.id ? "not-allowed" : "pointer",
+                }}
+              >
+                {deletingId === confirmDelete.id ? "Desactivando…" : "Desactivar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -230,11 +287,11 @@ export default function DoctorsPage() {
                 </div>
 
                 {/* Footer acciones */}
-                <div className="grid grid-cols-3" style={{ borderTop: "1px solid #f1f5f9" }}>
+                <div className="grid grid-cols-4" style={{ borderTop: "1px solid #f1f5f9" }}>
                   {[
-                    { label: "Editar",      href: `/dashboard/doctors/${doctor.id}/edit`,         color: "#64748b", hoverBg: "#f8fafc" },
-                    { label: "Calendario",  href: `/dashboard/doctors/${doctor.id}/calendar`,     color: "#7c3aed", hoverBg: "#faf5ff" },
-                    { label: "Horario",     href: `/dashboard/doctors/${doctor.id}/schedule`,     color: "#2563eb", hoverBg: "#eff6ff" },
+                    { label: "Editar",      href: `/dashboard/doctors/${doctor.id}/edit`,     color: "#64748b", hoverBg: "#f8fafc" },
+                    { label: "Calendario",  href: `/dashboard/doctors/${doctor.id}/calendar`, color: "#7c3aed", hoverBg: "#faf5ff" },
+                    { label: "Horario",     href: `/dashboard/doctors/${doctor.id}/schedule`, color: "#2563eb", hoverBg: "#eff6ff" },
                   ].map((action, i) => (
                     <Link key={action.label} href={action.href}>
                       <button
@@ -250,6 +307,15 @@ export default function DoctorsPage() {
                       </button>
                     </Link>
                   ))}
+                  <button
+                    className="w-full py-3 text-xs font-medium transition-colors"
+                    style={{ color: "#dc2626", borderLeft: "1px solid #f1f5f9" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fef2f2")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    onClick={() => setConfirmDelete(doctor)}
+                  >
+                    Eliminar
+                  </button>
                 </div>
               </div>
             );

@@ -32,7 +32,7 @@ export function downloadCSV(filename, headers, keys, rows) {
 // ── Column definitions per entity ─────────────────────────────────────────────
 
 export const PATIENTS_CSV = {
-  headers: ["ID", "Nombre", "Tipo", "Especie", "Raza", "Género", "Fecha nac.", "Peso (kg)", "Tipo sangre", "Alergias", "Condiciones crónicas", "Responsable", "Estado"],
+  headers: ["ID", "Nombre", "Tipo", "Especie", "Raza", "Género", "Fecha nac.", "Peso (lb)", "Tipo sangre", "Alergias", "Condiciones crónicas", "Responsable", "Estado"],
   keys:    ["id", "name", "patient_type", "species", "breed", "gender", "birthdate", "weight", "blood_type", "allergies", "chronic_conditions", "owner.full_name", "status"],
 };
 

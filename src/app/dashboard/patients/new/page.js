@@ -79,6 +79,10 @@ export default function NewPatientPage() {
       if (config.requiresOwner || !isAdult) {
         if (selectedOwner) {
           ownerId = selectedOwner.id;
+        } else if (ownerMode === "search") {
+          setErrors([`Debes seleccionar un ${config.ownerLabel.toLowerCase()} existente o cambiar a "Registrar nuevo".`]);
+          setLoading(false);
+          return;
         } else {
           const ownerRes = await api.post("/api/v1/owners", {
             owner: ownerForm,
@@ -356,7 +360,7 @@ export default function NewPatientPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Peso (kg)</label>
+              <label style={labelStyle}>Peso (lb)</label>
               <input
                 type="number"
                 step="0.01"

@@ -36,12 +36,15 @@ export default function PatientRecordsPage() {
     }
   };
 
-  const formatDate = (datetime) => {
-    return new Date(datetime).toLocaleDateString("es-GT", {
+  const formatDate = (dateStr) => {
+    // date-only strings (YYYY-MM-DD) must be parsed as local date to avoid
+    // UTC midnight → previous day offset in Guatemala (UTC-6)
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const d = new Date(year, month - 1, day);
+    return d.toLocaleDateString("es-GT", {
       day: "numeric",
       month: "short",
       year: "numeric",
-      timeZone: "America/Guatemala",
     });
   };
 
@@ -290,7 +293,7 @@ export default function PatientRecordsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1.5">
-                      {record.weight      && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.weight} kg</span>}
+                      {record.weight      && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.weight} lb</span>}
                       {record.temperature && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.temperature}°C</span>}
                       {record.heart_rate  && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{record.heart_rate} ppm</span>}
                       {record.blood_pressure_systolic && record.blood_pressure_diastolic && (

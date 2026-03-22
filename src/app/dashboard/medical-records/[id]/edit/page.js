@@ -168,7 +168,7 @@ export default function EditMedicalRecordPage() {
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label style={lbl}>Peso (kg)</label>
+              <label style={lbl}>Peso (lb)</label>
               <input type="number" step="0.01" placeholder="65.5" style={inp}
                 value={form.weight} onChange={(e) => set("weight", e.target.value)} />
             </div>

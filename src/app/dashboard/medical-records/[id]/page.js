@@ -21,7 +21,7 @@ const SOAP_SECTIONS = [
 ];
 
 const VITALS = [
-  { field: "weight",                   label: "Peso",          unit: "kg",   icon: "⚖" },
+  { field: "weight",                   label: "Peso",          unit: "lb",   icon: "⚖" },
   { field: "height",                   label: "Talla",         unit: "cm",   icon: "↕" },
   { field: "temperature",              label: "Temperatura",   unit: "°C",   icon: "🌡" },
   { field: "oxygen_saturation",        label: "SpO₂",          unit: "%",    icon: "◎" },
