@@ -18,13 +18,16 @@ const DAY_LABEL = { monday:"Lun", tuesday:"Mar", wednesday:"Mié", thursday:"Jue
 
 function formatNextAppt(iso) {
   if (!iso) return null;
-  const d = new Date(iso);
-  const today = new Date();
-  const diff  = Math.floor((d - today) / 86400000);
-  const time  = d.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
+  const [datePart, timePart] = iso.split("T");
+  const [y, m, d] = datePart.split("-").map(Number);
+  const date     = new Date(y, m - 1, d);
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+  const diff = Math.floor((date - todayDate) / 86400000);
+  const time = timePart.slice(0, 5);
   if (diff === 0) return `Hoy ${time}`;
   if (diff === 1) return `Mañana ${time}`;
-  return d.toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short" }) + ` ${time}`;
+  return date.toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short" }) + ` ${time}`;
 }
 
 export default function DoctorsPage() {

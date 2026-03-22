@@ -131,15 +131,16 @@ export default function AppointmentDetailPage() {
 
   const formatDateTime = (iso) => {
     if (!iso) return "—";
-    const d = new Date(iso);
-    return d.toLocaleDateString("es-GT", {
+    const [datePart, timePart] = iso.split("T");
+    const [y, m, d] = datePart.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("es-GT", {
       weekday: "long", day: "numeric", month: "long", year: "numeric",
-    }) + " · " + d.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
+    }) + " · " + timePart.slice(0, 5);
   };
 
   const formatTime = (iso) => {
     if (!iso) return "—";
-    return new Date(iso).toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
+    return iso.slice(11, 16);
   };
 
   if (loading) {

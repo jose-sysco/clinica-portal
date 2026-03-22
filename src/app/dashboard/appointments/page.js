@@ -126,8 +126,7 @@ export default function AppointmentsPage() {
     });
   };
 
-  const formatTime = (datetime) =>
-    new Date(datetime).toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
+  const formatTime = (datetime) => datetime ? datetime.slice(11, 16) : "—";
 
   return (
     <div className="space-y-6">
