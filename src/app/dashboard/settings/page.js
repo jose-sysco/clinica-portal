@@ -51,9 +51,47 @@ const COUNTRIES = [
   "República Dominicana", "Cuba", "Puerto Rico", "España", "Estados Unidos",
 ];
 
-const PLAN_LABELS = { trial: "Prueba", basic: "Básico", professional: "Profesional", enterprise: "Empresarial" };
 const PLAN_COLORS = { trial: "#d97706", basic: "#2563eb", professional: "#7c3aed", enterprise: "#0d9488" };
 const PLAN_BG     = { trial: "#fffbeb", basic: "#eff6ff", professional: "#f5f3ff", enterprise: "#f0fdfa" };
+const PLAN_BORDER = { trial: "#fde68a", basic: "#bfdbfe", professional: "#ddd6fe", enterprise: "#99f6e4" };
+
+function UsageBar({ label, used, max, color = "#2563eb" }) {
+  if (max == null) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-medium" style={{ color: "#374151" }}>{label}</span>
+          <span className="text-xs" style={{ color: "#94a3b8" }}>{used} · Ilimitado</span>
+        </div>
+        <div className="h-1.5 rounded-full" style={{ backgroundColor: "#f1f5f9" }}>
+          <div className="h-1.5 rounded-full w-full" style={{ backgroundColor: color, opacity: 0.3 }} />
+        </div>
+      </div>
+    );
+  }
+  const pct     = Math.min((used / max) * 100, 100);
+  const warning = pct >= 80;
+  const barColor = pct >= 100 ? "#ef4444" : warning ? "#f59e0b" : color;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs font-medium" style={{ color: "#374151" }}>{label}</span>
+        <span className="text-xs font-semibold" style={{ color: barColor }}>{used} / {max}</span>
+      </div>
+      <div className="h-1.5 rounded-full" style={{ backgroundColor: "#f1f5f9" }}>
+        <div
+          className="h-1.5 rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: barColor }}
+        />
+      </div>
+      {pct >= 90 && (
+        <p className="text-xs mt-1" style={{ color: barColor }}>
+          {pct >= 100 ? "Límite alcanzado — actualiza tu plan para continuar agregando." : `Casi en el límite (${Math.round(pct)}% usado).`}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // ── Section wrapper ────────────────────────────────────────────────────────────
 
@@ -216,31 +254,94 @@ export default function SettingsPage() {
       )}
 
       {/* ── Plan & licencia (solo lectura) ── */}
-      <Section title="Plan y licencia" description="Información sobre tu suscripción actual.">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
-            style={{ backgroundColor: PLAN_BG[organization?.plan] || "#f8fafc", border: "1px solid #e2e8f0" }}>
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PLAN_COLORS[organization?.plan] || "#94a3b8" }} />
-            <span className="text-sm font-semibold" style={{ color: PLAN_COLORS[organization?.plan] || "#64748b" }}>
-              Plan {PLAN_LABELS[organization?.plan] || organization?.plan}
-            </span>
-          </div>
-          {organization?.on_trial && (
-            <div className="text-sm px-4 py-3 rounded-xl"
-              style={{ backgroundColor: "#fffbeb", color: "#92400e", border: "1px solid #fde68a" }}>
-              {organization.trial_expired
-                ? "⚠️ Período de prueba expirado"
-                : `⏳ ${organization.trial_days_remaining} días restantes de prueba`}
+      <Section title="Plan y licencia" description="Información sobre tu suscripción actual y uso de recursos.">
+        <div className="space-y-5">
+          {/* Plan badge + trial banner */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl"
+              style={{
+                backgroundColor: PLAN_BG[organization?.plan]    || "#f8fafc",
+                border:          `1px solid ${PLAN_BORDER[organization?.plan] || "#e2e8f0"}`,
+              }}>
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PLAN_COLORS[organization?.plan] || "#94a3b8" }} />
+              <span className="text-sm font-semibold" style={{ color: PLAN_COLORS[organization?.plan] || "#64748b" }}>
+                {organization?.plan_display_name || organization?.plan}
+              </span>
             </div>
-          )}
-          {organization?.features?.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {organization.features.map(f => (
-                <span key={f} className="text-xs px-2.5 py-1 rounded-full font-medium"
-                  style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>
-                  {f}
-                </span>
-              ))}
+
+            {organization?.on_trial && !organization?.trial_expired && (
+              <div className="text-sm px-4 py-2.5 rounded-xl"
+                style={{ backgroundColor: "#fffbeb", color: "#92400e", border: "1px solid #fde68a" }}>
+                ⏳ {organization.trial_days_remaining} día{organization.trial_days_remaining !== 1 ? "s" : ""} restantes de prueba
+              </div>
+            )}
+            {organization?.trial_expired && (
+              <div className="text-sm px-4 py-2.5 rounded-xl"
+                style={{ backgroundColor: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
+                ⚠️ Período de prueba expirado
+              </div>
+            )}
+          </div>
+
+          {/* Usage bars */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl"
+            style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <UsageBar
+              label="Doctores"
+              used={organization?.doctors_used ?? 0}
+              max={organization?.plan_max_doctors ?? null}
+              color={PLAN_COLORS[organization?.plan] || "#2563eb"}
+            />
+            <UsageBar
+              label="Pacientes"
+              used={organization?.patients_used ?? 0}
+              max={organization?.plan_max_patients ?? null}
+              color={PLAN_COLORS[organization?.plan] || "#2563eb"}
+            />
+          </div>
+
+          {/* Pricing + features row */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            {(organization?.plan_price_monthly || organization?.plan_price_monthly_usd) && (
+              <div>
+                <p className="text-xs font-medium mb-0.5" style={{ color: "#94a3b8" }}>Precio mensual</p>
+                <p className="text-base font-semibold" style={{ color: "#0f172a" }}>
+                  {organization.plan_price_monthly
+                    ? `Q${Number(organization.plan_price_monthly).toFixed(2)}`
+                    : `$${Number(organization.plan_price_monthly_usd).toFixed(2)}`}
+                  {organization.plan_price_monthly && organization.plan_price_monthly_usd && (
+                    <span className="text-xs font-normal ml-1.5" style={{ color: "#94a3b8" }}>
+                      (${Number(organization.plan_price_monthly_usd).toFixed(2)} USD)
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {organization?.features?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {organization.features.map(f => (
+                  <span key={f} className="text-xs px-2.5 py-1 rounded-full font-medium"
+                    style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Upgrade CTA */}
+          {organization?.plan !== "enterprise" && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{ backgroundColor: "#f5f3ff", border: "1px solid #ddd6fe" }}>
+              <p className="text-sm" style={{ color: "#5b21b6" }}>
+                Actualiza tu plan para desbloquear más doctores, pacientes y funcionalidades.
+              </p>
+              <a href="mailto:soporte@clinicaportal.com?subject=Actualizar plan"
+                className="text-sm font-semibold whitespace-nowrap ml-4 px-4 py-2 rounded-lg"
+                style={{ backgroundColor: "#7c3aed", color: "#fff" }}>
+                Actualizar plan
+              </a>
             </div>
           )}
         </div>

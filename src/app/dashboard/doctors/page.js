@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
 import Link from "next/link";
 import { CardGridSkeleton } from "@/components/Skeleton";
@@ -31,6 +32,7 @@ function formatNextAppt(iso) {
 }
 
 export default function DoctorsPage() {
+  const { organization } = useAuth();
   const [doctors,        setDoctors]        = useState([]);
   const [loading,        setLoading]        = useState(true);
   const [pagination,     setPagination]     = useState(null);
@@ -129,16 +131,41 @@ export default function DoctorsPage() {
             {pagination && <span style={{ color: "#94a3b8" }}> — {pagination.count} en total</span>}
           </p>
         </div>
-        <Link href="/dashboard/doctors/new">
+        <div className="flex items-center gap-3">
+          {organization?.plan_max_doctors != null && (
+            <div className="text-xs px-3 py-1.5 rounded-lg font-medium"
+              style={{
+                backgroundColor: organization.doctors_used >= organization.plan_max_doctors ? "#fef2f2" : "#f1f5f9",
+                color:           organization.doctors_used >= organization.plan_max_doctors ? "#dc2626" : "#475569",
+                border:          `1px solid ${organization.doctors_used >= organization.plan_max_doctors ? "#fecaca" : "#e2e8f0"}`,
+              }}>
+              {organization.doctors_used} / {organization.plan_max_doctors} doctores
+            </div>
+          )}
+        {organization?.plan_max_doctors != null &&
+         organization.doctors_used >= organization.plan_max_doctors ? (
           <button
-            className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+            disabled
+            title={`Límite de ${organization.plan_max_doctors} doctores alcanzado. Actualiza tu plan.`}
+            className="text-sm font-medium px-4 py-2 rounded-lg cursor-not-allowed"
+            style={{ backgroundColor: "#f1f5f9", color: "#94a3b8", border: "1px solid #e2e8f0" }}
+            onClick={() => toast.error(`Límite de ${organization.plan_max_doctors} doctores alcanzado. Actualiza tu plan para agregar más.`)}
           >
             + Nuevo doctor
           </button>
-        </Link>
+        ) : (
+          <Link href="/dashboard/doctors/new">
+            <button
+              className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+            >
+              + Nuevo doctor
+            </button>
+          </Link>
+        )}
+        </div>
       </div>
 
       {/* Búsqueda */}

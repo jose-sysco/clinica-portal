@@ -426,7 +426,7 @@ export default function AppointmentsPage() {
                             Cancelar
                           </button>
                         )}
-                        {apt.status === "confirmed" && (
+                        {(apt.status === "confirmed" || apt.status === "in_progress") && (
                           <Link
                             href={`/dashboard/medical-records/new?appointment_id=${apt.id}`}
                           >

@@ -116,6 +116,8 @@ export default function NewPatientPage() {
     } catch (err) {
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);
+      } else if (err.response?.data?.error) {
+        setErrors([err.response.data.error]);
       } else {
         toast.error("Error al registrar");
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import api from "@/lib/api";
 import Link from "next/link";
@@ -14,6 +14,12 @@ const COLORS = ["#2563eb","#22c55e","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
 const STATUS_COLORS = { completed: "#22c55e", confirmed: "#2563eb", pending: "#f59e0b", cancelled: "#ef4444" };
 const STATUS_LABEL  = { pending: "Pendiente", confirmed: "Confirmada", completed: "Completada", cancelled: "Cancelada" };
 const monthNames = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+const ALERT_STYLE = {
+  warning: { border: "#fde68a", bg: "#fffbeb", icon: "⚠️", titleColor: "#92400e", textColor: "#78350f" },
+  info:    { border: "#bfdbfe", bg: "#eff6ff", icon: "ℹ️", titleColor: "#1e40af", textColor: "#1e3a8a" },
+  danger:  { border: "#fecaca", bg: "#fef2f2", icon: "🚨", titleColor: "#991b1b", textColor: "#7f1d1d" },
+};
 
 function Trend({ value }) {
   if (value == null) return <span style={{ fontSize: "11px", color: "#94a3b8" }}>—</span>;
@@ -33,21 +39,23 @@ function Skeleton({ h = 32, w }) {
 export default function DashboardPage() {
   const { user, organization } = useAuth();
   const router = useRouter();
-  const [stats,        setStats]        = useState(null);
-  const [reports,      setReports]      = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [showOnboard,  setShowOnboard]  = useState(false);
+  const [stats,       setStats]       = useState(null);
+  const [charts,      setCharts]      = useState(null);
+  const [alerts,      setAlerts]      = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [showOnboard, setShowOnboard] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
+  const fetchAll = useCallback(() => {
+    return Promise.all([
       api.get("/api/v1/dashboard/stats"),
-      api.get("/api/v1/dashboard/reports"),
+      api.get("/api/v1/dashboard/charts"),
+      api.get("/api/v1/dashboard/alerts"),
       api.get("/api/v1/doctors", { params: { per_page: 1 } }),
     ])
-      .then(([s, r, d]) => {
+      .then(([s, c, a, d]) => {
         setStats(s.data);
-        setReports(r.data);
-        // Show onboarding banner for admins when no doctors and wizard not done
+        setCharts(c.data);
+        setAlerts(a.data.alerts || []);
         if (user?.role === "admin" && d.data.pagination?.count === 0) {
           try {
             const done = localStorage.getItem(`onboarding_done_${organization?.id}`);
@@ -57,17 +65,24 @@ export default function DashboardPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [user, organization]);
+
+  // Carga inicial + polling cada 60 segundos
+  useEffect(() => {
+    fetchAll();
+    const interval = setInterval(fetchAll, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchAll]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
-  const monthlyData = reports?.appointments_by_month?.map(({ month, total }) => {
+  const monthlyData = charts?.appointments_by_month?.map(({ month, total }) => {
     const [year, m] = month.split("-");
     return { month: `${monthNames[parseInt(m) - 1]} ${year.slice(2)}`, total };
   }) ?? [];
 
-  const cs = reports?.cancellation_stats;
+  const cs = charts?.cancellation_stats;
   const pieData = cs
     ? [
         { name: "Completadas", value: cs.completed, key: "completed" },
@@ -145,6 +160,48 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ── Alertas operacionales ─────────────────────────────────────── */}
+      {!loading && alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((alert) => {
+            const style = ALERT_STYLE[alert.type] || ALERT_STYLE.info;
+            return (
+              <div
+                key={alert.key}
+                className="flex items-start gap-3 px-4 py-3 rounded-xl text-sm"
+                style={{ backgroundColor: style.bg, border: `1px solid ${style.border}` }}
+              >
+                <span style={{ fontSize: "16px", flexShrink: 0 }}>{style.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold" style={{ color: style.titleColor }}>{alert.title}</p>
+                  <p className="text-xs mt-0.5" style={{ color: style.textColor }}>{alert.message}</p>
+                </div>
+                {alert.key === "doctors_without_schedule" && (
+                  <Link href="/dashboard/doctors">
+                    <button
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                      style={{ backgroundColor: "#d97706", color: "#ffffff" }}
+                    >
+                      Ver doctores →
+                    </button>
+                  </Link>
+                )}
+                {alert.key === "pending_today" && (
+                  <Link href="/dashboard/appointments?status=pending">
+                    <button
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                      style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+                    >
+                      Ver citas →
+                    </button>
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* ── Stat cards ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
 
@@ -158,7 +215,6 @@ export default function DashboardPage() {
             boxShadow: "0 8px 28px rgba(37,99,235,0.32)",
           }}
         >
-          {/* decorative circle */}
           <div style={{ position: "absolute", top: "-20px", right: "-20px", width: "100px", height: "100px", borderRadius: "50%", background: "rgba(255,255,255,0.07)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: "-30px", right: "30px", width: "70px", height: "70px", borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
 

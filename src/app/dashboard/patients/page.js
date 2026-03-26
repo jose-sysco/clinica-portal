@@ -9,6 +9,7 @@ import ExportCSVButton from "@/components/ExportCSVButton";
 import { PATIENTS_CSV, preparePatients } from "@/lib/exportCSV";
 import { TableSkeleton } from "@/components/Skeleton";
 import EmptyState from "@/components/EmptyState";
+import { toast } from "sonner";
 
 const statusLabel = {
   active: {
@@ -107,6 +108,16 @@ export default function PatientsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {organization?.plan_max_patients != null && (
+            <div className="text-xs px-3 py-1.5 rounded-lg font-medium"
+              style={{
+                backgroundColor: organization.patients_used >= organization.plan_max_patients ? "#fef2f2" : "#f1f5f9",
+                color:           organization.patients_used >= organization.plan_max_patients ? "#dc2626" : "#475569",
+                border:          `1px solid ${organization.patients_used >= organization.plan_max_patients ? "#fecaca" : "#e2e8f0"}`,
+              }}>
+              {organization.patients_used} / {organization.plan_max_patients} {config.patientsLabel.toLowerCase()}
+            </div>
+          )}
           <ExportCSVButton
             filename="pacientes"
             endpoint="/api/v1/patients"
@@ -114,20 +125,29 @@ export default function PatientsPage() {
             keys={PATIENTS_CSV.keys}
             prepare={preparePatients}
           />
-          <Link href="/dashboard/patients/new">
+          {organization?.plan_max_patients != null &&
+           organization.patients_used >= organization.plan_max_patients ? (
             <button
-              className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#1d4ed8")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#2563eb")
-              }
+              disabled
+              title={`Límite de ${organization.plan_max_patients} pacientes alcanzado. Actualiza tu plan.`}
+              className="text-sm font-medium px-4 py-2 rounded-lg cursor-not-allowed"
+              style={{ backgroundColor: "#f1f5f9", color: "#94a3b8", border: "1px solid #e2e8f0" }}
+              onClick={() => toast.error(`Límite de ${organization.plan_max_patients} ${config.patientsLabel.toLowerCase()} alcanzado. Actualiza tu plan para agregar más.`)}
             >
               + Nuevo {config.patientLabel.toLowerCase()}
             </button>
-          </Link>
+          ) : (
+            <Link href="/dashboard/patients/new">
+              <button
+                className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+              >
+                + Nuevo {config.patientLabel.toLowerCase()}
+              </button>
+            </Link>
+          )}
         </div>
       </div>
 
