@@ -69,36 +69,24 @@ export default function NewDoctorPage() {
     setLoading(true);
 
     try {
-      // Paso 1 — Crear usuario con rol doctor
-      const userRes = await api.post("/api/v1/auth/sign_up_staff", {
-        user: { ...form.user, role: "doctor" },
-      });
-
-      // Paso 2 — Crear el doctor
-      const doctorRes = await api.post("/api/v1/doctors", {
+      // Todo en un solo request — el backend crea user + doctor + schedules
+      // en una transacción. Si algo falla, nada queda guardado.
+      await api.post("/api/v1/doctors", {
+        user: form.user,
         doctor: {
-          user_id: userRes.data.user.id,
-          specialty: form.doctor.specialty,
-          license_number: form.doctor.license_number,
-          bio: form.doctor.bio,
+          specialty:             form.doctor.specialty,
+          license_number:        form.doctor.license_number,
+          bio:                   form.doctor.bio,
           consultation_duration: parseInt(form.doctor.consultation_duration),
         },
+        schedules: schedules
+          .filter((s) => s.active)
+          .map((s) => ({
+            day_of_week: s.day,
+            start_time:  s.start,
+            end_time:    s.end,
+          })),
       });
-
-      // Paso 3 — Crear horarios activos
-      const activeSchedules = schedules.filter((s) => s.active);
-      await Promise.all(
-        activeSchedules.map((s) =>
-          api.post(`/api/v1/doctors/${doctorRes.data.id}/schedules`, {
-            schedule: {
-              day_of_week: s.day,
-              start_time: s.start,
-              end_time: s.end,
-              is_active: true,
-            },
-          }),
-        ),
-      );
 
       toast.success("Doctor creado correctamente");
       router.push("/dashboard/doctors");
