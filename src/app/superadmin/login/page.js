@@ -6,7 +6,7 @@ import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3010";
 // Slug fijo de la organización interna del sistema — nunca expuesto al usuario
-const SUPERADMIN_SLUG = "clinicaportal-admin";
+const SUPERADMIN_SLUG = "sistema-superadmin";
 
 export default function SuperadminLoginPage() {
   const [form,    setForm]    = useState({ email: "", password: "" });
