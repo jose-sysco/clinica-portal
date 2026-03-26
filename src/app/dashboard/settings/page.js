@@ -153,13 +153,14 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!organization) return;
     const initial = {
-      name:        organization.name        || "",
-      phone:       organization.phone       || "",
-      address:     organization.address     || "",
-      city:        organization.city        || "",
-      country:     organization.country     || "",
-      timezone:    organization.timezone    || "UTC",
-      clinic_type: organization.clinic_type || "general",
+      name:          organization.name          || "",
+      phone:         organization.phone         || "",
+      address:       organization.address       || "",
+      city:          organization.city          || "",
+      country:       organization.country       || "",
+      timezone:      organization.timezone      || "UTC",
+      clinic_type:   organization.clinic_type   || "general",
+      primary_color: organization.primary_color || "",
     };
     setForm(initial);
     setOriginal(initial);
@@ -381,7 +382,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* ── Identidad visual ── */}
-      <Section title="Identidad visual" description="Logo que aparece en el PDF de expedientes y en el encabezado del sistema.">
+      <Section title="Identidad visual" description="Logo y color principal que aparecen en el encabezado del sistema y en los PDFs.">
         <input
           ref={fileInputRef}
           type="file"
@@ -468,6 +469,108 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Separador */}
+        <div className="my-5" style={{ borderTop: "1px solid #f1f5f9" }} />
+
+        {/* Color principal */}
+        {organization?.features?.includes("custom_branding") ? (
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium" style={{ color: "#374151" }}>Color principal</p>
+              <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                Personaliza el color del encabezado y los elementos de navegación activos.
+              </p>
+            </div>
+
+            {/* Swatches rápidos */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {[
+                { hex: "#2563eb", label: "Azul (defecto)" },
+                { hex: "#7c3aed", label: "Púrpura" },
+                { hex: "#0d9488", label: "Teal" },
+                { hex: "#059669", label: "Esmeralda" },
+                { hex: "#dc2626", label: "Rojo" },
+                { hex: "#d97706", label: "Ámbar" },
+                { hex: "#0284c7", label: "Cielo" },
+                { hex: "#db2777", label: "Rosa" },
+              ].map(({ hex, label }) => {
+                const selected = (form.primary_color || "#2563eb") === hex;
+                return (
+                  <button
+                    key={hex}
+                    type="button"
+                    title={label}
+                    onClick={() => set("primary_color", hex)}
+                    className="w-8 h-8 rounded-lg transition-all flex-shrink-0"
+                    style={{
+                      backgroundColor: hex,
+                      border: selected ? `3px solid ${hex}` : "2px solid transparent",
+                      boxShadow: selected ? `0 0 0 2px #fff, 0 0 0 4px ${hex}` : "0 1px 3px rgba(0,0,0,0.15)",
+                      transform: selected ? "scale(1.15)" : "scale(1)",
+                    }}
+                  />
+                );
+              })}
+
+              {/* Selector personalizado */}
+              <div className="relative w-8 h-8 flex-shrink-0" title="Color personalizado">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold cursor-pointer"
+                  style={{
+                    background: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+                    border: "2px solid #e2e8f0",
+                  }}
+                />
+                <input
+                  type="color"
+                  value={form.primary_color || "#2563eb"}
+                  onChange={e => set("primary_color", e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  title="Elige un color personalizado"
+                />
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="flex items-center gap-3">
+              <div
+                className="w-5 h-5 rounded-lg flex-shrink-0"
+                style={{ backgroundColor: form.primary_color || "#2563eb" }}
+              />
+              <span className="text-xs font-mono" style={{ color: "#64748b" }}>
+                {form.primary_color || "#2563eb"}
+              </span>
+              {form.primary_color && form.primary_color !== "#2563eb" && (
+                <button
+                  type="button"
+                  onClick={() => set("primary_color", "")}
+                  className="text-xs"
+                  style={{ color: "#94a3b8" }}
+                >
+                  Restaurar defecto
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4 px-4 py-3 rounded-xl"
+            style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="flex gap-1.5">
+              {["#2563eb","#7c3aed","#0d9488","#dc2626"].map(c => (
+                <div key={c} className="w-6 h-6 rounded-md opacity-30" style={{ backgroundColor: c }} />
+              ))}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium" style={{ color: "#64748b" }}>Color principal</p>
+              <p className="text-xs" style={{ color: "#94a3b8" }}>Disponible en el plan Enterprise</p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: "#f0fdfa", color: "#0d9488", border: "1px solid #99f6e4" }}>
+              Enterprise
+            </span>
+          </div>
+        )}
       </Section>
 
       {/* ── Ubicación ── */}

@@ -8,6 +8,7 @@ import Link from "next/link";
 const navigation = [
   { name: "Dashboard",       href: "/superadmin",               icon: "⊞" },
   { name: "Organizaciones",  href: "/superadmin/organizations",  icon: "🏥" },
+  { name: "Facturación",     href: "/superadmin/billing",        icon: "💳" },
   { name: "Planes",          href: "/superadmin/plans",          icon: "◈" },
   { name: "Administradores", href: "/superadmin/users",          icon: "🛡️" },
 ];

@@ -4,7 +4,7 @@ import Cookies from 'js-cookie'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010'
 
 // Slug interno fijo — superadmin opera bajo su propia organización de sistema
-const SUPERADMIN_SLUG = 'clinicaportal-admin'
+const SUPERADMIN_SLUG = 'sistema-superadmin'
 
 const superadminApi = axios.create({
   baseURL: API_URL,

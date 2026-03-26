@@ -10,6 +10,7 @@ import { getConfig } from "@/lib/clinicConfig";
 import { useFeatures } from "@/lib/useFeature";
 import GlobalSearch from "@/components/GlobalSearch";
 import NotificationBell from "@/components/NotificationBell";
+import PaymentReminder from "@/components/PaymentReminder";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -197,7 +198,7 @@ function TrialBanner({ organization }) {
 
 // ── Nav item ──────────────────────────────────────────────────────────────────
 
-function NavItem({ item, pathname }) {
+function NavItem({ item, pathname, brandColor = "#2563eb" }) {
   const isActive = item.exact
     ? pathname === item.href
     : pathname === item.href || pathname.startsWith(item.href + "/");
@@ -223,9 +224,9 @@ function NavItem({ item, pathname }) {
       style={
         isActive
           ? {
-              background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+              background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
               color:      "#ffffff",
-              boxShadow:  "0 2px 10px rgba(37,99,235,0.3)",
+              boxShadow:  `0 2px 10px ${brandColor}4d`,
             }
           : { color: "#64748b" }
       }
@@ -333,9 +334,11 @@ export default function DashboardLayout({ children }) {
     );
   }
 
-  const initials  = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
-  const navGroups = getNavGroups(organization?.clinic_type, user?.role, features);
-  const roleStyle = roleBadgeStyle[user?.role] || roleBadgeStyle.staff;
+  const initials   = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
+  const navGroups  = getNavGroups(organization?.clinic_type, user?.role, features);
+  const roleStyle  = roleBadgeStyle[user?.role] || roleBadgeStyle.staff;
+  const brandColor = organization?.primary_color || "#2563eb";
+  const brandGradient = `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`;
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#f1f5f9" }}>
@@ -362,7 +365,7 @@ export default function DashboardLayout({ children }) {
         {/* Org header con gradiente */}
         <div
           className="px-5 py-5 flex items-center gap-3"
-          style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%)" }}
+          style={{ background: brandGradient }}
         >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
@@ -407,7 +410,7 @@ export default function DashboardLayout({ children }) {
               )}
               <div className="flex flex-col gap-0.5">
                 {group.items.map(item => (
-                  <NavItem key={item.href} item={item} pathname={pathname} />
+                  <NavItem key={item.href} item={item} pathname={pathname} brandColor={brandColor} />
                 ))}
               </div>
             </div>
@@ -425,8 +428,8 @@ export default function DashboardLayout({ children }) {
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
               style={{
-                background:  "linear-gradient(135deg,#1d4ed8,#2563eb)",
-                boxShadow:   "0 2px 8px rgba(37,99,235,0.3)",
+                background:  brandGradient,
+                boxShadow:   `0 2px 8px ${brandColor}4d`,
                 flexShrink:  0,
               }}
             >
@@ -526,6 +529,9 @@ export default function DashboardLayout({ children }) {
 
         {/* Trial banner */}
         {organization?.on_trial && <TrialBanner organization={organization} />}
+
+        {/* Recordatorio de pago — últimos 7 días del mes, solo planes de pago */}
+        {!organization?.on_trial && <PaymentReminder />}
 
         {/* Content */}
         <div className="flex-1 p-5 lg:p-8 relative" style={{ backgroundColor: "#f1f5f9" }}>

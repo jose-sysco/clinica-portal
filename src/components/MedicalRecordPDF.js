@@ -132,6 +132,10 @@ function MedicalRecordDocument({ record, organization, config }) {
   const vitals    = VITALS_META.filter((v) => record?.[v.field] != null && record?.[v.field] !== "");
   const clinicLabel = CLINIC_LABEL[organization?.clinic_type] || "Clínica";
 
+  const brand    = organization?.primary_color || C.blue;
+  const brandBg  = `${brand}18`;
+  const brandBdr = `${brand}55`;
+
   return (
     <Document title={`Expediente #${record?.id}`} author={organization?.name}>
       <Page size="A4" style={s.page}>
@@ -139,7 +143,7 @@ function MedicalRecordDocument({ record, organization, config }) {
         {/* ── Header ── */}
         <View style={s.header}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View style={s.logoBox}>
+            <View style={[s.logoBox, { backgroundColor: brand }]}>
               <Text style={s.logoLetter}>{organization?.name?.[0] || "C"}</Text>
             </View>
             <View>
@@ -147,9 +151,9 @@ function MedicalRecordDocument({ record, organization, config }) {
               <Text style={s.orgType}>{clinicLabel}</Text>
             </View>
           </View>
-          <View style={s.rxBadge}>
-            <Text style={s.rxText}>Rx</Text>
-            <Text style={s.rxId}>#{record?.id}</Text>
+          <View style={[s.rxBadge, { backgroundColor: brandBg, borderColor: brandBdr }]}>
+            <Text style={[s.rxText, { color: brand }]}>Rx</Text>
+            <Text style={[s.rxId, { color: brand }]}>#{record?.id}</Text>
           </View>
         </View>
 
@@ -169,9 +173,9 @@ function MedicalRecordDocument({ record, organization, config }) {
             <Text style={s.metaLabel}>{config?.patientLabel || "Paciente"}</Text>
             <Text style={s.metaValue}>{record?.patient?.name || "—"}</Text>
           </View>
-          <View style={[s.metaCard, record?.next_visit_date ? { backgroundColor: C.blueBg, borderColor: "#bfdbfe" } : {}]}>
+          <View style={[s.metaCard, record?.next_visit_date ? { backgroundColor: brandBg, borderColor: brandBdr } : {}]}>
             <Text style={s.metaLabel}>Próxima visita</Text>
-            <Text style={record?.next_visit_date ? s.metaValueBlue : s.metaValue}>
+            <Text style={record?.next_visit_date ? [s.metaValueBlue, { color: brand }] : s.metaValue}>
               {record?.next_visit_date ? fmtShort(record.next_visit_date) : "No programada"}
             </Text>
           </View>
