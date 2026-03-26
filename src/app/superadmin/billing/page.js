@@ -99,7 +99,7 @@ function PaymentModal({ org, planPrice, period, onClose, onSaved }) {
             Registrar pago
           </p>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
-            {org.name} — {monthName(...Object.values(parsePeriod(period)).reverse().reverse())}
+            {org.name} — {monthName(parsePeriod(period).month, parsePeriod(period).year)}
           </p>
         </div>
 
