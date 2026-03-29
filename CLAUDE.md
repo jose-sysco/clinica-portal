@@ -10,6 +10,18 @@ npm run build    # Production build
 npm run lint     # ESLint
 ```
 
+## Testing
+
+```bash
+npm run test:run          # Run all unit tests (one-shot)
+npm run test              # Unit tests in watch mode
+npm run test:coverage     # Unit tests + coverage report
+npm run test:e2e          # E2E tests with Playwright (starts dev server automatically)
+npm run test:e2e:ui       # E2E with interactive Playwright UI
+```
+
+Unit tests live in `src/lib/__tests__/`. E2E tests live in `e2e/`.
+
 The backend Rails API runs separately on `localhost:3010`. Set `NEXT_PUBLIC_API_URL` to override.
 
 ## Architecture
