@@ -86,6 +86,12 @@ const Icon = {
       <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
     </svg>
   ),
+  inventory: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  ),
 };
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -137,8 +143,10 @@ const getNavGroups = (clinicType, role, features) => {
     groups.push({
       label: "Análisis",
       items: [
-        { name: "Reportes", href: "/dashboard/reports", icon: Icon.reports,
+        { name: "Reportes",   href: "/dashboard/reports",   icon: Icon.reports,
           locked: features.length > 0 && !has("reports") },
+        { name: "Inventario", href: "/dashboard/inventory", icon: Icon.inventory,
+          locked: features.length > 0 && !has("inventory") },
       ],
     });
   }
@@ -206,13 +214,13 @@ function NavItem({ item, pathname, brandColor = "#2563eb" }) {
   if (item.locked) {
     return (
       <div
-        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm"
+        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm"
         title="No disponible en tu plan actual"
         style={{ color: "#d1d9e3", cursor: "not-allowed" }}
       >
-        <span style={{ color: "#dde3ec", flexShrink: 0 }}>{item.icon}</span>
-        <span className="flex-1 truncate">{item.name}</span>
-        <span style={{ color: "#dde3ec" }}>{Icon.lock}</span>
+        <span style={{ color: "#e2e8f0", flexShrink: 0 }}>{item.icon}</span>
+        <span className="flex-1 truncate text-xs">{item.name}</span>
+        <span style={{ color: "#e2e8f0" }}>{Icon.lock}</span>
       </div>
     );
   }
@@ -220,13 +228,13 @@ function NavItem({ item, pathname, brandColor = "#2563eb" }) {
   return (
     <Link
       href={item.href}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all"
       style={
         isActive
           ? {
-              background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
-              color:      "#ffffff",
-              boxShadow:  `0 2px 10px ${brandColor}4d`,
+              backgroundColor: `${brandColor}12`,
+              color:            brandColor,
+              fontWeight:       "600",
             }
           : { color: "#64748b" }
       }
@@ -243,7 +251,7 @@ function NavItem({ item, pathname, brandColor = "#2563eb" }) {
         }
       }}
     >
-      <span style={{ color: isActive ? "rgba(255,255,255,0.85)" : "#94a3b8", flexShrink: 0 }}>
+      <span style={{ color: isActive ? brandColor : "#94a3b8", flexShrink: 0 }}>
         {item.icon}
       </span>
       <span className="flex-1 truncate">{item.name}</span>
@@ -362,13 +370,13 @@ export default function DashboardLayout({ children }) {
           boxShadow:       "2px 0 24px rgba(15,23,42,0.07)",
         }}
       >
-        {/* Org header con gradiente */}
+        {/* Org header con color de marca */}
         <div
-          className="px-5 py-5 flex items-center gap-3"
+          className="px-4 py-4 flex items-center gap-3"
           style={{ background: brandGradient }}
         >
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
             style={{
               backgroundColor: "rgba(255,255,255,0.18)",
               backdropFilter:  "blur(4px)",
@@ -383,32 +391,27 @@ export default function DashboardLayout({ children }) {
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <span className="text-white font-black text-base">{organization?.name?.[0] || "C"}</span>
+              <span className="text-white font-black text-sm">{organization?.name?.[0] || "C"}</span>
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-bold truncate" style={{ color: "#ffffff" }}>
               {organization?.name}
             </p>
-            <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.6)" }}>
               {clinicTypeLabel[organization?.clinic_type] || "Portal médico"}
             </p>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5">
+        <nav className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-px">
           {navGroups.map((group, gi) => (
-            <div key={gi} className={gi > 0 ? "mt-2" : ""}>
-              {group.label && (
-                <p
-                  className="px-3 mb-1.5 mt-1"
-                  style={{ fontSize: "10.5px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#b0bac8" }}
-                >
-                  {group.label}
-                </p>
+            <div key={gi}>
+              {gi > 0 && (
+                <div className="my-2 mx-1" style={{ height: "1px", backgroundColor: "#f0f4f8" }} />
               )}
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-px">
                 {group.items.map(item => (
                   <NavItem key={item.href} item={item} pathname={pathname} brandColor={brandColor} />
                 ))}
@@ -417,54 +420,46 @@ export default function DashboardLayout({ children }) {
           ))}
         </nav>
 
-        {/* User footer */}
+        {/* User footer — fila única compacta */}
         <div className="px-3 py-3" style={{ borderTop: "1px solid #f0f4f8" }}>
-          <Link
-            href="/dashboard/profile"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all"
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = "#f8fafc"}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = "transparent"}
-          >
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
-              style={{
-                background:  brandGradient,
-                boxShadow:   `0 2px 8px ${brandColor}4d`,
-                flexShrink:  0,
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl transition-colors">
+            <Link
+              href="/dashboard/profile"
+              className="flex items-center gap-2.5 flex-1 min-w-0 transition-colors"
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
+                style={{ background: brandGradient, boxShadow: `0 2px 6px ${brandColor}3d` }}
+              >
+                {initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold truncate" style={{ color: "#0f172a" }}>{user?.full_name}</p>
+                <p className="text-xs truncate" style={{ color: roleStyle.color }}>{roleLabel[user?.role]}</p>
+              </div>
+            </Link>
+            <button
+              onClick={logout}
+              title="Cerrar sesión"
+              className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0 transition-all"
+              style={{ color: "#b0bac8" }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = "#dc2626";
+                e.currentTarget.style.backgroundColor = "#fff5f5";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = "#b0bac8";
+                e.currentTarget.style.backgroundColor = "transparent";
               }}
             >
-              {initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold truncate" style={{ color: "#0f172a" }}>{user?.full_name}</p>
-              <span
-                className="text-xs font-medium px-2 py-0.5 rounded-full inline-block"
-                style={roleStyle}
-              >
-                {roleLabel[user?.role]}
-              </span>
-            </div>
-          </Link>
-
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all"
-            style={{ color: "#94a3b8" }}
-            onMouseEnter={e => {
-              e.currentTarget.style.color = "#dc2626";
-              e.currentTarget.style.backgroundColor = "#fff5f5";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.color = "#94a3b8";
-              e.currentTarget.style.backgroundColor = "transparent";
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Cerrar sesión
-          </button>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </aside>
 

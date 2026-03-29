@@ -180,69 +180,71 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Filtros */}
-      <div
-        className="rounded-xl p-4 flex flex-wrap gap-3"
-        style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
-      >
-        <select
-          value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{
-            border: "1px solid #e2e8f0",
-            color: "#0f172a",
-            backgroundColor: "#f8fafc",
-          }}
-        >
-          <option value="">Todos los estados</option>
-          {Object.entries(statusLabel).map(([key, val]) => (
-            <option key={key} value={key}>
-              {val.label}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="date"
-          value={filters.date}
-          onChange={(e) =>
-            setFilters({ ...filters, date: e.target.value, today: false })
-          }
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{
-            border: "1px solid #e2e8f0",
-            color: "#0f172a",
-            backgroundColor: "#f8fafc",
-          }}
-        />
-
-        <button
-          onClick={() =>
-            setFilters({ ...filters, today: !filters.today, date: "" })
-          }
-          className="text-sm px-3 py-2 rounded-lg transition-colors font-medium"
-          style={{
-            border: "1px solid #e2e8f0",
-            backgroundColor: filters.today ? "#2563eb" : "#f8fafc",
-            color: filters.today ? "#ffffff" : "#64748b",
-          }}
-        >
-          Hoy
-        </button>
-
-        {(filters.status || filters.date || filters.today) && (
+      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+        {/* Status pills */}
+        <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setFilters({ status: "", date: "", today: false })}
-            className="text-sm px-3 py-2 rounded-lg transition-colors"
+            onClick={() => setFilters({ ...filters, status: "" })}
+            className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
             style={{
-              border: "1px solid #fecaca",
-              backgroundColor: "#fef2f2",
-              color: "#dc2626",
+              backgroundColor: !filters.status ? "#0f172a" : "#f1f5f9",
+              color:           !filters.status ? "#ffffff"  : "#64748b",
+              border: `1px solid ${!filters.status ? "#0f172a" : "#e2e8f0"}`,
             }}
           >
-            Limpiar filtros
+            Todas
           </button>
-        )}
+          {Object.entries(statusLabel).map(([key, val]) => {
+            const active = filters.status === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setFilters({ ...filters, status: active ? "" : key })}
+                className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
+                style={{
+                  backgroundColor: active ? val.bg    : "#f8fafc",
+                  color:           active ? val.color : "#64748b",
+                  border:          `1px solid ${active ? val.border : "#e2e8f0"}`,
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: active ? val.color : "#cbd5e1" }} />
+                {val.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Date row */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setFilters({ ...filters, today: !filters.today, date: "" })}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+            style={{
+              backgroundColor: filters.today ? "#2563eb" : "#f8fafc",
+              color:           filters.today ? "#ffffff"  : "#64748b",
+              border:          `1px solid ${filters.today ? "#2563eb" : "#e2e8f0"}`,
+            }}
+          >
+            Hoy
+          </button>
+          <input
+            type="date"
+            value={filters.date}
+            onChange={(e) => setFilters({ ...filters, date: e.target.value, today: false })}
+            className="text-xs px-3 py-1.5 rounded-lg outline-none"
+            style={{ border: "1px solid #e2e8f0", color: filters.date ? "#0f172a" : "#94a3b8", backgroundColor: "#f8fafc" }}
+          />
+          {(filters.status || filters.date || filters.today) && (
+            <button
+              onClick={() => setFilters({ status: "", date: "", today: false })}
+              className="text-xs px-3 py-1.5 rounded-lg transition-colors"
+              style={{ border: "1px solid #fecaca", backgroundColor: "#fef2f2", color: "#dc2626" }}
+            >
+              × Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Lista */}
@@ -301,21 +303,15 @@ export default function AppointmentsPage() {
                   <tr
                     key={apt.id}
                     style={{
-                      borderBottom:
-                        index < appointments.length - 1
-                          ? "1px solid #f1f5f9"
-                          : "none",
+                      borderBottom: index < appointments.length - 1 ? "1px solid #f1f5f9" : "none",
+                      borderLeft: `3px solid ${status.color}`,
                     }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f8fafc")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium" style={{ color: "#0f172a" }}>
+                        <p className="text-sm font-semibold" style={{ color: "#0f172a" }}>
                           {apt.patient?.name}
                         </p>
                         {apt.recurrence_group_id && (
@@ -330,48 +326,40 @@ export default function AppointmentsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs" style={{ color: "#94a3b8" }}>
+                      <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
                         {apt.owner?.full_name}
                         {apt.recurrence_group_id && (
                           <span style={{ color: "#a78bfa" }}> · {apt.recurrence_index}/{apt.recurrence_total}</span>
                         )}
                       </p>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm" style={{ color: "#0f172a" }}>
-                        {apt.doctor?.full_name}
-                      </p>
+                    <td className="px-5 py-4">
+                      <p className="text-sm" style={{ color: "#334155" }}>{apt.doctor?.full_name}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: "#0f172a" }}
-                      >
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-medium" style={{ color: "#0f172a" }}>
                         {formatDate(apt.scheduled_at)}
                       </p>
-                      <p className="text-xs" style={{ color: "#94a3b8" }}>
-                        {formatTime(apt.scheduled_at)} —{" "}
-                        {formatTime(apt.ends_at)}
+                      <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                        {formatTime(apt.scheduled_at)} — {formatTime(apt.ends_at)}
                       </p>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs" style={{ color: "#64748b" }}>
+                    <td className="px-5 py-4">
+                      <span className="text-xs font-medium px-2 py-1 rounded-lg"
+                        style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}>
                         {typeLabel[apt.appointment_type]}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className="text-xs font-medium px-2.5 py-1 rounded-full"
-                        style={{
-                          color: status.color,
-                          backgroundColor: status.bg,
-                          border: `1px solid ${status.border}`,
-                        }}
-                      >
-                        {status.label}
-                      </span>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: status.color }} />
+                        <span className="text-xs font-medium" style={{ color: status.color }}>
+                          {status.label}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4">
                       <div className="flex items-center gap-2 justify-end">
                         <Link href={`/dashboard/appointments/${apt.id}`}>
                           <button

@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useFeature } from "@/lib/useFeature";
 import api from "@/lib/api";
 
 const STATUS_COLOR = { pending: "#d97706", confirmed: "#2563eb", completed: "#16a34a", cancelled: "#dc2626" };
 const STATUS_LABEL = { pending: "Pendiente", confirmed: "Confirmada", completed: "Completada", cancelled: "Cancelada" };
 
 export default function GlobalSearch({ onClose }) {
-  const router      = useRouter();
-  const inputRef    = useRef(null);
+  const router        = useRouter();
+  const inputRef      = useRef(null);
+  const hasInventory  = useFeature("inventory");
   const [query,     setQuery]     = useState("");
   const [results,   setResults]   = useState(null);
   const [loading,   setLoading]   = useState(false);
@@ -21,9 +23,10 @@ export default function GlobalSearch({ onClose }) {
   // Flatten results for keyboard navigation
   const flat = results
     ? [
-        ...results.patients.map((r) => ({ ...r, _type: "patient" })),
-        ...results.doctors.map((r)  => ({ ...r, _type: "doctor"  })),
-        ...results.appointments.map((r) => ({ ...r, _type: "appointment" })),
+        ...results.patients.map((r)     => ({ ...r, _type: "patient"     })),
+        ...results.doctors.map((r)      => ({ ...r, _type: "doctor"      })),
+        ...(results.appointments || []).map((r) => ({ ...r, _type: "appointment" })),
+        ...(results.products     || []).map((r) => ({ ...r, _type: "product"     })),
       ]
     : [];
 
@@ -49,6 +52,7 @@ export default function GlobalSearch({ onClose }) {
     if (item._type === "patient")     router.push(`/dashboard/patients/${item.id}`);
     if (item._type === "doctor")      router.push(`/dashboard/doctors/${item.id}/calendar`);
     if (item._type === "appointment") router.push(`/dashboard/appointments/${item.id}`);
+    if (item._type === "product")     router.push(`/dashboard/inventory/${item.id}`);
   };
 
   const handleKey = (e) => {
@@ -58,7 +62,10 @@ export default function GlobalSearch({ onClose }) {
     if (e.key === "Enter" && flat[selected]) navigate(flat[selected]);
   };
 
-  const hasResults = results && (results.patients.length + results.doctors.length + results.appointments.length) > 0;
+  const totalResults = results
+    ? results.patients.length + results.doctors.length + (results.appointments?.length || 0) + (results.products?.length || 0)
+    : 0;
+  const hasResults = results && totalResults > 0;
   const noResults  = results && !hasResults;
 
   let flatIdx = 0;
@@ -67,7 +74,8 @@ export default function GlobalSearch({ onClose }) {
     if (!items?.length) return null;
     return (
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest px-4 py-2" style={{ color: "#94a3b8", backgroundColor: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest px-4 py-2"
+          style={{ color: "#94a3b8", backgroundColor: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
           {title}
         </p>
         {items.map((item) => {
@@ -102,19 +110,22 @@ export default function GlobalSearch({ onClose }) {
       >
         {/* Input */}
         <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: "1px solid #f1f5f9" }}>
-          <span style={{ color: "#94a3b8", fontSize: "16px" }}>⌕</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Buscar pacientes, doctores, citas..."
+            placeholder={hasInventory ? "Buscar pacientes, doctores, citas, productos..." : "Buscar pacientes, doctores, citas..."}
             className="flex-1 text-sm outline-none"
             style={{ color: "#0f172a", backgroundColor: "transparent" }}
           />
           {loading && <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />}
-          <kbd className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0", color: "#94a3b8", fontFamily: "monospace" }}>
+          <kbd className="text-xs px-1.5 py-0.5 rounded flex-shrink-0"
+            style={{ backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0", color: "#94a3b8", fontFamily: "monospace" }}>
             Esc
           </kbd>
         </div>
@@ -124,7 +135,11 @@ export default function GlobalSearch({ onClose }) {
           {!query && (
             <div className="px-4 py-8 text-center">
               <p className="text-sm font-medium mb-1" style={{ color: "#64748b" }}>Búsqueda global</p>
-              <p className="text-xs" style={{ color: "#94a3b8" }}>Escribe el nombre de un paciente, doctor o motivo de cita</p>
+              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                {hasInventory
+                  ? "Escribe para buscar pacientes, doctores, citas o productos del inventario"
+                  : "Escribe el nombre de un paciente, doctor o motivo de cita"}
+              </p>
             </div>
           )}
 
@@ -180,7 +195,10 @@ export default function GlobalSearch({ onClose }) {
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: STATUS_COLOR[item.status] + "20" }}>
-                      <span style={{ color: STATUS_COLOR[item.status], fontSize: "11px", fontWeight: "700" }}>◷</span>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={STATUS_COLOR[item.status]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate" style={{ color: "#0f172a" }}>{item.patient_name}</p>
@@ -193,6 +211,34 @@ export default function GlobalSearch({ onClose }) {
                   </div>
                 )}
               />
+              {hasInventory && (
+                <Section
+                  title="Inventario"
+                  items={results.products}
+                  renderItem={(item, isSel) => (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: item.low_stock ? "#fef2f2" : (isSel ? "#f0fdf4" : "#f1f5f9") }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                          stroke={item.low_stock ? "#dc2626" : (isSel ? "#16a34a" : "#64748b")}
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate" style={{ color: "#0f172a" }}>{item.name}</p>
+                        <p className="text-xs" style={{ color: "#94a3b8" }}>
+                          {item.category && <span>{item.category} · </span>}
+                          <span style={{ color: item.low_stock ? "#dc2626" : "#94a3b8", fontWeight: item.low_stock ? "600" : "400" }}>
+                            {item.current_stock} {item.unit}{item.low_stock ? " — Stock bajo" : ""}
+                          </span>
+                        </p>
+                      </div>
+                      <span className="ml-auto text-xs" style={{ color: "#cbd5e1" }}>Producto</span>
+                    </div>
+                  )}
+                />
+              )}
             </>
           )}
         </div>

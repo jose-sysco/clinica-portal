@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
+import { useFeature } from "@/lib/useFeature";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -84,6 +85,7 @@ export default function NewMedicalRecordPage() {
   const appointmentId = searchParams.get("appointment_id");
   const { organization } = useAuth();
   const config = getConfig(organization?.clinic_type);
+  const hasInventory = useFeature("inventory");
 
   const [appointment,   setAppointment]   = useState(null);
   const [loading,       setLoading]       = useState(!!appointmentId);
@@ -94,6 +96,15 @@ export default function NewMedicalRecordPage() {
   const [nextVisitTime, setNextVisitTime] = useState("");
   const [slots,         setSlots]         = useState([]);
   const [slotsLoading,  setSlotsLoading]  = useState(false);
+
+  // Inventario + medicamentos unificados
+  const [usedProducts,    setUsedProducts]    = useState([]);   // productos del inventario
+  const [freeTextMeds,    setFreeTextMeds]    = useState([]);   // medicamentos sin inventario
+  const [productSearch,   setProductSearch]   = useState("");
+  const [productResults,  setProductResults]  = useState([]);
+  const [searchingProds,  setSearchingProds]  = useState(false);
+  const searchTimeout = useRef(null);
+  const doctorHasInventory = appointment?.doctor?.inventory_movements === true;
 
   useEffect(() => {
     if (appointmentId) fetchAppointment();
@@ -128,6 +139,38 @@ export default function NewMedicalRecordPage() {
 
   const set = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
+  const searchProducts = (q) => {
+    setProductSearch(q);
+    clearTimeout(searchTimeout.current);
+    if (!q.trim()) { setProductResults([]); return; }
+    searchTimeout.current = setTimeout(async () => {
+      setSearchingProds(true);
+      try {
+        const res = await api.get("/api/v1/inventory/search", { params: { q } });
+        setProductResults(res.data.data || []);
+      } catch {} finally { setSearchingProds(false); }
+    }, 300);
+  };
+
+  const addProduct = (product) => {
+    setUsedProducts((prev) => {
+      if (prev.find((p) => p.product_id === product.id)) return prev;
+      return [...prev, { product_id: product.id, name: product.name, unit: product.unit, quantity: "1", dose: "", frequency: "", duration: "" }];
+    });
+    setProductSearch("");
+    setProductResults([]);
+  };
+
+  const removeProduct = (productId) => setUsedProducts((p) => p.filter((x) => x.product_id !== productId));
+  const updateProduct = (productId, field, val) =>
+    setUsedProducts((p) => p.map((x) => x.product_id === productId ? { ...x, [field]: val } : x));
+
+  const addFreeTextMed = () =>
+    setFreeTextMeds((prev) => [...prev, { id: Date.now(), name: "", dose: "", frequency: "", duration: "" }]);
+  const removeFreeTextMed = (id) => setFreeTextMeds((p) => p.filter((x) => x.id !== id));
+  const updateFreeTextMed = (id, field, val) =>
+    setFreeTextMeds((p) => p.map((x) => x.id === id ? { ...x, [field]: val } : x));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors([]);
@@ -141,7 +184,31 @@ export default function NewMedicalRecordPage() {
     }
     setSubmitting(true);
     try {
-      await api.post("/api/v1/medical_records", { medical_record: form });
+      const payload = { ...form };
+      if (doctorHasInventory) {
+        if (usedProducts.length > 0) {
+          payload.used_products = usedProducts.map((p) => ({ product_id: p.product_id, quantity: parseFloat(p.quantity) }));
+        }
+        // Construir el texto de receta desde las entradas estructuradas
+        const medLines = [
+          ...usedProducts.map((p) => {
+            let line = p.name;
+            if (p.dose)      line += ` ${p.dose}`;
+            if (p.frequency) line += ` — ${p.frequency}`;
+            if (p.duration)  line += ` por ${p.duration}`;
+            return line;
+          }),
+          ...freeTextMeds.filter((m) => m.name.trim()).map((m) => {
+            let line = m.name;
+            if (m.dose)      line += ` ${m.dose}`;
+            if (m.frequency) line += ` — ${m.frequency}`;
+            if (m.duration)  line += ` por ${m.duration}`;
+            return line;
+          }),
+        ];
+        payload.medications = medLines.join("\n");
+      }
+      await api.post("/api/v1/medical_records", { medical_record: payload });
 
       // Si el usuario eligió agendar la próxima cita de inmediato
       if (scheduleNext && form.next_visit_date && appointment) {
@@ -318,8 +385,139 @@ export default function NewMedicalRecordPage() {
           </div>
         ))}
 
-        {/* ── Medicamentos y notas ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* ── Medicamentos ── */}
+        {hasInventory && doctorHasInventory ? (
+          /* Modo inventario: búsqueda estructurada unificada */
+          <div className="rounded-xl p-6 space-y-4" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+                Medicamentos recetados
+              </p>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
+                Descuenta del inventario al guardar
+              </span>
+            </div>
+
+            {/* Buscador de inventario */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar medicamento o insumo del inventario..."
+                value={productSearch}
+                onChange={(e) => searchProducts(e.target.value)}
+                style={inp}
+              />
+              {(searchingProds || productResults.length > 0) && (
+                <div className="absolute top-full left-0 right-0 z-10 rounded-lg shadow-lg mt-1 overflow-hidden"
+                  style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+                  {searchingProds && (
+                    <div className="px-4 py-2 text-sm" style={{ color: "#94a3b8" }}>Buscando...</div>
+                  )}
+                  {productResults.map((p) => (
+                    <button key={p.id} type="button" onClick={() => addProduct(p)}
+                      className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between"
+                      style={{ borderBottom: "1px solid #f1f5f9" }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8fafc"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ffffff"}>
+                      <span style={{ color: "#0f172a" }}>{p.name}</span>
+                      <span className="text-xs" style={{ color: p.current_stock <= 0 ? "#dc2626" : "#94a3b8" }}>
+                        Stock: {p.current_stock} {p.unit}
+                      </span>
+                    </button>
+                  ))}
+                  {!searchingProds && productResults.length === 0 && productSearch && (
+                    <div className="px-4 py-2 text-sm" style={{ color: "#94a3b8" }}>Sin resultados en inventario</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Lista de productos del inventario seleccionados */}
+            {usedProducts.length > 0 && (
+              <div className="space-y-3">
+                {usedProducts.map((p) => (
+                  <div key={p.product_id} className="rounded-xl p-4 space-y-3"
+                    style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                    {/* Fila 1: nombre + qty + quitar */}
+                    <div className="flex items-center gap-3">
+                      <span className="flex-1 text-sm font-semibold" style={{ color: "#0f172a" }}>{p.name}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <input type="number" min="0.01" step="0.01" value={p.quantity}
+                          onChange={(e) => updateProduct(p.product_id, "quantity", e.target.value)}
+                          className="text-sm text-center rounded-lg w-20"
+                          style={{ padding: "8px 10px", border: "1px solid #e2e8f0", outline: "none", color: "#0f172a", backgroundColor: "#fff" }} />
+                        <span className="text-sm w-14" style={{ color: "#64748b" }}>{p.unit}</span>
+                      </div>
+                      <button type="button" onClick={() => removeProduct(p.product_id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0 text-xs font-bold"
+                        style={{ color: "#dc2626", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>✕</button>
+                    </div>
+                    {/* Fila 2: dosis, frecuencia, duración */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        { field: "dose",      placeholder: "Dosis (ej: 500mg)" },
+                        { field: "frequency", placeholder: "Frecuencia (ej: cada 8h)" },
+                        { field: "duration",  placeholder: "Duración (ej: 7 días)" },
+                      ].map(({ field, placeholder }) => (
+                        <input key={field} type="text" placeholder={placeholder}
+                          value={p[field]} onChange={(e) => updateProduct(p.product_id, field, e.target.value)}
+                          className="text-sm rounded-lg w-full"
+                          style={{ padding: "8px 12px", border: "1px solid #e2e8f0", outline: "none", color: "#0f172a", backgroundColor: "#fff" }} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Medicamentos sin inventario (receta libre) */}
+            {freeTextMeds.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#d97706" }}>Sin inventario — no descuenta stock</p>
+                {freeTextMeds.map((m) => (
+                  <div key={m.id} className="rounded-xl p-4 space-y-3"
+                    style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+                    <div className="flex items-center gap-3">
+                      <input type="text" placeholder="Nombre del medicamento"
+                        value={m.name} onChange={(e) => updateFreeTextMed(m.id, "name", e.target.value)}
+                        className="flex-1 text-sm rounded-lg"
+                        style={{ padding: "8px 12px", border: "1px solid #fde68a", outline: "none", color: "#0f172a", backgroundColor: "#fff" }} />
+                      <button type="button" onClick={() => removeFreeTextMed(m.id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0 text-xs font-bold"
+                        style={{ color: "#dc2626", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>✕</button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        { field: "dose",      placeholder: "Dosis" },
+                        { field: "frequency", placeholder: "Frecuencia" },
+                        { field: "duration",  placeholder: "Duración" },
+                      ].map(({ field, placeholder }) => (
+                        <input key={field} type="text" placeholder={placeholder}
+                          value={m[field]} onChange={(e) => updateFreeTextMed(m.id, field, e.target.value)}
+                          className="text-sm rounded-lg w-full"
+                          style={{ padding: "8px 12px", border: "1px solid #fde68a", outline: "none", color: "#0f172a", backgroundColor: "#fff" }} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {usedProducts.length === 0 && freeTextMeds.length === 0 && (
+              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                Busca un producto del inventario o agrega un medicamento externo.
+              </p>
+            )}
+
+            <button type="button" onClick={addFreeTextMed}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              style={{ color: "#d97706", backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+              + Agregar medicamento sin inventario
+            </button>
+          </div>
+        ) : (
+          /* Modo sin inventario: textarea libre */
           <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
             <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#94a3b8" }}>
               Medicamentos recetados
@@ -332,7 +530,10 @@ export default function NewMedicalRecordPage() {
               style={{ ...inp, resize: "none", lineHeight: "1.6" }}
             />
           </div>
-          <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+        )}
+
+        {/* ── Notas y próxima visita ── */}
+        <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
             <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#94a3b8" }}>
               Notas adicionales
             </p>
@@ -452,7 +653,6 @@ export default function NewMedicalRecordPage() {
                 </div>
               )}
             </div>
-          </div>
         </div>
 
         {/* Botones */}
