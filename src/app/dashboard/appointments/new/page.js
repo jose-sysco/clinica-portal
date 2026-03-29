@@ -928,10 +928,10 @@ export default function NewAppointmentPage() {
                   <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>Genera una serie de citas automáticamente</p>
                 </div>
                 <button type="button" onClick={() => setRecurring(v => !v)}
-                  className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+                  className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0 overflow-hidden"
                   style={{ backgroundColor: recurring ? "#2563eb" : "#e2e8f0" }}>
-                  <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                    style={{ transform: recurring ? "translateX(22px)" : "translateX(2px)" }} />
+                  <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                    style={{ transform: recurring ? "translateX(20px)" : "translateX(0px)" }} />
                 </button>
               </div>
 

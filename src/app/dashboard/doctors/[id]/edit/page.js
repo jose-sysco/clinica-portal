@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useFeature } from "@/lib/useFeature";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 export default function EditDoctorPage() {
   const router = useRouter();
   const { id } = useParams();
+  const hasInventory = useFeature("inventory");
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -20,6 +22,7 @@ export default function EditDoctorPage() {
     bio: "",
     consultation_duration: 30,
     status: "active",
+    inventory_movements: false,
   });
 
   const [schedules, setSchedules] = useState([
@@ -98,6 +101,7 @@ export default function EditDoctorPage() {
         bio: d.bio || "",
         consultation_duration: d.consultation_duration || 30,
         status: d.status || "active",
+        inventory_movements: d.inventory_movements || false,
       });
 
       // Mapear horarios existentes
@@ -367,6 +371,30 @@ export default function EditDoctorPage() {
                 <option value="on_leave">De permiso</option>
               </select>
             </div>
+
+            {hasInventory && (
+              <div className="rounded-xl p-4" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: "#0f172a" }}>Movimientos de inventario</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
+                      Al activar, los insumos usados en consultas de este doctor se descontarán automáticamente del inventario.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, inventory_movements: !f.inventory_movements }))}
+                    className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 overflow-hidden"
+                    style={{ backgroundColor: form.inventory_movements ? "#2563eb" : "#e2e8f0" }}
+                  >
+                    <span
+                      className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+                      style={{ transform: form.inventory_movements ? "translateX(20px)" : "translateX(0)" }}
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div>
               <label style={labelStyle}>Biografía</label>
