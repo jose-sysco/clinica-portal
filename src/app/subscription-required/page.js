@@ -72,8 +72,8 @@ function SubscriptionContent() {
           </p>
           <p className="text-xs" style={{ color: "#2563eb" }}>
             Escríbenos a{" "}
-            <span className="font-medium">soporte@clinicaportal.com</span> o
-            contáctanos por WhatsApp para activar tu suscripción.
+            <span className="font-medium">soporte@sysco.com.gt</span> para
+            activar tu suscripción.
           </p>
         </div>
 
@@ -107,7 +107,7 @@ function SubscriptionContent() {
         {/* Botones */}
         <div className="flex flex-col gap-2">
           <a
-            href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
+            href="mailto:soporte@sysco.com.gt?subject=Activar suscripción"
             className="w-full py-3 rounded-xl text-sm font-semibold text-center transition-colors"
             style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
           >

@@ -114,7 +114,6 @@ Plans: `trial` → `basic` → `professional` → `enterprise`. Trial lasts 15 d
 |---------|:-----:|:-----:|:------------:|:----------:|
 | reports | ❌ | ✅ | ✅ | ✅ |
 | multi_doctor | ❌ | ❌ | ✅ | ✅ |
-| whatsapp_notifications | ❌ | ❌ | ✅ | ✅ |
 | inventory | ❌ | ❌ | ❌ | ✅ |
 | custom_branding | ❌ | ❌ | ❌ | ✅ |
 
