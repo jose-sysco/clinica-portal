@@ -119,13 +119,10 @@ function StepDoctor({ config, onNext, onBack }) {
     setErrors([]);
     setLoading(true);
     try {
-      // Create user with doctor role
-      const userRes = await api.post("/api/v1/auth/sign_up_staff", {
-        user: { first_name: form.first_name, last_name: form.last_name, email: form.email, phone: form.phone, password: form.password, password_confirmation: form.password, role: "doctor" },
-      });
-      // Create doctor profile
+      // Single transactional request — backend creates user + doctor atomically
       const doctorRes = await api.post("/api/v1/doctors", {
-        doctor: { user_id: userRes.data.user.id, specialty: form.specialty, license_number: form.license_number, consultation_duration: parseInt(form.consultation_duration) },
+        user: { first_name: form.first_name, last_name: form.last_name, email: form.email, phone: form.phone, password: form.password, password_confirmation: form.password },
+        doctor: { specialty: form.specialty, license_number: form.license_number, consultation_duration: parseInt(form.consultation_duration) },
       });
       onNext({ doctor: doctorRes.data, doctorName: `${form.first_name} ${form.last_name}`, duration: parseInt(form.consultation_duration) });
     } catch (err) {
