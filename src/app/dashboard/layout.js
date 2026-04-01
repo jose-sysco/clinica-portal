@@ -104,7 +104,7 @@ const getNavGroups = (clinicType, role, features) => {
     { name: "Doctores",           href: "/dashboard/doctors",  icon: Icon.doctors  },
     { name: config.patientsLabel, href: "/dashboard/patients", icon: Icon.patients },
   ];
-  if (clinicType === "veterinary" || clinicType === "pediatric") {
+  if (config.showOwners) {
     directory.push({ name: config.ownersLabel, href: "/dashboard/owners", icon: Icon.owners });
   }
 
