@@ -55,14 +55,21 @@ export default function MedicalRecordDetailPage() {
 
   const formatDate = (d) => {
     if (!d) return "—";
-    return new Date(d).toLocaleDateString("es-GT", {
+    // Fechas YYYY-MM-DD sin hora → parsear como local para evitar desfase UTC
+    const date = typeof d === "string" && d.length === 10 ? new Date(d + "T00:00:00") : new Date(d);
+    return date.toLocaleDateString("es-GT", {
       weekday: "long", day: "numeric", month: "long", year: "numeric",
     });
   };
 
-  // Detecta si el registro usa el formato SOAP nuevo o el legacy
-  const isSoap   = SOAP_SECTIONS.some((s) => record?.[s.field]);
+  // Detecta qué secciones tiene el registro (todo basado en datos, no en config)
+  const isSoap    = SOAP_SECTIONS.some((s) => record?.[s.field]);
   const hasVitals = VITALS.some((v) => record?.[v.field] != null && record?.[v.field] !== "");
+  const hasPhysio = ["pain_scale", "affected_area", "treatment_performed", "rehabilitation_plan", "evolution_notes"].some((f) => record?.[f] != null && record?.[f] !== "");
+  const hasDental = ["dental_procedure", "dental_affected_teeth", "dental_anesthesia"].some((f) => record?.[f]);
+  const hasPsychology = ["session_development", "session_objectives", "session_agreements", "session_number", "mood_scale", "psychotherapy_technique"].some((f) => record?.[f] != null && record?.[f] !== "");
+  const hasNutrition = ["dietary_plan", "dietary_assessment", "food_restrictions", "physical_activity_level", "goal_weight"].some((f) => record?.[f] != null && record?.[f] !== "");
+  const hasVetExtra  = ["coat_condition", "vaccination_notes", "deworming_notes"].some((f) => record?.[f]);
 
   if (loading) {
     return (
@@ -178,6 +185,170 @@ export default function MedicalRecordDetailPage() {
         </div>
       )}
 
+      {/* ── Fisioterapia ── */}
+      {hasPhysio && (
+        <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: "#94a3b8" }}>
+            Evaluación fisioterapéutica
+          </p>
+          <div className="space-y-4">
+            {record?.pain_scale != null && record?.pain_scale !== "" && (
+              <div className="flex items-center gap-4">
+                <p className="text-xs font-medium w-36 flex-shrink-0" style={{ color: "#64748b" }}>Escala de dolor</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-32 h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#e2e8f0" }}>
+                    <div className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${(record.pain_scale / 10) * 100}%`,
+                        backgroundColor: record.pain_scale >= 7 ? "#dc2626" : record.pain_scale >= 4 ? "#f59e0b" : "#16a34a",
+                      }} />
+                  </div>
+                  <span className="text-sm font-bold"
+                    style={{ color: record.pain_scale >= 7 ? "#dc2626" : record.pain_scale >= 4 ? "#f59e0b" : "#16a34a" }}>
+                    {record.pain_scale}/10
+                  </span>
+                </div>
+              </div>
+            )}
+            {[
+              { field: "affected_area",       label: "Área afectada" },
+              { field: "range_of_motion",     label: "Rango de movimiento" },
+              { field: "functional_assessment",label: "Evaluación funcional" },
+              { field: "treatment_performed", label: "Tratamiento realizado" },
+              { field: "rehabilitation_plan", label: "Plan de rehabilitación" },
+              { field: "evolution_notes",     label: "Notas de evolución" },
+            ].map(({ field, label }) => record?.[field] ? (
+              <div key={field}>
+                <p className="text-xs font-medium mb-1" style={{ color: "#64748b" }}>{label}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#0f172a" }}>{record[field]}</p>
+              </div>
+            ) : null)}
+          </div>
+        </div>
+      )}
+
+      {/* ── Odontología ── */}
+      {hasDental && (
+        <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: "#94a3b8" }}>
+            Procedimiento dental
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { field: "dental_procedure",      label: "Procedimiento" },
+              { field: "dental_affected_teeth", label: "Piezas afectadas" },
+              { field: "dental_anesthesia",     label: "Anestesia" },
+            ].map(({ field, label }) => record?.[field] ? (
+              <div key={field}>
+                <p className="text-xs font-medium mb-1" style={{ color: "#64748b" }}>{label}</p>
+                <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{record[field]}</p>
+              </div>
+            ) : null)}
+          </div>
+        </div>
+      )}
+
+      {/* ── Psicología ── */}
+      {hasPsychology && (
+        <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: "#94a3b8" }}>
+            Registro de sesión
+          </p>
+          <div className="space-y-4">
+            <div className="flex items-center gap-6 flex-wrap">
+              {record?.session_number && (
+                <div>
+                  <p className="text-xs font-medium mb-0.5" style={{ color: "#64748b" }}>Sesión #</p>
+                  <p className="text-xl font-bold" style={{ color: "#8b5cf6" }}>{record.session_number}</p>
+                </div>
+              )}
+              {record?.mood_scale != null && record?.mood_scale !== "" && (
+                <div>
+                  <p className="text-xs font-medium mb-0.5" style={{ color: "#64748b" }}>Estado de ánimo</p>
+                  <p className="text-xl font-bold" style={{ color: "#8b5cf6" }}>{record.mood_scale}/10</p>
+                </div>
+              )}
+              {record?.psychotherapy_technique && (
+                <div>
+                  <p className="text-xs font-medium mb-0.5" style={{ color: "#64748b" }}>Técnica</p>
+                  <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{record.psychotherapy_technique}</p>
+                </div>
+              )}
+            </div>
+            {[
+              { field: "session_objectives",  label: "Objetivos de la sesión" },
+              { field: "session_development", label: "Desarrollo de la sesión" },
+              { field: "session_agreements",  label: "Acuerdos y tareas para casa" },
+            ].map(({ field, label }) => record?.[field] ? (
+              <div key={field}>
+                <p className="text-xs font-medium mb-1" style={{ color: "#64748b" }}>{label}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#0f172a" }}>{record[field]}</p>
+              </div>
+            ) : null)}
+          </div>
+        </div>
+      )}
+
+      {/* ── Nutrición ── */}
+      {hasNutrition && (
+        <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: "#94a3b8" }}>
+            Evaluación nutricional
+          </p>
+          <div className="space-y-4">
+            {(record?.goal_weight || record?.physical_activity_level) && (
+              <div className="flex items-center gap-6 flex-wrap">
+                {record?.goal_weight && (
+                  <div>
+                    <p className="text-xs font-medium mb-0.5" style={{ color: "#64748b" }}>Peso meta</p>
+                    <p className="text-xl font-bold" style={{ color: "#10b981" }}>{record.goal_weight} lb</p>
+                  </div>
+                )}
+                {record?.physical_activity_level && (
+                  <div>
+                    <p className="text-xs font-medium mb-0.5" style={{ color: "#64748b" }}>Actividad física</p>
+                    <p className="text-sm font-medium capitalize" style={{ color: "#0f172a" }}>
+                      {record.physical_activity_level.replace("_", " ")}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            {[
+              { field: "dietary_assessment", label: "Evaluación dietética" },
+              { field: "dietary_plan",       label: "Plan alimenticio" },
+              { field: "food_restrictions",  label: "Restricciones / alergias" },
+            ].map(({ field, label }) => record?.[field] ? (
+              <div key={field}>
+                <p className="text-xs font-medium mb-1" style={{ color: "#64748b" }}>{label}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#0f172a" }}>{record[field]}</p>
+              </div>
+            ) : null)}
+          </div>
+        </div>
+      )}
+
+      {/* ── Veterinaria (campos extra) ── */}
+      {hasVetExtra && (
+        <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#94a3b8" }}>
+            Datos veterinarios
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { field: "coat_condition",    label: "Condición del pelaje" },
+              { field: "vaccination_notes", label: "Vacunas" },
+              { field: "deworming_notes",   label: "Desparasitación" },
+            ].map(({ field, label }) => record?.[field] ? (
+              <div key={field}>
+                <p className="text-xs font-medium mb-1" style={{ color: "#64748b" }}>{label}</p>
+                <p className="text-sm leading-relaxed" style={{ color: "#0f172a" }}>{record[field]}</p>
+              </div>
+            ) : null)}
+          </div>
+        </div>
+      )}
+
       {/* ── SOAP ── */}
       {isSoap && (
         <div className="space-y-4">
@@ -204,7 +375,7 @@ export default function MedicalRecordDetailPage() {
       )}
 
       {/* ── Formato legacy (registros anteriores al rediseño SOAP) ── */}
-      {!isSoap && (
+      {!isSoap && !hasPhysio && !hasPsychology && !hasNutrition && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {record?.diagnosis && (
             <div className="rounded-xl p-6" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>

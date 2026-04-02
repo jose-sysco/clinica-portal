@@ -101,8 +101,8 @@ const getNavGroups = (clinicType, role, features) => {
   const has    = (f) => features.includes(f);
 
   const directory = [
-    { name: "Doctores",           href: "/dashboard/doctors",  icon: Icon.doctors  },
-    { name: config.patientsLabel, href: "/dashboard/patients", icon: Icon.patients },
+    { name: config.staffLabel || "Doctores", href: "/dashboard/doctors",  icon: Icon.doctors  },
+    { name: config.patientsLabel,            href: "/dashboard/patients", icon: Icon.patients },
   ];
   if (config.showOwners) {
     directory.push({ name: config.ownersLabel, href: "/dashboard/owners", icon: Icon.owners });
@@ -275,12 +275,15 @@ const clinicTypeLabel = {
   fitness:       "Fitness y Deporte",
 };
 
-const roleLabel = {
-  admin:        "Administrador",
-  doctor:       "Doctor",
-  receptionist: "Recepcionista",
-  patient:      "Paciente",
-  staff:        "Staff",
+const getRoleLabel = (role, config) => {
+  if (role === "doctor") return config.staffSingularLabel || "Doctor";
+  const labels = {
+    admin:        "Administrador",
+    receptionist: "Recepcionista",
+    patient:      "Paciente",
+    staff:        "Staff",
+  };
+  return labels[role] || role;
 };
 
 const roleBadgeStyle = {
@@ -343,6 +346,7 @@ export default function DashboardLayout({ children }) {
   }
 
   const initials   = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
+  const config     = getConfig(organization?.clinic_type);
   const navGroups  = getNavGroups(organization?.clinic_type, user?.role, features);
   const roleStyle  = roleBadgeStyle[user?.role] || roleBadgeStyle.staff;
   const brandColor = organization?.primary_color || "#2563eb";
@@ -437,7 +441,7 @@ export default function DashboardLayout({ children }) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold truncate" style={{ color: "#0f172a" }}>{user?.full_name}</p>
-                <p className="text-xs truncate" style={{ color: roleStyle.color }}>{roleLabel[user?.role]}</p>
+                <p className="text-xs truncate" style={{ color: roleStyle.color }}>{getRoleLabel(user?.role, config)}</p>
               </div>
             </Link>
             <button
@@ -517,7 +521,7 @@ export default function DashboardLayout({ children }) {
               className="text-xs font-semibold px-3 py-1.5 rounded-lg hidden sm:inline"
               style={roleStyle}
             >
-              {roleLabel[user?.role]}
+              {getRoleLabel(user?.role, config)}
             </span>
           </div>
         </header>

@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import AccessDenied from "@/components/AccessDenied";
 import Link from "next/link";
 import { toast } from "sonner";
 
-const roleLabel = {
+const getRoleLabels = (staffLabel) => ({
   admin: {
     label: "Administrador",
     color: "#7c3aed",
@@ -15,7 +16,7 @@ const roleLabel = {
     border: "#e9d5ff",
   },
   doctor: {
-    label: "Doctor",
+    label: staffLabel || "Doctor",
     color: "#2563eb",
     bg: "#eff6ff",
     border: "#bfdbfe",
@@ -32,7 +33,7 @@ const roleLabel = {
     bg: "#f8fafc",
     border: "#e2e8f0",
   },
-};
+});
 
 const statusLabel = {
   active: {
@@ -50,7 +51,9 @@ const statusLabel = {
 };
 
 export default function UsersPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, organization } = useAuth();
+  const config    = getConfig(organization?.clinic_type);
+  const roleLabel = getRoleLabels(config.staffLabel);
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);

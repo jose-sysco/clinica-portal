@@ -29,7 +29,9 @@ function StatusBadge({ status }) {
 
 function fmtDate(d) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  // Fechas YYYY-MM-DD llegan sin zona horaria → parsear como local para evitar desfase UTC
+  const date = d.length === 10 ? new Date(d + "T00:00:00") : new Date(d);
+  return date.toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 }
 
 function fmtTime(d) {

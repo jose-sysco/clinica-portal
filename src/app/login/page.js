@@ -116,7 +116,7 @@ function LeftPanel() {
           style={{ backgroundColor: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)" }}>
           <span className="text-white font-black text-base">C</span>
         </div>
-        <span className="text-white font-bold text-base tracking-tight">Clínica Portal</span>
+        <span className="text-white font-bold text-base tracking-tight">Cita Portal</span>
       </div>
 
       <div className="space-y-8 relative z-10">
@@ -129,11 +129,11 @@ function LeftPanel() {
             Sistema activo — Guatemala
           </div>
           <h1 className="text-4xl font-black text-white leading-tight">
-            Gestión médica<br />
+            Gestión de citas<br />
             <span style={{ color: "#93c5fd" }}>sin complicaciones</span>
           </h1>
           <p className="mt-4 text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.52)" }}>
-            Administra citas, pacientes y doctores desde un solo portal. Rápido, seguro y adaptable a cualquier clínica.
+            Administra citas, clientes y profesionales desde un solo portal. Rápido, seguro y adaptable a cualquier negocio.
           </p>
         </div>
 
@@ -154,7 +154,7 @@ function LeftPanel() {
       </div>
 
       <p className="text-xs relative z-10" style={{ color: "rgba(255,255,255,0.25)" }}>
-        © 2026 Clínica Portal · Todos los derechos reservados
+        © 2026 Cita Portal · Todos los derechos reservados
       </p>
     </div>
   );
@@ -249,7 +249,7 @@ function LoginForm() {
               style={{ background: "linear-gradient(135deg,#1e3a8a,#2563eb)" }}>
               <span className="text-white font-black">C</span>
             </div>
-            <span className="font-bold text-base" style={{ color: "#0f172a" }}>Clínica Portal</span>
+            <span className="font-bold text-base" style={{ color: "#0f172a" }}>Cita Portal</span>
           </div>
 
           {/* ── Paso 1: email ────────────────────────────────────────── */}
@@ -290,7 +290,7 @@ function LoginForm() {
               <p className="text-center text-sm mt-6" style={{ color: "#94a3b8" }}>
                 ¿No tienes cuenta?{" "}
                 <Link href="/register" className="font-semibold" style={{ color: "#2563eb" }}>
-                  Registra tu clínica
+                  Registra tu negocio
                 </Link>
               </p>
             </>

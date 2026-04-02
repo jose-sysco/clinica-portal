@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 export default function NewPatientPage() {
   const router = useRouter();
-  const { organization } = useAuth();
+  const { organization, fetchMe } = useAuth();
   const config = getConfig(organization?.clinic_type);
 
   const [isAdult, setIsAdult] = useState(config.adultCheck ? null : true);
@@ -74,9 +74,12 @@ export default function NewPatientPage() {
     setLoading(true);
 
     try {
-      let ownerId = null;
+      // Adulto en clínica que no requiere responsable → crear paciente directamente sin owner
+      if (!config.requiresOwner && isAdult) {
+        await api.post("/api/v1/patients", { patient: patientForm });
+      } else {
+        let ownerId = null;
 
-      if (config.requiresOwner || !isAdult) {
         if (selectedOwner) {
           ownerId = selectedOwner.id;
         } else if (ownerMode === "search") {
@@ -84,34 +87,15 @@ export default function NewPatientPage() {
           setLoading(false);
           return;
         } else {
-          const ownerRes = await api.post("/api/v1/owners", {
-            owner: ownerForm,
-          });
+          const ownerRes = await api.post("/api/v1/owners", { owner: ownerForm });
           ownerId = ownerRes.data.id;
         }
-      } else {
-        // Adulto — owner = paciente
-        const nameParts = patientForm.name.trim().split(" ");
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(" ") || firstName;
 
-        const ownerRes = await api.post("/api/v1/owners", {
-          owner: {
-            first_name: firstName,
-            last_name: lastName,
-            email: ownerForm.email,
-            phone: ownerForm.phone,
-            identification: ownerForm.identification,
-          },
-        });
-        ownerId = ownerRes.data.id;
+        await api.post(`/api/v1/owners/${ownerId}/patients`, { patient: patientForm });
       }
 
-      await api.post(`/api/v1/owners/${ownerId}/patients`, {
-        patient: patientForm,
-      });
-
       toast.success(`${config.patientLabel} registrado correctamente`);
+      await fetchMe();
       router.push("/dashboard/patients");
     } catch (err) {
       if (err.response?.data?.errors) {
@@ -461,56 +445,50 @@ export default function NewPatientPage() {
             className="rounded-xl p-6 shadow-sm space-y-4"
             style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
           >
-            {!needsOwner ? (
+            {!config.requiresOwner && isAdult ? (
+              /* Adulto en clínica que no requiere responsable — sin owner */
+              <div className="flex flex-col items-center justify-center h-full py-8 text-center gap-3">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "#15803d" }}>Paciente independiente</p>
+                  <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+                    No se requiere {config.ownerLabel?.toLowerCase() || "responsable"} para pacientes mayores de edad.
+                  </p>
+                </div>
+              </div>
+            ) : !needsOwner ? (
+              /* Menor en clínica que no requiere responsable — contacto básico */
               <>
-                <p
-                  className="text-xs font-semibold uppercase tracking-widest"
-                  style={{ color: "#94a3b8" }}
-                >
+                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
                   Datos de contacto
                 </p>
-                <div
-                  className="px-3 py-2 rounded-lg text-xs"
-                  style={{
-                    backgroundColor: "#eff6ff",
-                    color: "#2563eb",
-                    border: "1px solid #bfdbfe",
-                  }}
-                >
+                <div className="px-3 py-2 rounded-lg text-xs"
+                  style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
                   El paciente será registrado como su propio responsable
                 </div>
                 <div>
                   <label style={labelStyle}>Teléfono *</label>
-                  <input
-                    type="text"
-                    value={ownerForm.phone}
+                  <input type="text" value={ownerForm.phone}
                     onChange={(e) => handleOwner("phone", e.target.value)}
-                    placeholder="55551234"
-                    style={inputStyle}
-                    required
-                  />
+                    placeholder="55551234" style={inputStyle} required />
                 </div>
                 <div>
                   <label style={labelStyle}>Email</label>
-                  <input
-                    type="email"
-                    value={ownerForm.email}
+                  <input type="email" value={ownerForm.email}
                     onChange={(e) => handleOwner("email", e.target.value)}
-                    placeholder="paciente@email.com"
-                    style={inputStyle}
-                  />
+                    placeholder="paciente@email.com" style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Identificación</label>
-                  <input
-                    type="text"
-                    value={ownerForm.identification}
-                    onChange={(e) =>
-                      handleOwner("identification", e.target.value)
-                    }
-                    placeholder="1234567"
-                    style={inputStyle}
-                  />
+                  <input type="text" value={ownerForm.identification}
+                    onChange={(e) => handleOwner("identification", e.target.value)}
+                    placeholder="1234567" style={inputStyle} />
                 </div>
               </>
             ) : (

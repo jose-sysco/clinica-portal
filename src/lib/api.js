@@ -70,7 +70,12 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // ── 401: intentar renovar token ────────────────────────────────────────
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Excluir endpoints de auth — sus 401 son errores reales (contraseña incorrecta),
+    // no tokens expirados, y no deben disparar el flujo de refresh.
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/sign_in') ||
+                           originalRequest.url?.includes('/auth/sign_up')
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
 
       // Si ya hay un refresh en curso, encolar este request
       if (isRefreshing) {

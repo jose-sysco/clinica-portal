@@ -51,6 +51,14 @@ export default function NewAppointmentPage() {
   });
   const [savingPatient, setSavingPatient] = useState(false);
 
+  // Búsqueda directa de paciente (para clínicas con adultCheck)
+  const [searchMode,           setSearchMode]           = useState(config.adultCheck ? "patient" : "owner");
+  const [patientSearch,        setPatientSearch]        = useState("");
+  const [patientSearchResults, setPatientSearchResults] = useState([]);
+  const [patientSearchLoading, setPatientSearchLoading] = useState(false);
+  const [showPatientSearch,    setShowPatientSearch]    = useState(false);
+  const patientSrchRef = useRef(null);
+
   const [form, setForm] = useState({
     doctor_id: searchParams.get("doctor_id") || "",
     owner_id: searchParams.get("owner_id") || "",
@@ -79,6 +87,8 @@ export default function NewAppointmentPage() {
     const handleClick = (e) => {
       if (ownerRef.current && !ownerRef.current.contains(e.target))
         setShowOwnerResults(false);
+      if (patientSrchRef.current && !patientSrchRef.current.contains(e.target))
+        setShowPatientSearch(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -183,6 +193,40 @@ export default function NewAppointmentPage() {
     handleChange("patient_id", "");
   };
 
+  const searchPatientsDirect = async (q) => {
+    if (q.length < 2) { setPatientSearchResults([]); setShowPatientSearch(false); return; }
+    setPatientSearchLoading(true);
+    try {
+      const res = await api.get("/api/v1/patients", { params: { q, per_page: 20 } });
+      setPatientSearchResults(Array.isArray(res.data?.data) ? res.data.data : []);
+      setShowPatientSearch(true);
+    } catch {}
+    finally { setPatientSearchLoading(false); }
+  };
+
+  const selectPatientDirect = (patient) => {
+    setPatientSearch(patient.name);
+    setShowPatientSearch(false);
+    setPatientSearchResults([]);
+    setSelectedPatient(patient);
+    handleChange("patient_id", patient.id);
+    if (patient.owner) {
+      setSelectedOwner(patient.owner);
+      setOwnerSearch(patient.owner.full_name);
+      handleChange("owner_id", patient.owner.id);
+    }
+  };
+
+  const clearPatientDirect = () => {
+    setPatientSearch("");
+    setPatientSearchResults([]);
+    setSelectedPatient(null);
+    setSelectedOwner(null);
+    setOwnerSearch("");
+    handleChange("patient_id", "");
+    handleChange("owner_id", "");
+  };
+
   // Crear propietario inline
   const handleCreateOwner = async () => {
     if (
@@ -248,7 +292,7 @@ export default function NewAppointmentPage() {
     if (
       !form.doctor_id ||
       !form.patient_id ||
-      !form.owner_id ||
+      (searchMode === "owner" && !form.owner_id) ||
       !form.time ||
       !form.reason
     ) {
@@ -455,8 +499,126 @@ export default function NewAppointmentPage() {
               {config.patientLabel} y motivo
             </p>
 
-            {/* Buscador de owner */}
-            <div ref={ownerRef}>
+            {/* Toggle modo de búsqueda (solo para clínicas con adultos) */}
+            {config.adultCheck && (
+              <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+                {[
+                  { key: "patient", label: `Buscar ${config.patientLabel.toLowerCase()}` },
+                  { key: "owner",   label: `Buscar por ${config.ownerLabel.toLowerCase()}` },
+                ].map(({ key, label }, i) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setSearchMode(key);
+                      if (key === "patient") { clearOwner(); setPatientSearch(""); setPatientSearchResults([]); }
+                      else clearPatientDirect();
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "6px 12px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      backgroundColor: searchMode === key ? "#2563eb" : "#f8fafc",
+                      color: searchMode === key ? "#fff" : "#64748b",
+                      border: "none",
+                      borderLeft: i > 0 ? "1px solid #e2e8f0" : "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Búsqueda directa de paciente */}
+            {searchMode === "patient" && (
+              <div ref={patientSrchRef}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>{config.patientLabel} *</label>
+                </div>
+                {selectedPatient ? (
+                  <div
+                    className="flex items-center justify-between px-3 py-2 rounded-lg"
+                    style={{ border: "1px solid #bfdbfe", backgroundColor: "#eff6ff" }}
+                  >
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{selectedPatient.name}</p>
+                      {selectedOwner && (
+                        <p className="text-xs" style={{ color: "#64748b" }}>
+                          {config.ownerLabel}: {selectedOwner.full_name}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearPatientDirect}
+                      className="text-xs px-2 py-1 rounded"
+                      style={{ color: "#dc2626", backgroundColor: "#fef2f2" }}
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={patientSearch}
+                      onChange={(e) => {
+                        setPatientSearch(e.target.value);
+                        searchPatientsDirect(e.target.value);
+                      }}
+                      placeholder={`Buscar ${config.patientLabel.toLowerCase()} por nombre...`}
+                      style={inputStyle}
+                    />
+                    {patientSearchLoading && (
+                      <div className="absolute right-3 top-2.5">
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                    {showPatientSearch && patientSearchResults.length > 0 && (
+                      <div
+                        className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
+                        style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+                      >
+                        {patientSearchResults.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => selectPatientDirect(p)}
+                            className="w-full text-left px-4 py-3 transition-colors"
+                            style={{ borderBottom: "1px solid #f1f5f9" }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                          >
+                            <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{p.name}</p>
+                            {p.owner && (
+                              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                                {config.ownerLabel}: {p.owner.full_name}
+                              </p>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {showPatientSearch && patientSearchResults.length === 0 && patientSearch.length >= 2 && !patientSearchLoading && (
+                      <div
+                        className="absolute z-10 w-full mt-1 rounded-lg p-3 text-center"
+                        style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+                      >
+                        <p className="text-sm" style={{ color: "#94a3b8" }}>
+                          No se encontraron {config.patientsLabel.toLowerCase()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Buscador de owner (modo owner-first) */}
+            {searchMode === "owner" && <div ref={ownerRef}>
               <div className="flex items-center justify-between mb-1.5">
                 <label style={{ ...labelStyle, marginBottom: 0 }}>
                   {config.ownerLabel} *
@@ -654,10 +816,10 @@ export default function NewAppointmentPage() {
                     )}
                 </div>
               )}
-            </div>
+            </div>}
 
-            {/* Selector de paciente */}
-            {selectedOwner && (
+            {/* Selector de paciente (modo owner-first) */}
+            {searchMode === "owner" && selectedOwner && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label style={{ ...labelStyle, marginBottom: 0 }}>

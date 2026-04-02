@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function NewDoctorPage() {
   const router = useRouter();
+  const { fetchMe } = useAuth();
 
   const [form, setForm] = useState({
     user: {
@@ -89,6 +91,7 @@ export default function NewDoctorPage() {
       });
 
       toast.success("Doctor creado correctamente");
+      await fetchMe();
       router.push("/dashboard/doctors");
     } catch (err) {
       if (err.response?.data?.errors) {

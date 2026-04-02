@@ -9,6 +9,7 @@ export function middleware(request) {
     "/register",
     "/forgot-password",
     "/reset-password",
+    "/verify-email",
     "/subscription-required",
     "/superadmin/login",
   ];

@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
 
 export default function NewUserPage() {
   const router = useRouter();
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   const [form, setForm] = useState({
     first_name: "",
@@ -191,7 +195,7 @@ export default function NewUserPage() {
                 required
               >
                 <option value="receptionist">Recepcionista</option>
-                <option value="doctor">Doctor</option>
+                <option value="doctor">{config.staffSingularLabel || "Doctor"}</option>
                 <option value="admin">Administrador</option>
               </select>
               {form.role === "doctor" && (

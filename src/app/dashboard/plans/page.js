@@ -188,7 +188,9 @@ function PlansSkeleton() {
 // ── Página principal ───────────────────────────────────────────────────────────
 
 export default function PlansPage() {
-  const { user, organization } = useAuth();
+  const { user, organization, fetchMe } = useAuth();
+
+  useEffect(() => { fetchMe(); }, []);
 
   const [plans,       setPlans]       = useState([]);
   const [featureList, setFeatureList] = useState([]);

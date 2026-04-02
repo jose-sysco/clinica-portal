@@ -150,6 +150,8 @@ export default function SettingsPage() {
   const [uploadingLogo,setUploadingLogo]= useState(false);
   const fileInputRef = useRef(null);
 
+  useEffect(() => { fetchMe(); }, []);
+
   useEffect(() => {
     if (!organization) return;
     const initial = {

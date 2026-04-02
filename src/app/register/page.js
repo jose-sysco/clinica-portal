@@ -155,10 +155,10 @@ export default function RegisterPage() {
               <span className="text-white font-bold">C</span>
             </div>
             <h1 className="text-2xl font-bold" style={{ color: "#0f172a" }}>
-              Registra tu clínica
+              Registra tu negocio
             </h1>
             <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-              Completa los datos para empezar a usar Clínica Portal
+              Completa los datos para empezar a usar Cita Portal
             </p>
           </div>
 
@@ -193,23 +193,23 @@ export default function RegisterPage() {
                   className="text-xs font-semibold uppercase tracking-widest"
                   style={{ color: "#94a3b8" }}
                 >
-                  Datos de la clínica
+                  Datos del negocio
                 </p>
 
                 <div>
-                  <label style={labelStyle}>Nombre de la clínica *</label>
+                  <label style={labelStyle}>Nombre del negocio *</label>
                   <input
                     type="text"
                     value={form.organization.name}
                     onChange={(e) => handleOrg("name", e.target.value)}
-                    placeholder="Clínica Veterinaria Patitas"
+                    placeholder="Centro Veterinario Patitas"
                     style={inputStyle}
                     required
                   />
                 </div>
 
                 <div>
-                  <label style={labelStyle}>Tipo de clínica *</label>
+                  <label style={labelStyle}>Tipo de negocio *</label>
                   <select
                     value={form.organization.clinic_type}
                     onChange={(e) => handleOrg("clinic_type", e.target.value)}
