@@ -170,12 +170,15 @@ function LoginForm() {
   const justRegistered = searchParams.get("registered") === "true";
 
   // step: "email" | "password"
-  const [step,     setStep]     = useState("email");
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
-  const [org,      setOrg]      = useState(null);   // { slug, name }
-  const [error,    setError]    = useState(null);
-  const [loading,  setLoading]  = useState(false);
+  const [step,              setStep]              = useState("email");
+  const [email,             setEmail]             = useState("");
+  const [password,          setPassword]          = useState("");
+  const [org,               setOrg]               = useState(null);   // { slug, name }
+  const [error,             setError]             = useState(null);
+  const [loading,           setLoading]           = useState(false);
+  const [unverifiedEmail,   setUnverifiedEmail]   = useState(null);
+  const [resendLoading,     setResendLoading]      = useState(false);
+  const [resendDone,        setResendDone]         = useState(false);
 
   // ── Paso 1: buscar organización por email ─────────────────────────────────
 
@@ -200,14 +203,33 @@ function LoginForm() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
+    setUnverifiedEmail(null);
+    setResendDone(false);
     setLoading(true);
     try {
       const data = await login(org.slug, email, password);
       router.push(data.user?.role === "superadmin" ? "/superadmin" : "/dashboard");
     } catch (err) {
-      setError(err.response?.data?.error || "Contraseña incorrecta. Intenta de nuevo.");
+      if (err.response?.data?.code === "email_not_verified") {
+        setUnverifiedEmail(email);
+      } else {
+        setError(err.response?.data?.error || "Contraseña incorrecta. Intenta de nuevo.");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    try {
+      await api.post("/api/v1/auth/resend_verification", {
+        email:             unverifiedEmail,
+        organization_slug: org?.slug,
+      });
+      setResendDone(true);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -296,6 +318,40 @@ function LoginForm() {
               </div>
 
               <ErrorBox msg={error} />
+
+              {unverifiedEmail && (
+                <div
+                  className="rounded-xl p-4 mb-2"
+                  style={{ backgroundColor: "#fefce8", border: "1px solid #fde68a" }}
+                >
+                  <p className="text-sm font-semibold" style={{ color: "#92400e", margin: "0 0 8px 0" }}>
+                    ⚠️ Correo no verificado
+                  </p>
+                  <p className="text-sm" style={{ color: "#92400e", margin: "0 0 12px 0" }}>
+                    Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.
+                  </p>
+                  {!resendDone ? (
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resendLoading}
+                      className="text-sm font-semibold rounded-lg px-4 py-2"
+                      style={{
+                        backgroundColor: resendLoading ? "#fde68a" : "#f59e0b",
+                        color:           "#ffffff",
+                        border:          "none",
+                        cursor:          resendLoading ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {resendLoading ? "Enviando..." : "Reenviar correo de verificación"}
+                    </button>
+                  ) : (
+                    <p className="text-sm font-medium" style={{ color: "#16a34a", margin: 0 }}>
+                      ✓ Correo reenviado. Revisa tu bandeja de entrada.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <form onSubmit={handleLogin} className="space-y-5">
                 {/* Email bloqueado */}
