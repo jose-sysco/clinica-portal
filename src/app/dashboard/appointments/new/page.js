@@ -52,11 +52,13 @@ export default function NewAppointmentPage() {
   const [savingPatient, setSavingPatient] = useState(false);
 
   // Búsqueda directa de paciente (para clínicas con adultCheck)
-  const [searchMode,           setSearchMode]           = useState(config.adultCheck ? "patient" : "owner");
-  const [patientSearch,        setPatientSearch]        = useState("");
+  const [searchMode, setSearchMode] = useState(
+    config.adultCheck ? "patient" : "owner",
+  );
+  const [patientSearch, setPatientSearch] = useState("");
   const [patientSearchResults, setPatientSearchResults] = useState([]);
   const [patientSearchLoading, setPatientSearchLoading] = useState(false);
-  const [showPatientSearch,    setShowPatientSearch]    = useState(false);
+  const [showPatientSearch, setShowPatientSearch] = useState(false);
   const patientSrchRef = useRef(null);
 
   const [form, setForm] = useState({
@@ -69,9 +71,9 @@ export default function NewAppointmentPage() {
     reason: "",
   });
 
-  const [recurring,          setRecurring]          = useState(false);
-  const [recurrenceType,     setRecurrenceType]      = useState("weekly");
-  const [recurrenceSessions, setRecurrenceSessions]  = useState(4);
+  const [recurring, setRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState("weekly");
+  const [recurrenceSessions, setRecurrenceSessions] = useState(4);
 
   useEffect(() => {
     fetchDoctors();
@@ -106,12 +108,18 @@ export default function NewAppointmentPage() {
 
   const fetchDoctors = async () => {
     try {
-      const res = await api.get("/api/v1/doctors", { params: { per_page: 200 } });
+      const res = await api.get("/api/v1/doctors", {
+        params: { per_page: 200 },
+      });
       const active = res.data.data.filter((d) => d.status === "active");
       setDoctors(active);
 
       // Si el usuario es doctor y no hay un doctor pre-seleccionado por URL, auto-seleccionar el suyo
-      if (user?.role === "doctor" && user?.doctor_id && !searchParams.get("doctor_id")) {
+      if (
+        user?.role === "doctor" &&
+        user?.doctor_id &&
+        !searchParams.get("doctor_id")
+      ) {
         const myDoctor = active.find((d) => d.id === user.doctor_id);
         if (myDoctor) {
           setForm((f) => ({ ...f, doctor_id: myDoctor.id }));
@@ -194,14 +202,24 @@ export default function NewAppointmentPage() {
   };
 
   const searchPatientsDirect = async (q) => {
-    if (q.length < 2) { setPatientSearchResults([]); setShowPatientSearch(false); return; }
+    if (q.length < 2) {
+      setPatientSearchResults([]);
+      setShowPatientSearch(false);
+      return;
+    }
     setPatientSearchLoading(true);
     try {
-      const res = await api.get("/api/v1/patients", { params: { q, per_page: 20 } });
-      setPatientSearchResults(Array.isArray(res.data?.data) ? res.data.data : []);
+      const res = await api.get("/api/v1/patients", {
+        params: { q, per_page: 20 },
+      });
+      setPatientSearchResults(
+        Array.isArray(res.data?.data) ? res.data.data : [],
+      );
       setShowPatientSearch(true);
-    } catch {}
-    finally { setPatientSearchLoading(false); }
+    } catch {
+    } finally {
+      setPatientSearchLoading(false);
+    }
   };
 
   const selectPatientDirect = (patient) => {
@@ -303,24 +321,26 @@ export default function NewAppointmentPage() {
     try {
       const payload = {
         appointment: {
-          doctor_id:        parseInt(form.doctor_id),
-          patient_id:       parseInt(form.patient_id),
-          owner_id:         parseInt(form.owner_id),
-          scheduled_at:     `${form.date}T${form.time}:00`,
+          doctor_id: parseInt(form.doctor_id),
+          patient_id: parseInt(form.patient_id),
+          owner_id: parseInt(form.owner_id),
+          scheduled_at: `${form.date}T${form.time}:00`,
           appointment_type: form.appointment_type,
-          reason:           form.reason,
+          reason: form.reason,
         },
       };
 
       if (recurring && recurrenceSessions > 1) {
-        payload.recurrence_type     = recurrenceType;
+        payload.recurrence_type = recurrenceType;
         payload.recurrence_sessions = recurrenceSessions;
       }
 
       const res = await api.post("/api/v1/appointments", payload);
 
       if (res.data.series_id) {
-        toast.success(`Serie creada: ${res.data.total} citas agendadas correctamente`);
+        toast.success(
+          `Serie creada: ${res.data.total} citas agendadas correctamente`,
+        );
       } else {
         toast.success("Cita creada correctamente");
       }
@@ -414,18 +434,18 @@ export default function NewAppointmentPage() {
               className="text-xs font-semibold uppercase tracking-widest"
               style={{ color: "#94a3b8" }}
             >
-              Médico y horario
+              {config.staffLabel} y horario
             </p>
 
             <div>
-              <label style={labelStyle}>Doctor *</label>
+              <label style={labelStyle}>{config.staffLabel} *</label>
               <select
                 value={form.doctor_id}
                 onChange={(e) => handleChange("doctor_id", e.target.value)}
                 style={inputStyle}
                 required
               >
-                <option value="">Selecciona un doctor</option>
+                <option value="">Selecciona un {config.staffLabel}</option>
                 {doctors.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.full_name} — {d.specialty}
@@ -450,7 +470,7 @@ export default function NewAppointmentPage() {
               <label style={labelStyle}>Horario disponible *</label>
               {!form.doctor_id ? (
                 <p className="text-sm py-2" style={{ color: "#94a3b8" }}>
-                  Selecciona un doctor primero
+                  Selecciona un {config.staffLabel} primero
                 </p>
               ) : loading ? (
                 <div className="flex items-center gap-2 py-2">
@@ -501,25 +521,38 @@ export default function NewAppointmentPage() {
 
             {/* Toggle modo de búsqueda (solo para clínicas con adultos) */}
             {config.adultCheck && (
-              <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+              <div
+                className="flex rounded-lg overflow-hidden"
+                style={{ border: "1px solid #e2e8f0" }}
+              >
                 {[
-                  { key: "patient", label: `Buscar ${config.patientLabel.toLowerCase()}` },
-                  { key: "owner",   label: `Buscar por ${config.ownerLabel.toLowerCase()}` },
+                  {
+                    key: "patient",
+                    label: `Buscar ${config.patientLabel.toLowerCase()}`,
+                  },
+                  {
+                    key: "owner",
+                    label: `Buscar por ${config.ownerLabel.toLowerCase()}`,
+                  },
                 ].map(({ key, label }, i) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => {
                       setSearchMode(key);
-                      if (key === "patient") { clearOwner(); setPatientSearch(""); setPatientSearchResults([]); }
-                      else clearPatientDirect();
+                      if (key === "patient") {
+                        clearOwner();
+                        setPatientSearch("");
+                        setPatientSearchResults([]);
+                      } else clearPatientDirect();
                     }}
                     style={{
                       flex: 1,
                       padding: "6px 12px",
                       fontSize: "13px",
                       fontWeight: 500,
-                      backgroundColor: searchMode === key ? "#2563eb" : "#f8fafc",
+                      backgroundColor:
+                        searchMode === key ? "#2563eb" : "#f8fafc",
                       color: searchMode === key ? "#fff" : "#64748b",
                       border: "none",
                       borderLeft: i > 0 ? "1px solid #e2e8f0" : "none",
@@ -536,15 +569,25 @@ export default function NewAppointmentPage() {
             {searchMode === "patient" && (
               <div ref={patientSrchRef}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label style={{ ...labelStyle, marginBottom: 0 }}>{config.patientLabel} *</label>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>
+                    {config.patientLabel} *
+                  </label>
                 </div>
                 {selectedPatient ? (
                   <div
                     className="flex items-center justify-between px-3 py-2 rounded-lg"
-                    style={{ border: "1px solid #bfdbfe", backgroundColor: "#eff6ff" }}
+                    style={{
+                      border: "1px solid #bfdbfe",
+                      backgroundColor: "#eff6ff",
+                    }}
                   >
                     <div>
-                      <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{selectedPatient.name}</p>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "#0f172a" }}
+                      >
+                        {selectedPatient.name}
+                      </p>
                       {selectedOwner && (
                         <p className="text-xs" style={{ color: "#64748b" }}>
                           {config.ownerLabel}: {selectedOwner.full_name}
@@ -580,7 +623,10 @@ export default function NewAppointmentPage() {
                     {showPatientSearch && patientSearchResults.length > 0 && (
                       <div
                         className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
-                        style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+                        style={{
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                        }}
                       >
                         {patientSearchResults.map((p) => (
                           <button
@@ -589,12 +635,26 @@ export default function NewAppointmentPage() {
                             onClick={() => selectPatientDirect(p)}
                             className="w-full text-left px-4 py-3 transition-colors"
                             style={{ borderBottom: "1px solid #f1f5f9" }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "#f8fafc")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "transparent")
+                            }
                           >
-                            <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{p.name}</p>
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "#0f172a" }}
+                            >
+                              {p.name}
+                            </p>
                             {p.owner && (
-                              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                              <p
+                                className="text-xs"
+                                style={{ color: "#94a3b8" }}
+                              >
                                 {config.ownerLabel}: {p.owner.full_name}
                               </p>
                             )}
@@ -602,221 +662,237 @@ export default function NewAppointmentPage() {
                         ))}
                       </div>
                     )}
-                    {showPatientSearch && patientSearchResults.length === 0 && patientSearch.length >= 2 && !patientSearchLoading && (
-                      <div
-                        className="absolute z-10 w-full mt-1 rounded-lg p-3 text-center"
-                        style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
-                      >
-                        <p className="text-sm" style={{ color: "#94a3b8" }}>
-                          No se encontraron {config.patientsLabel.toLowerCase()}
-                        </p>
-                      </div>
-                    )}
+                    {showPatientSearch &&
+                      patientSearchResults.length === 0 &&
+                      patientSearch.length >= 2 &&
+                      !patientSearchLoading && (
+                        <div
+                          className="absolute z-10 w-full mt-1 rounded-lg p-3 text-center"
+                          style={{
+                            backgroundColor: "#ffffff",
+                            border: "1px solid #e2e8f0",
+                          }}
+                        >
+                          <p className="text-sm" style={{ color: "#94a3b8" }}>
+                            No se encontraron{" "}
+                            {config.patientsLabel.toLowerCase()}
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
             )}
 
             {/* Buscador de owner (modo owner-first) */}
-            {searchMode === "owner" && <div ref={ownerRef}>
-              <div className="flex items-center justify-between mb-1.5">
-                <label style={{ ...labelStyle, marginBottom: 0 }}>
-                  {config.ownerLabel} *
-                </label>
-                {!selectedOwner && !showNewOwnerForm && (
-                  <button
-                    type="button"
-                    onClick={() => setShowNewOwnerForm(true)}
-                    className="text-xs font-medium"
-                    style={{ color: "#2563eb" }}
-                  >
-                    + Crear nuevo
-                  </button>
-                )}
-              </div>
+            {searchMode === "owner" && (
+              <div ref={ownerRef}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>
+                    {config.ownerLabel} *
+                  </label>
+                  {!selectedOwner && !showNewOwnerForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowNewOwnerForm(true)}
+                      className="text-xs font-medium"
+                      style={{ color: "#2563eb" }}
+                    >
+                      + Crear nuevo
+                    </button>
+                  )}
+                </div>
 
-              {selectedOwner ? (
-                <div
-                  className="flex items-center justify-between px-3 py-2 rounded-lg"
-                  style={{
-                    border: "1px solid #bfdbfe",
-                    backgroundColor: "#eff6ff",
-                  }}
-                >
-                  <div>
-                    <p
-                      className="text-sm font-medium"
-                      style={{ color: "#0f172a" }}
-                    >
-                      {selectedOwner.full_name}
-                    </p>
-                    <p className="text-xs" style={{ color: "#64748b" }}>
-                      {selectedOwner.phone}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={clearOwner}
-                    className="text-xs px-2 py-1 rounded"
-                    style={{ color: "#dc2626", backgroundColor: "#fef2f2" }}
-                  >
-                    Cambiar
-                  </button>
-                </div>
-              ) : showNewOwnerForm ? (
-                <div
-                  className="rounded-lg p-3 space-y-2"
-                  style={{
-                    border: "1px solid #e2e8f0",
-                    backgroundColor: "#f8fafc",
-                  }}
-                >
-                  <p
-                    className="text-xs font-semibold"
-                    style={{ color: "#64748b" }}
-                  >
-                    Nuevo {config.ownerLabel.toLowerCase()}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Nombre *"
-                      value={newOwnerForm.first_name}
-                      onChange={(e) =>
-                        setNewOwnerForm((f) => ({
-                          ...f,
-                          first_name: e.target.value,
-                        }))
-                      }
-                      style={smallInputStyle}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Apellido *"
-                      value={newOwnerForm.last_name}
-                      onChange={(e) =>
-                        setNewOwnerForm((f) => ({
-                          ...f,
-                          last_name: e.target.value,
-                        }))
-                      }
-                      style={smallInputStyle}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Teléfono *"
-                    value={newOwnerForm.phone}
-                    onChange={(e) =>
-                      setNewOwnerForm((f) => ({ ...f, phone: e.target.value }))
-                    }
-                    style={smallInputStyle}
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={newOwnerForm.email}
-                    onChange={(e) =>
-                      setNewOwnerForm((f) => ({ ...f, email: e.target.value }))
-                    }
-                    style={smallInputStyle}
-                  />
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={handleCreateOwner}
-                      disabled={savingOwner}
-                      className="flex-1 py-1.5 rounded-lg text-xs font-medium"
-                      style={{
-                        backgroundColor: savingOwner ? "#93c5fd" : "#2563eb",
-                        color: "#ffffff",
-                      }}
-                    >
-                      {savingOwner ? "Guardando..." : "Guardar"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowNewOwnerForm(false)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                      style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={ownerSearch}
-                    onChange={(e) => {
-                      setOwnerSearch(e.target.value);
-                      searchOwners(e.target.value);
+                {selectedOwner ? (
+                  <div
+                    className="flex items-center justify-between px-3 py-2 rounded-lg"
+                    style={{
+                      border: "1px solid #bfdbfe",
+                      backgroundColor: "#eff6ff",
                     }}
-                    placeholder={`Buscar ${config.ownerLabel.toLowerCase()}...`}
-                    style={inputStyle}
-                  />
-                  {ownerLoading && (
-                    <div className="absolute right-3 top-2.5">
-                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  >
+                    <div>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "#0f172a" }}
+                      >
+                        {selectedOwner.full_name}
+                      </p>
+                      <p className="text-xs" style={{ color: "#64748b" }}>
+                        {selectedOwner.phone}
+                      </p>
                     </div>
-                  )}
-                  {showOwnerResults && ownerResults.length > 0 && (
-                    <div
-                      className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
-                      style={{
-                        backgroundColor: "#ffffff",
-                        border: "1px solid #e2e8f0",
-                      }}
+                    <button
+                      type="button"
+                      onClick={clearOwner}
+                      className="text-xs px-2 py-1 rounded"
+                      style={{ color: "#dc2626", backgroundColor: "#fef2f2" }}
                     >
-                      {ownerResults.map((owner) => (
-                        <button
-                          key={owner.id}
-                          type="button"
-                          onClick={() => selectOwner(owner)}
-                          className="w-full text-left px-4 py-3 transition-colors"
-                          style={{ borderBottom: "1px solid #f1f5f9" }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#f8fafc")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              "transparent")
-                          }
-                        >
-                          <p
-                            className="text-sm font-medium"
-                            style={{ color: "#0f172a" }}
-                          >
-                            {owner.full_name}
-                          </p>
-                          <p className="text-xs" style={{ color: "#94a3b8" }}>
-                            {owner.phone}{" "}
-                            {owner.email ? `· ${owner.email}` : ""}
-                          </p>
-                        </button>
-                      ))}
+                      Cambiar
+                    </button>
+                  </div>
+                ) : showNewOwnerForm ? (
+                  <div
+                    className="rounded-lg p-3 space-y-2"
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      backgroundColor: "#f8fafc",
+                    }}
+                  >
+                    <p
+                      className="text-xs font-semibold"
+                      style={{ color: "#64748b" }}
+                    >
+                      Nuevo {config.ownerLabel.toLowerCase()}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nombre *"
+                        value={newOwnerForm.first_name}
+                        onChange={(e) =>
+                          setNewOwnerForm((f) => ({
+                            ...f,
+                            first_name: e.target.value,
+                          }))
+                        }
+                        style={smallInputStyle}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Apellido *"
+                        value={newOwnerForm.last_name}
+                        onChange={(e) =>
+                          setNewOwnerForm((f) => ({
+                            ...f,
+                            last_name: e.target.value,
+                          }))
+                        }
+                        style={smallInputStyle}
+                      />
                     </div>
-                  )}
-                  {showOwnerResults &&
-                    ownerResults.length === 0 &&
-                    ownerSearch.length >= 2 &&
-                    !ownerLoading && (
+                    <input
+                      type="text"
+                      placeholder="Teléfono *"
+                      value={newOwnerForm.phone}
+                      onChange={(e) =>
+                        setNewOwnerForm((f) => ({
+                          ...f,
+                          phone: e.target.value,
+                        }))
+                      }
+                      style={smallInputStyle}
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={newOwnerForm.email}
+                      onChange={(e) =>
+                        setNewOwnerForm((f) => ({
+                          ...f,
+                          email: e.target.value,
+                        }))
+                      }
+                      style={smallInputStyle}
+                    />
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleCreateOwner}
+                        disabled={savingOwner}
+                        className="flex-1 py-1.5 rounded-lg text-xs font-medium"
+                        style={{
+                          backgroundColor: savingOwner ? "#93c5fd" : "#2563eb",
+                          color: "#ffffff",
+                        }}
+                      >
+                        {savingOwner ? "Guardando..." : "Guardar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewOwnerForm(false)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={ownerSearch}
+                      onChange={(e) => {
+                        setOwnerSearch(e.target.value);
+                        searchOwners(e.target.value);
+                      }}
+                      placeholder={`Buscar ${config.ownerLabel.toLowerCase()}...`}
+                      style={inputStyle}
+                    />
+                    {ownerLoading && (
+                      <div className="absolute right-3 top-2.5">
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                    {showOwnerResults && ownerResults.length > 0 && (
                       <div
-                        className="absolute z-10 w-full mt-1 rounded-lg p-3 text-center"
+                        className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
                         style={{
                           backgroundColor: "#ffffff",
                           border: "1px solid #e2e8f0",
                         }}
                       >
-                        <p className="text-sm" style={{ color: "#94a3b8" }}>
-                          No se encontraron {config.ownersLabel.toLowerCase()}
-                        </p>
+                        {ownerResults.map((owner) => (
+                          <button
+                            key={owner.id}
+                            type="button"
+                            onClick={() => selectOwner(owner)}
+                            className="w-full text-left px-4 py-3 transition-colors"
+                            style={{ borderBottom: "1px solid #f1f5f9" }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "#f8fafc")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "transparent")
+                            }
+                          >
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "#0f172a" }}
+                            >
+                              {owner.full_name}
+                            </p>
+                            <p className="text-xs" style={{ color: "#94a3b8" }}>
+                              {owner.phone}{" "}
+                              {owner.email ? `· ${owner.email}` : ""}
+                            </p>
+                          </button>
+                        ))}
                       </div>
                     )}
-                </div>
-              )}
-            </div>}
+                    {showOwnerResults &&
+                      ownerResults.length === 0 &&
+                      ownerSearch.length >= 2 &&
+                      !ownerLoading && (
+                        <div
+                          className="absolute z-10 w-full mt-1 rounded-lg p-3 text-center"
+                          style={{
+                            backgroundColor: "#ffffff",
+                            border: "1px solid #e2e8f0",
+                          }}
+                        >
+                          <p className="text-sm" style={{ color: "#94a3b8" }}>
+                            No se encontraron {config.ownersLabel.toLowerCase()}
+                          </p>
+                        </div>
+                      )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Selector de paciente (modo owner-first) */}
             {searchMode === "owner" && selectedOwner && (
@@ -1083,17 +1159,39 @@ export default function NewAppointmentPage() {
             </div>
 
             {/* ── Recurrencia ── */}
-            <div className="rounded-xl p-4" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div
+              className="rounded-xl p-4"
+              style={{
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+              }}
+            >
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: "#0f172a" }}>Cita recurrente</p>
-                  <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>Genera una serie de citas automáticamente</p>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#0f172a" }}
+                  >
+                    Cita recurrente
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                    Genera una serie de citas automáticamente
+                  </p>
                 </div>
-                <button type="button" onClick={() => setRecurring(v => !v)}
+                <button
+                  type="button"
+                  onClick={() => setRecurring((v) => !v)}
                   className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0 overflow-hidden"
-                  style={{ backgroundColor: recurring ? "#2563eb" : "#e2e8f0" }}>
-                  <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
-                    style={{ transform: recurring ? "translateX(20px)" : "translateX(0px)" }} />
+                  style={{ backgroundColor: recurring ? "#2563eb" : "#e2e8f0" }}
+                >
+                  <span
+                    className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                    style={{
+                      transform: recurring
+                        ? "translateX(20px)"
+                        : "translateX(0px)",
+                    }}
+                  />
                 </button>
               </div>
 
@@ -1101,50 +1199,105 @@ export default function NewAppointmentPage() {
                 <div className="space-y-3 pt-1">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: "#64748b" }}>Frecuencia</label>
-                      <select value={recurrenceType} onChange={e => setRecurrenceType(e.target.value)}
+                      <label
+                        className="block text-xs font-medium mb-1"
+                        style={{ color: "#64748b" }}
+                      >
+                        Frecuencia
+                      </label>
+                      <select
+                        value={recurrenceType}
+                        onChange={(e) => setRecurrenceType(e.target.value)}
                         className="w-full text-sm rounded-lg px-3 py-2 outline-none"
-                        style={{ border: "1px solid #e2e8f0", color: "#0f172a", backgroundColor: "#fff" }}>
+                        style={{
+                          border: "1px solid #e2e8f0",
+                          color: "#0f172a",
+                          backgroundColor: "#fff",
+                        }}
+                      >
                         <option value="weekly">Cada semana</option>
                         <option value="biweekly">Cada 2 semanas</option>
                         <option value="monthly">Cada mes</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: "#64748b" }}>Número de sesiones</label>
-                      <input type="number" min={2} max={52} value={recurrenceSessions}
-                        onChange={e => setRecurrenceSessions(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))}
+                      <label
+                        className="block text-xs font-medium mb-1"
+                        style={{ color: "#64748b" }}
+                      >
+                        Número de sesiones
+                      </label>
+                      <input
+                        type="number"
+                        min={2}
+                        max={52}
+                        value={recurrenceSessions}
+                        onChange={(e) =>
+                          setRecurrenceSessions(
+                            Math.max(
+                              2,
+                              Math.min(52, parseInt(e.target.value) || 2),
+                            ),
+                          )
+                        }
                         className="w-full text-sm rounded-lg px-3 py-2 outline-none"
-                        style={{ border: "1px solid #e2e8f0", color: "#0f172a", backgroundColor: "#fff" }} />
+                        style={{
+                          border: "1px solid #e2e8f0",
+                          color: "#0f172a",
+                          backgroundColor: "#fff",
+                        }}
+                      />
                     </div>
                   </div>
 
                   {/* Preview de fechas */}
                   {form.date && form.time && (
                     <div>
-                      <p className="text-xs font-medium mb-2" style={{ color: "#64748b" }}>
+                      <p
+                        className="text-xs font-medium mb-2"
+                        style={{ color: "#64748b" }}
+                      >
                         Fechas a generar ({recurrenceSessions} sesiones):
                       </p>
                       <div className="flex flex-wrap gap-1.5">
-                        {Array.from({ length: Math.min(recurrenceSessions, 8) }).map((_, i) => {
+                        {Array.from({
+                          length: Math.min(recurrenceSessions, 8),
+                        }).map((_, i) => {
                           const base = new Date(`${form.date}T${form.time}:00`);
                           let d;
-                          if (recurrenceType === "weekly")   d = new Date(base.getTime() + i * 7  * 86400000);
-                          if (recurrenceType === "biweekly") d = new Date(base.getTime() + i * 14 * 86400000);
+                          if (recurrenceType === "weekly")
+                            d = new Date(base.getTime() + i * 7 * 86400000);
+                          if (recurrenceType === "biweekly")
+                            d = new Date(base.getTime() + i * 14 * 86400000);
                           if (recurrenceType === "monthly") {
                             d = new Date(base);
                             d.setMonth(d.getMonth() + i);
                           }
-                          const label = d.toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short" });
+                          const label = d.toLocaleDateString("es-GT", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                          });
                           return (
-                            <span key={i} className="text-xs px-2 py-1 rounded-lg font-medium"
-                              style={{ backgroundColor: i === 0 ? "#eff6ff" : "#f1f5f9", color: i === 0 ? "#2563eb" : "#64748b", border: `1px solid ${i === 0 ? "#bfdbfe" : "#e2e8f0"}` }}>
+                            <span
+                              key={i}
+                              className="text-xs px-2 py-1 rounded-lg font-medium"
+                              style={{
+                                backgroundColor:
+                                  i === 0 ? "#eff6ff" : "#f1f5f9",
+                                color: i === 0 ? "#2563eb" : "#64748b",
+                                border: `1px solid ${i === 0 ? "#bfdbfe" : "#e2e8f0"}`,
+                              }}
+                            >
                               {i + 1}. {label}
                             </span>
                           );
                         })}
                         {recurrenceSessions > 8 && (
-                          <span className="text-xs px-2 py-1 rounded-lg" style={{ color: "#94a3b8" }}>
+                          <span
+                            className="text-xs px-2 py-1 rounded-lg"
+                            style={{ color: "#94a3b8" }}
+                          >
                             +{recurrenceSessions - 8} más...
                           </span>
                         )}
@@ -1169,8 +1322,8 @@ export default function NewAppointmentPage() {
                 {submitting
                   ? "Creando..."
                   : recurring
-                  ? `Crear ${recurrenceSessions} citas`
-                  : "Crear cita"}
+                    ? `Crear ${recurrenceSessions} citas`
+                    : "Crear cita"}
               </button>
               <Link href="/dashboard/appointments">
                 <button

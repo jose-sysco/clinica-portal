@@ -50,15 +50,15 @@ function SubscriptionContent() {
         <div className="text-5xl mb-6">{reason.icon}</div>
 
         {/* Título */}
-        <h1
-          className="text-xl font-bold mb-3"
-          style={{ color: "#0f172a" }}
-        >
+        <h1 className="text-xl font-bold mb-3" style={{ color: "#0f172a" }}>
           {reason.title}
         </h1>
 
         {/* Descripción */}
-        <p className="text-sm mb-8 leading-relaxed" style={{ color: "#64748b" }}>
+        <p
+          className="text-sm mb-8 leading-relaxed"
+          style={{ color: "#64748b" }}
+        >
           {reason.description}
         </p>
 
@@ -67,7 +67,10 @@ function SubscriptionContent() {
           className="rounded-xl p-4 mb-6 text-left"
           style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}
         >
-          <p className="text-xs font-semibold mb-1" style={{ color: "#1d4ed8" }}>
+          <p
+            className="text-xs font-semibold mb-1"
+            style={{ color: "#1d4ed8" }}
+          >
             ¿Necesitas ayuda?
           </p>
           <p className="text-xs" style={{ color: "#2563eb" }}>
@@ -80,9 +83,21 @@ function SubscriptionContent() {
         {/* Planes */}
         <div className="space-y-3 mb-6">
           {[
-            { name: "Básico", price: "$29/mes", features: "Hasta 2 doctores · 200 citas/mes" },
-            { name: "Profesional", price: "$59/mes", features: "Hasta 10 doctores · citas ilimitadas" },
-            { name: "Empresarial", price: "A consultar", features: "Multi-sede · soporte prioritario" },
+            {
+              name: "Básico",
+              price: "$29/mes",
+              features: "Hasta 2 profesionales · 200 citas/mes",
+            },
+            {
+              name: "Profesional",
+              price: "$59/mes",
+              features: "Hasta 10 profesionales · citas ilimitadas",
+            },
+            {
+              name: "Empresarial",
+              price: "A consultar",
+              features: "Multi-sede · soporte prioritario",
+            },
           ].map((plan) => (
             <div
               key={plan.name}
@@ -90,7 +105,10 @@ function SubscriptionContent() {
               style={{ border: "1px solid #e2e8f0" }}
             >
               <div>
-                <p className="text-sm font-semibold" style={{ color: "#0f172a" }}>
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "#0f172a" }}
+                >
                   {plan.name}
                 </p>
                 <p className="text-xs" style={{ color: "#94a3b8" }}>

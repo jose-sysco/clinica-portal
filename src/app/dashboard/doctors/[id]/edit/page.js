@@ -200,13 +200,13 @@ export default function EditDoctorPage() {
         ),
       );
 
-      toast.success("Doctor actualizado correctamente");
+      toast.success("Profesional actualizado correctamente");
       router.push("/dashboard/doctors");
     } catch (err) {
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);
       } else {
-        toast.error("Error al actualizar el doctor");
+        toast.error("Error al actualizar el profesional");
       }
     } finally {
       setSubmitting(false);
@@ -261,7 +261,7 @@ export default function EditDoctorPage() {
             className="text-2xl font-bold tracking-tight"
             style={{ color: "#0f172a" }}
           >
-            Editar doctor
+            Editar {config.staffLabel}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
             {doctor?.full_name} · {doctor?.email}
@@ -271,9 +271,17 @@ export default function EditDoctorPage() {
       <Link href={`/dashboard/doctors/${id}/schedule`}>
         <button
           className="text-sm font-medium px-4 py-2 rounded-lg"
-          style={{ color: "#2563eb", backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#dbeafe")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#eff6ff")}
+          style={{
+            color: "#2563eb",
+            backgroundColor: "#eff6ff",
+            border: "1px solid #bfdbfe",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "#dbeafe")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = "#eff6ff")
+          }
         >
           Gestionar horario →
         </button>
@@ -373,23 +381,49 @@ export default function EditDoctorPage() {
             </div>
 
             {hasInventory && (
-              <div className="rounded-xl p-4" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <div
+                className="rounded-xl p-4"
+                style={{
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium" style={{ color: "#0f172a" }}>Movimientos de inventario</p>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "#0f172a" }}
+                    >
+                      Movimientos de inventario
+                    </p>
                     <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
-                      Al activar, los insumos usados en consultas de este doctor se descontarán automáticamente del inventario.
+                      Al activar, los insumos usados en consultas de este{" "}
+                      {config.staffLabel} se descontarán automáticamente del
+                      inventario.
                     </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setForm((f) => ({ ...f, inventory_movements: !f.inventory_movements }))}
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        inventory_movements: !f.inventory_movements,
+                      }))
+                    }
                     className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 overflow-hidden"
-                    style={{ backgroundColor: form.inventory_movements ? "#2563eb" : "#e2e8f0" }}
+                    style={{
+                      backgroundColor: form.inventory_movements
+                        ? "#2563eb"
+                        : "#e2e8f0",
+                    }}
                   >
                     <span
                       className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
-                      style={{ transform: form.inventory_movements ? "translateX(20px)" : "translateX(0)" }}
+                      style={{
+                        transform: form.inventory_movements
+                          ? "translateX(20px)"
+                          : "translateX(0)",
+                      }}
                     />
                   </button>
                 </div>

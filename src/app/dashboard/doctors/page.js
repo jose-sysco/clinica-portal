@@ -9,40 +9,79 @@ import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
 
 const STATUS_CONFIG = {
-  active:   { label: "Activo",     color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
-  inactive: { label: "Inactivo",   color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
-  on_leave: { label: "De permiso", color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
+  active: {
+    label: "Activo",
+    color: "#16a34a",
+    bg: "#f0fdf4",
+    border: "#bbf7d0",
+  },
+  inactive: {
+    label: "Inactivo",
+    color: "#dc2626",
+    bg: "#fef2f2",
+    border: "#fecaca",
+  },
+  on_leave: {
+    label: "De permiso",
+    color: "#ea580c",
+    bg: "#fff7ed",
+    border: "#fed7aa",
+  },
 };
 
-const DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
-const DAY_LABEL = { monday:"Lun", tuesday:"Mar", wednesday:"Mié", thursday:"Jue", friday:"Vie", saturday:"Sáb", sunday:"Dom" };
+const DAY_ORDER = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+const DAY_LABEL = {
+  monday: "Lun",
+  tuesday: "Mar",
+  wednesday: "Mié",
+  thursday: "Jue",
+  friday: "Vie",
+  saturday: "Sáb",
+  sunday: "Dom",
+};
 
 function formatNextAppt(iso) {
   if (!iso) return null;
   const [datePart, timePart] = iso.split("T");
   const [y, m, d] = datePart.split("-").map(Number);
-  const date     = new Date(y, m - 1, d);
+  const date = new Date(y, m - 1, d);
   const todayDate = new Date();
   todayDate.setHours(0, 0, 0, 0);
   const diff = Math.floor((date - todayDate) / 86400000);
   const time = timePart.slice(0, 5);
   if (diff === 0) return `Hoy ${time}`;
   if (diff === 1) return `Mañana ${time}`;
-  return date.toLocaleDateString("es-GT", { weekday: "short", day: "numeric", month: "short" }) + ` ${time}`;
+  return (
+    date.toLocaleDateString("es-GT", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }) + ` ${time}`
+  );
 }
 
 export default function DoctorsPage() {
   const { organization } = useAuth();
-  const [doctors,        setDoctors]        = useState([]);
-  const [loading,        setLoading]        = useState(true);
-  const [pagination,     setPagination]     = useState(null);
-  const [page,           setPage]           = useState(1);
-  const [search,         setSearch]         = useState("");
-  const [deletingId,     setDeletingId]     = useState(null);
-  const [confirmDelete,  setConfirmDelete]  = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const debounceRef = useRef(null);
 
-  useEffect(() => { fetchDoctors(); }, [page]);
+  useEffect(() => {
+    fetchDoctors();
+  }, [page]);
 
   // Debounce search
   const handleSearch = (val) => {
@@ -62,8 +101,10 @@ export default function DoctorsPage() {
       const res = await api.get("/api/v1/doctors", { params });
       setDoctors(res.data.data);
       setPagination(res.data.pagination);
-    } catch {}
-    finally { setLoading(false); }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (doctor) => {
@@ -84,24 +125,38 @@ export default function DoctorsPage() {
     <div className="space-y-6">
       {/* Modal de confirmación de desactivación */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-          onClick={() => setConfirmDelete(null)}>
-          <div className="rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4"
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            className="rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4"
             style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
-            onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-base font-semibold mb-2" style={{ color: "#0f172a" }}>
-              ¿Desactivar doctor?
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              className="text-base font-semibold mb-2"
+              style={{ color: "#0f172a" }}
+            >
+              ¿Desactivar {config.staffSingularLabel}?
             </h2>
             <p className="text-sm mb-5" style={{ color: "#64748b" }}>
-              <span className="font-medium" style={{ color: "#0f172a" }}>{confirmDelete.full_name}</span> quedará
-              inactivo y no aparecerá en el listado ni podrá recibir citas nuevas.
+              <span className="font-medium" style={{ color: "#0f172a" }}>
+                {confirmDelete.full_name}
+              </span>{" "}
+              quedará inactivo y no aparecerá en el listado ni podrá recibir
+              citas nuevas.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
                 className="flex-1 py-2 rounded-xl text-sm font-medium"
-                style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}
+                style={{
+                  backgroundColor: "#f1f5f9",
+                  color: "#64748b",
+                  border: "1px solid #e2e8f0",
+                }}
               >
                 Cancelar
               </button>
@@ -110,12 +165,16 @@ export default function DoctorsPage() {
                 disabled={deletingId === confirmDelete.id}
                 className="flex-1 py-2 rounded-xl text-sm font-medium"
                 style={{
-                  backgroundColor: deletingId === confirmDelete.id ? "#fca5a5" : "#dc2626",
+                  backgroundColor:
+                    deletingId === confirmDelete.id ? "#fca5a5" : "#dc2626",
                   color: "#ffffff",
-                  cursor: deletingId === confirmDelete.id ? "not-allowed" : "pointer",
+                  cursor:
+                    deletingId === confirmDelete.id ? "not-allowed" : "pointer",
                 }}
               >
-                {deletingId === confirmDelete.id ? "Desactivando…" : "Desactivar"}
+                {deletingId === confirmDelete.id
+                  ? "Desactivando…"
+                  : "Desactivar"}
               </button>
             </div>
           </div>
@@ -125,46 +184,77 @@ export default function DoctorsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>Doctores</h1>
+          <h1
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: "#0f172a" }}
+          >
+            {config.staffLabel}
+          </h1>
           <p className="text-sm mt-1" style={{ color: "#64748b" }}>
             Gestión del equipo médico
-            {pagination && <span style={{ color: "#94a3b8" }}> — {pagination.count} en total</span>}
+            {pagination && (
+              <span style={{ color: "#94a3b8" }}>
+                {" "}
+                — {pagination.count} en total
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-3">
           {organization?.plan_max_doctors != null && (
-            <div className="text-xs px-3 py-1.5 rounded-lg font-medium"
+            <div
+              className="text-xs px-3 py-1.5 rounded-lg font-medium"
               style={{
-                backgroundColor: organization.doctors_used >= organization.plan_max_doctors ? "#fef2f2" : "#f1f5f9",
-                color:           organization.doctors_used >= organization.plan_max_doctors ? "#dc2626" : "#475569",
-                border:          `1px solid ${organization.doctors_used >= organization.plan_max_doctors ? "#fecaca" : "#e2e8f0"}`,
-              }}>
-              {organization.doctors_used} / {organization.plan_max_doctors} doctores
+                backgroundColor:
+                  organization.doctors_used >= organization.plan_max_doctors
+                    ? "#fef2f2"
+                    : "#f1f5f9",
+                color:
+                  organization.doctors_used >= organization.plan_max_doctors
+                    ? "#dc2626"
+                    : "#475569",
+                border: `1px solid ${organization.doctors_used >= organization.plan_max_doctors ? "#fecaca" : "#e2e8f0"}`,
+              }}
+            >
+              {organization.doctors_used} / {organization.plan_max_doctors}{" "}
+              doctores
             </div>
           )}
-        {organization?.plan_max_doctors != null &&
-         organization.doctors_used >= organization.plan_max_doctors ? (
-          <button
-            disabled
-            title={`Límite de ${organization.plan_max_doctors} doctores alcanzado. Actualiza tu plan.`}
-            className="text-sm font-medium px-4 py-2 rounded-lg cursor-not-allowed"
-            style={{ backgroundColor: "#f1f5f9", color: "#94a3b8", border: "1px solid #e2e8f0" }}
-            onClick={() => toast.error(`Límite de ${organization.plan_max_doctors} doctores alcanzado. Actualiza tu plan para agregar más.`)}
-          >
-            + Nuevo doctor
-          </button>
-        ) : (
-          <Link href="/dashboard/doctors/new">
+          {organization?.plan_max_doctors != null &&
+          organization.doctors_used >= organization.plan_max_doctors ? (
             <button
-              className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+              disabled
+              title={`Límite de ${organization.plan_max_doctors} ${config.staffLabel} alcanzado. Actualiza tu plan.`}
+              className="text-sm font-medium px-4 py-2 rounded-lg cursor-not-allowed"
+              style={{
+                backgroundColor: "#f1f5f9",
+                color: "#94a3b8",
+                border: "1px solid #e2e8f0",
+              }}
+              onClick={() =>
+                toast.error(
+                  `Límite de ${organization.plan_max_doctors} ${config.staffLabel} alcanzado. Actualiza tu plan para agregar más.`,
+                )
+              }
             >
-              + Nuevo doctor
+              + Nuevo {config.staffSingularLabel}
             </button>
-          </Link>
-        )}
+          ) : (
+            <Link href="/dashboard/doctors/new">
+              <button
+                className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#1d4ed8")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#2563eb")
+                }
+              >
+                + Nuevo {config.staffSingularLabel}
+              </button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -176,13 +266,21 @@ export default function DoctorsPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           className="flex-1 text-sm px-4 py-2.5 rounded-xl outline-none"
-          style={{ border: "1px solid #e2e8f0", backgroundColor: "#ffffff", color: "#0f172a" }}
+          style={{
+            border: "1px solid #e2e8f0",
+            backgroundColor: "#ffffff",
+            color: "#0f172a",
+          }}
         />
         {search && (
           <button
             onClick={() => handleSearch("")}
             className="text-sm px-4 py-2.5 rounded-xl"
-            style={{ border: "1px solid #e2e8f0", color: "#94a3b8", backgroundColor: "#ffffff" }}
+            style={{
+              border: "1px solid #e2e8f0",
+              color: "#94a3b8",
+              backgroundColor: "#ffffff",
+            }}
           >
             Limpiar
           </button>
@@ -191,65 +289,151 @@ export default function DoctorsPage() {
 
       {/* Grid */}
       {loading ? (
-        <CardGridSkeleton cards={6} cols="grid-cols-1 md:grid-cols-2 xl:grid-cols-3" />
+        <CardGridSkeleton
+          cards={6}
+          cols="grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+        />
       ) : doctors.length === 0 ? (
-        <div className="rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+        <div
+          className="rounded-xl"
+          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+        >
           <EmptyState
             icon="doctors"
-            title="Sin doctores registrados"
-            description={search ? `No se encontraron resultados para "${search}".` : "Agrega tu primer doctor para poder gestionar citas."}
-            action={!search ? "+ Nuevo doctor" : undefined}
+            title="Sin {config.staffLabel} registrados"
+            description={
+              search
+                ? `No se encontraron resultados para "${search}".`
+                : `Agrega tu primer ${config.staffSingularLabel} para poder gestionar citas.`
+            }
+            action={
+              !search ? `+ Nuevo ${config.staffSingularLabel}` : undefined
+            }
             href="/dashboard/doctors/new"
           />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {doctors.map((doctor) => {
-            const status     = STATUS_CONFIG[doctor.status] || STATUS_CONFIG.active;
-            const activeSch  = doctor.schedules?.filter((s) => s.is_active)
-                                 .sort((a,b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)) || [];
-            const nextAppt   = formatNextAppt(doctor.next_appointment?.scheduled_at);
-            const initials   = doctor.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2);
+            const status = STATUS_CONFIG[doctor.status] || STATUS_CONFIG.active;
+            const activeSch =
+              doctor.schedules
+                ?.filter((s) => s.is_active)
+                .sort(
+                  (a, b) =>
+                    DAY_ORDER.indexOf(a.day_of_week) -
+                    DAY_ORDER.indexOf(b.day_of_week),
+                ) || [];
+            const nextAppt = formatNextAppt(
+              doctor.next_appointment?.scheduled_at,
+            );
+            const initials = doctor.full_name
+              ?.split(" ")
+              .map((n) => n[0])
+              .join("")
+              .slice(0, 2);
 
             return (
               <div
                 key={doctor.id}
                 className="rounded-xl flex flex-col"
-                style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                }}
               >
                 {/* Header */}
-                <div className="p-5" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <div
+                  className="p-5"
+                  style={{ borderBottom: "1px solid #f1f5f9" }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: "#eff6ff" }}>
-                        <span className="text-sm font-bold" style={{ color: "#2563eb" }}>{initials}</span>
+                      <div
+                        className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: "#eff6ff" }}
+                      >
+                        <span
+                          className="text-sm font-bold"
+                          style={{ color: "#2563eb" }}
+                        >
+                          {initials}
+                        </span>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "#0f172a" }}>{doctor.full_name}</p>
-                        <p className="text-xs mt-0.5 truncate" style={{ color: "#64748b" }}>{doctor.specialty}</p>
+                        <p
+                          className="text-sm font-semibold truncate"
+                          style={{ color: "#0f172a" }}
+                        >
+                          {doctor.full_name}
+                        </p>
+                        <p
+                          className="text-xs mt-0.5 truncate"
+                          style={{ color: "#64748b" }}
+                        >
+                          {doctor.specialty}
+                        </p>
                       </div>
                     </div>
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
-                      style={{ color: status.color, backgroundColor: status.bg, border: `1px solid ${status.border}` }}>
+                    <span
+                      className="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
+                      style={{
+                        color: status.color,
+                        backgroundColor: status.bg,
+                        border: `1px solid ${status.border}`,
+                      }}
+                    >
                       {status.label}
                     </span>
                   </div>
                 </div>
 
                 {/* Stats de citas */}
-                <div className="grid grid-cols-3 divide-x" style={{ borderBottom: "1px solid #f1f5f9", divideColor: "#f1f5f9" }}>
+                <div
+                  className="grid grid-cols-3 divide-x"
+                  style={{
+                    borderBottom: "1px solid #f1f5f9",
+                    divideColor: "#f1f5f9",
+                  }}
+                >
                   <div className="px-4 py-3 text-center">
-                    <p className="text-lg font-bold" style={{ color: "#0f172a" }}>{doctor.appointments_today ?? 0}</p>
-                    <p className="text-xs" style={{ color: "#94a3b8" }}>Hoy</p>
+                    <p
+                      className="text-lg font-bold"
+                      style={{ color: "#0f172a" }}
+                    >
+                      {doctor.appointments_today ?? 0}
+                    </p>
+                    <p className="text-xs" style={{ color: "#94a3b8" }}>
+                      Hoy
+                    </p>
                   </div>
-                  <div className="px-4 py-3 text-center" style={{ borderLeft: "1px solid #f1f5f9" }}>
-                    <p className="text-lg font-bold" style={{ color: "#0f172a" }}>{doctor.appointments_this_week ?? 0}</p>
-                    <p className="text-xs" style={{ color: "#94a3b8" }}>Esta semana</p>
+                  <div
+                    className="px-4 py-3 text-center"
+                    style={{ borderLeft: "1px solid #f1f5f9" }}
+                  >
+                    <p
+                      className="text-lg font-bold"
+                      style={{ color: "#0f172a" }}
+                    >
+                      {doctor.appointments_this_week ?? 0}
+                    </p>
+                    <p className="text-xs" style={{ color: "#94a3b8" }}>
+                      Esta semana
+                    </p>
                   </div>
-                  <div className="px-4 py-3 text-center" style={{ borderLeft: "1px solid #f1f5f9" }}>
-                    <p className="text-lg font-bold" style={{ color: "#0f172a" }}>{doctor.consultation_duration}</p>
-                    <p className="text-xs" style={{ color: "#94a3b8" }}>Min/cita</p>
+                  <div
+                    className="px-4 py-3 text-center"
+                    style={{ borderLeft: "1px solid #f1f5f9" }}
+                  >
+                    <p
+                      className="text-lg font-bold"
+                      style={{ color: "#0f172a" }}
+                    >
+                      {doctor.consultation_duration}
+                    </p>
+                    <p className="text-xs" style={{ color: "#94a3b8" }}>
+                      Min/cita
+                    </p>
                   </div>
                 </div>
 
@@ -257,8 +441,13 @@ export default function DoctorsPage() {
                 <div className="px-5 py-4 flex-1 space-y-3">
                   {/* Próxima cita */}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "#94a3b8" }}>Próxima cita</span>
-                    <span className="text-xs font-medium" style={{ color: nextAppt ? "#2563eb" : "#cbd5e1" }}>
+                    <span className="text-xs" style={{ color: "#94a3b8" }}>
+                      Próxima cita
+                    </span>
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: nextAppt ? "#2563eb" : "#cbd5e1" }}
+                    >
                       {nextAppt
                         ? `${doctor.next_appointment.patient_name} · ${nextAppt}`
                         : "Sin citas próximas"}
@@ -267,20 +456,36 @@ export default function DoctorsPage() {
 
                   {doctor.license_number && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs" style={{ color: "#94a3b8" }}>Cédula</span>
-                      <span className="text-xs font-medium" style={{ color: "#0f172a" }}>{doctor.license_number}</span>
+                      <span className="text-xs" style={{ color: "#94a3b8" }}>
+                        Cédula
+                      </span>
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: "#0f172a" }}
+                      >
+                        {doctor.license_number}
+                      </span>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "#94a3b8" }}>Email</span>
-                    <span className="text-xs font-medium truncate ml-4" style={{ color: "#0f172a" }}>{doctor.email}</span>
+                    <span className="text-xs" style={{ color: "#94a3b8" }}>
+                      Email
+                    </span>
+                    <span
+                      className="text-xs font-medium truncate ml-4"
+                      style={{ color: "#0f172a" }}
+                    >
+                      {doctor.email}
+                    </span>
                   </div>
 
                   {/* Horario */}
                   {activeSch.length > 0 && (
                     <div>
-                      <p className="text-xs mb-2" style={{ color: "#94a3b8" }}>Horario de atención</p>
+                      <p className="text-xs mb-2" style={{ color: "#94a3b8" }}>
+                        Horario de atención
+                      </p>
                       <div className="space-y-1">
                         {/* Agrupar días con el mismo horario */}
                         {(() => {
@@ -289,19 +494,37 @@ export default function DoctorsPage() {
                             const key = `${s.start_time}–${s.end_time}`;
                             const existing = groups.find((g) => g.key === key);
                             if (existing) existing.days.push(s.day_of_week);
-                            else groups.push({ key, days: [s.day_of_week], start: s.start_time, end: s.end_time });
+                            else
+                              groups.push({
+                                key,
+                                days: [s.day_of_week],
+                                start: s.start_time,
+                                end: s.end_time,
+                              });
                           });
                           return groups.map((g) => (
-                            <div key={g.key} className="flex items-center justify-between">
+                            <div
+                              key={g.key}
+                              className="flex items-center justify-between"
+                            >
                               <div className="flex gap-1">
                                 {g.days.map((d) => (
-                                  <span key={d} className="text-xs px-1.5 py-0.5 rounded"
-                                    style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>
+                                  <span
+                                    key={d}
+                                    className="text-xs px-1.5 py-0.5 rounded"
+                                    style={{
+                                      backgroundColor: "#f1f5f9",
+                                      color: "#475569",
+                                    }}
+                                  >
                                     {DAY_LABEL[d]}
                                   </span>
                                 ))}
                               </div>
-                              <span className="text-xs font-medium" style={{ color: "#64748b" }}>
+                              <span
+                                className="text-xs font-medium"
+                                style={{ color: "#64748b" }}
+                              >
                                 {g.start} – {g.end}
                               </span>
                             </div>
@@ -312,16 +535,36 @@ export default function DoctorsPage() {
                   )}
 
                   {activeSch.length === 0 && (
-                    <p className="text-xs" style={{ color: "#e2e8f0" }}>Sin horarios configurados</p>
+                    <p className="text-xs" style={{ color: "#e2e8f0" }}>
+                      Sin horarios configurados
+                    </p>
                   )}
                 </div>
 
                 {/* Footer acciones */}
-                <div className="grid grid-cols-4" style={{ borderTop: "1px solid #f1f5f9" }}>
+                <div
+                  className="grid grid-cols-4"
+                  style={{ borderTop: "1px solid #f1f5f9" }}
+                >
                   {[
-                    { label: "Editar",      href: `/dashboard/doctors/${doctor.id}/edit`,     color: "#64748b", hoverBg: "#f8fafc" },
-                    { label: "Calendario",  href: `/dashboard/doctors/${doctor.id}/calendar`, color: "#7c3aed", hoverBg: "#faf5ff" },
-                    { label: "Horario",     href: `/dashboard/doctors/${doctor.id}/schedule`, color: "#2563eb", hoverBg: "#eff6ff" },
+                    {
+                      label: "Editar",
+                      href: `/dashboard/doctors/${doctor.id}/edit`,
+                      color: "#64748b",
+                      hoverBg: "#f8fafc",
+                    },
+                    {
+                      label: "Calendario",
+                      href: `/dashboard/doctors/${doctor.id}/calendar`,
+                      color: "#7c3aed",
+                      hoverBg: "#faf5ff",
+                    },
+                    {
+                      label: "Horario",
+                      href: `/dashboard/doctors/${doctor.id}/schedule`,
+                      color: "#2563eb",
+                      hoverBg: "#eff6ff",
+                    },
                   ].map((action, i) => (
                     <Link key={action.label} href={action.href}>
                       <button
@@ -330,8 +573,14 @@ export default function DoctorsPage() {
                           color: action.color,
                           borderLeft: i > 0 ? "1px solid #f1f5f9" : "none",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = action.hoverBg)}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            action.hoverBg)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
                       >
                         {action.label}
                       </button>
@@ -339,9 +588,16 @@ export default function DoctorsPage() {
                   ))}
                   <button
                     className="w-full py-3 text-xs font-medium transition-colors"
-                    style={{ color: "#dc2626", borderLeft: "1px solid #f1f5f9" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fef2f2")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    style={{
+                      color: "#dc2626",
+                      borderLeft: "1px solid #f1f5f9",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#fef2f2")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
                     onClick={() => setConfirmDelete(doctor)}
                   >
                     Eliminar
@@ -357,7 +613,8 @@ export default function DoctorsPage() {
       {pagination && pagination.pages > 1 && (
         <div className="flex items-center justify-between px-2 py-4">
           <p className="text-xs" style={{ color: "#94a3b8" }}>
-            Página {pagination.page} de {pagination.pages} — {pagination.count} doctores
+            Página {pagination.page} de {pagination.pages} — {pagination.count}{" "}
+            {config.staffLabel}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -374,7 +631,12 @@ export default function DoctorsPage() {
               ← Anterior
             </button>
             {Array.from({ length: pagination.pages }, (_, i) => i + 1)
-              .filter((p) => p === 1 || p === pagination.pages || Math.abs(p - pagination.page) <= 1)
+              .filter(
+                (p) =>
+                  p === 1 ||
+                  p === pagination.pages ||
+                  Math.abs(p - pagination.page) <= 1,
+              )
               .reduce((acc, p, idx, arr) => {
                 if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
                 acc.push(p);
@@ -382,21 +644,28 @@ export default function DoctorsPage() {
               }, [])
               .map((p, i) =>
                 p === "..." ? (
-                  <span key={`d${i}`} className="text-xs" style={{ color: "#94a3b8" }}>…</span>
+                  <span
+                    key={`d${i}`}
+                    className="text-xs"
+                    style={{ color: "#94a3b8" }}
+                  >
+                    …
+                  </span>
                 ) : (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
                     className="text-xs font-medium w-8 h-8 rounded-lg"
                     style={{
-                      backgroundColor: pagination.page === p ? "#2563eb" : "#ffffff",
-                      color:           pagination.page === p ? "#ffffff" : "#64748b",
-                      border:          `1px solid ${pagination.page === p ? "#2563eb" : "#e2e8f0"}`,
+                      backgroundColor:
+                        pagination.page === p ? "#2563eb" : "#ffffff",
+                      color: pagination.page === p ? "#ffffff" : "#64748b",
+                      border: `1px solid ${pagination.page === p ? "#2563eb" : "#e2e8f0"}`,
                     }}
                   >
                     {p}
                   </button>
-                )
+                ),
               )}
             <button
               onClick={() => setPage((p) => p + 1)}
@@ -405,8 +674,12 @@ export default function DoctorsPage() {
               style={{
                 border: "1px solid #e2e8f0",
                 backgroundColor: "#ffffff",
-                color: pagination.page === pagination.pages ? "#cbd5e1" : "#64748b",
-                cursor: pagination.page === pagination.pages ? "not-allowed" : "pointer",
+                color:
+                  pagination.page === pagination.pages ? "#cbd5e1" : "#64748b",
+                cursor:
+                  pagination.page === pagination.pages
+                    ? "not-allowed"
+                    : "pointer",
               }}
             >
               Siguiente →

@@ -195,12 +195,15 @@ export default function NewUserPage() {
                 required
               >
                 <option value="receptionist">Recepcionista</option>
-                <option value="doctor">{config.staffSingularLabel || "Doctor"}</option>
+                <option value="doctor">
+                  {config.staffSingularLabel || "Doctor"}
+                </option>
                 <option value="admin">Administrador</option>
               </select>
               {form.role === "doctor" && (
                 <p className="text-xs mt-1" style={{ color: "#f59e0b" }}>
-                  ⚠️ Para doctores usa el módulo de Doctores para configurar
+                  ⚠️ Para {config.staffSingularLabel || "doctores"} usa el
+                  módulo de {config.staffLabel || "Doctores"} para configurar
                   horarios y especialidad.
                 </p>
               )}

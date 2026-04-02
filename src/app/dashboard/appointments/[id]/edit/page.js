@@ -10,9 +10,9 @@ import { toast } from "sonner";
 
 const TYPE_OPTIONS = [
   { value: "first_visit", label: "Primera visita" },
-  { value: "follow_up",   label: "Seguimiento" },
-  { value: "emergency",   label: "Urgencia" },
-  { value: "routine",     label: "Rutina" },
+  { value: "follow_up", label: "Seguimiento" },
+  { value: "emergency", label: "Urgencia" },
+  { value: "routine", label: "Rutina" },
 ];
 
 function toLocalDatetime(iso) {
@@ -22,22 +22,22 @@ function toLocalDatetime(iso) {
 }
 
 export default function AppointmentEditPage() {
-  const { id }     = useParams();
-  const router     = useRouter();
+  const { id } = useParams();
+  const router = useRouter();
   const { organization } = useAuth();
-  const config     = getConfig(organization?.clinic_type);
+  const config = getConfig(organization?.clinic_type);
 
-  const [appt,      setAppt]      = useState(null);
-  const [doctors,   setDoctors]   = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [saving,    setSaving]    = useState(false);
-  const [form,      setForm]      = useState({
-    doctor_id:        "",
-    scheduled_at:     "",
-    ends_at:          "",
+  const [appt, setAppt] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    doctor_id: "",
+    scheduled_at: "",
+    ends_at: "",
     appointment_type: "",
-    reason:           "",
-    notes:            "",
+    reason: "",
+    notes: "",
   });
 
   useEffect(() => {
@@ -50,12 +50,12 @@ export default function AppointmentEditPage() {
         setAppt(a);
         setDoctors(docsRes.data.data || []);
         setForm({
-          doctor_id:        a.doctor?.id || "",
-          scheduled_at:     toLocalDatetime(a.scheduled_at),
-          ends_at:          toLocalDatetime(a.ends_at),
+          doctor_id: a.doctor?.id || "",
+          scheduled_at: toLocalDatetime(a.scheduled_at),
+          ends_at: toLocalDatetime(a.ends_at),
           appointment_type: a.appointment_type || "",
-          reason:           a.reason || "",
-          notes:            a.notes || "",
+          reason: a.reason || "",
+          notes: a.notes || "",
         });
       })
       .catch(() => toast.error("Error al cargar la cita"))
@@ -67,7 +67,9 @@ export default function AppointmentEditPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.doctor_id || !form.scheduled_at || !form.ends_at) {
-      toast.error("Doctor, hora de inicio y hora de fin son obligatorios");
+      toast.error(
+        `${config.staffLabel}, hora de inicio y hora de fin son obligatorios`,
+      );
       return;
     }
     if (new Date(form.ends_at) <= new Date(form.scheduled_at)) {
@@ -88,11 +90,22 @@ export default function AppointmentEditPage() {
   };
 
   const inp = {
-    width: "100%", padding: "10px 12px", fontSize: "14px",
-    border: "1px solid #e2e8f0", borderRadius: "10px",
-    outline: "none", backgroundColor: "#ffffff", color: "#0f172a",
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: "14px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    outline: "none",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
   };
-  const lbl = { display: "block", fontSize: "12px", fontWeight: "600", color: "#374151", marginBottom: "6px" };
+  const lbl = {
+    display: "block",
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: "6px",
+  };
 
   if (loading) {
     return (
@@ -113,13 +126,20 @@ export default function AppointmentEditPage() {
         <Link href={`/dashboard/appointments/${id}`}>
           <button
             className="text-sm px-3 py-1.5 rounded-lg"
-            style={{ color: "#64748b", backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0" }}
+            style={{
+              color: "#64748b",
+              backgroundColor: "#f1f5f9",
+              border: "1px solid #e2e8f0",
+            }}
           >
             ← Volver
           </button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>
+          <h1
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: "#0f172a" }}
+          >
             Editar cita #{appt.id}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
@@ -130,38 +150,61 @@ export default function AppointmentEditPage() {
 
       {/* Aviso si es serie */}
       {isRecurring && (
-        <div className="rounded-xl p-4 flex items-start gap-3"
-          style={{ backgroundColor: "#fdf4ff", border: "1px solid #e9d5ff" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        <div
+          className="rounded-xl p-4 flex items-start gap-3"
+          style={{ backgroundColor: "#fdf4ff", border: "1px solid #e9d5ff" }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#7c3aed"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mt-0.5 flex-shrink-0"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           <p className="text-sm" style={{ color: "#7c3aed" }}>
-            Esta cita pertenece a una serie (sesión {appt.recurrence_index} de {appt.recurrence_total}).
-            Los cambios solo aplican a esta sesión individual.
+            Esta cita pertenece a una serie (sesión {appt.recurrence_index} de{" "}
+            {appt.recurrence_total}). Los cambios solo aplican a esta sesión
+            individual.
           </p>
         </div>
       )}
 
       {/* Formulario */}
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="rounded-xl p-6 space-y-5"
-          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
-          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+        <div
+          className="rounded-xl p-6 space-y-5"
+          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "#94a3b8" }}
+          >
             Detalles de la cita
           </p>
 
           {/* Doctor */}
           <div>
-            <label style={lbl}>Doctor *</label>
+            <label style={lbl}>{config.staffLabel} *</label>
             <select
               value={form.doctor_id}
               onChange={(e) => set("doctor_id", e.target.value)}
               style={inp}
               required
             >
-              <option value="">Seleccionar doctor...</option>
+              <option value="">Seleccionar {config.staffLabel}...</option>
               {doctors.map((d) => (
-                <option key={d.id} value={d.id}>{d.full_name}{d.specialty ? ` — ${d.specialty}` : ""}</option>
+                <option key={d.id} value={d.id}>
+                  {d.full_name}
+                  {d.specialty ? ` — ${d.specialty}` : ""}
+                </option>
               ))}
             </select>
           </div>
@@ -177,7 +220,9 @@ export default function AppointmentEditPage() {
             >
               <option value="">Seleccionar tipo...</option>
               {TYPE_OPTIONS.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
               ))}
             </select>
           </div>
@@ -232,20 +277,31 @@ export default function AppointmentEditPage() {
         </div>
 
         {/* Info del paciente (readonly) */}
-        <div className="rounded-xl p-5 flex items-center gap-4"
-          style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "#eff6ff" }}>
-            <span className="text-sm font-bold" style={{ color: "#2563eb" }}>{appt.patient?.name?.[0]}</span>
+        <div
+          className="rounded-xl p-5 flex items-center gap-4"
+          style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}
+        >
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "#eff6ff" }}
+          >
+            <span className="text-sm font-bold" style={{ color: "#2563eb" }}>
+              {appt.patient?.name?.[0]}
+            </span>
           </div>
           <div>
-            <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{appt.patient?.name}</p>
+            <p className="text-sm font-medium" style={{ color: "#0f172a" }}>
+              {appt.patient?.name}
+            </p>
             <p className="text-xs" style={{ color: "#94a3b8" }}>
-              {config.patientLabel} · {config.ownerLabel}: {appt.owner?.full_name}
+              {config.patientLabel} · {config.ownerLabel}:{" "}
+              {appt.owner?.full_name}
             </p>
           </div>
-          <span className="ml-auto text-xs px-2 py-1 rounded-full"
-            style={{ backgroundColor: "#f1f5f9", color: "#94a3b8" }}>
+          <span
+            className="ml-auto text-xs px-2 py-1 rounded-full"
+            style={{ backgroundColor: "#f1f5f9", color: "#94a3b8" }}
+          >
             No editable
           </span>
         </div>
@@ -268,7 +324,11 @@ export default function AppointmentEditPage() {
             <button
               type="button"
               className="text-sm font-medium px-5 py-2.5 rounded-xl"
-              style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}
+              style={{
+                backgroundColor: "#f1f5f9",
+                color: "#64748b",
+                border: "1px solid #e2e8f0",
+              }}
             >
               Cancelar
             </button>

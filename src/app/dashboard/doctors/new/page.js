@@ -76,17 +76,17 @@ export default function NewDoctorPage() {
       await api.post("/api/v1/doctors", {
         user: form.user,
         doctor: {
-          specialty:             form.doctor.specialty,
-          license_number:        form.doctor.license_number,
-          bio:                   form.doctor.bio,
+          specialty: form.doctor.specialty,
+          license_number: form.doctor.license_number,
+          bio: form.doctor.bio,
           consultation_duration: parseInt(form.doctor.consultation_duration),
         },
         schedules: schedules
           .filter((s) => s.active)
           .map((s) => ({
             day_of_week: s.day,
-            start_time:  s.start,
-            end_time:    s.end,
+            start_time: s.start,
+            end_time: s.end,
           })),
       });
 
@@ -144,10 +144,10 @@ export default function NewDoctorPage() {
             className="text-2xl font-bold tracking-tight"
             style={{ color: "#0f172a" }}
           >
-            Nuevo doctor
+            Nuevo {config.staffSingularLabel}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
-            Registra un nuevo médico en la clínica
+            Registra un nuevo {config.staffSingularLabel} en la clínica
           </p>
         </div>
       </div>
@@ -212,7 +212,7 @@ export default function NewDoctorPage() {
                 type="email"
                 value={form.user.email}
                 onChange={(e) => handleUser("email", e.target.value)}
-                placeholder="doctor@clinica.com"
+                placeholder="[EMAIL_ADDRESS]"
                 style={inputStyle}
                 required
               />
@@ -243,7 +243,7 @@ export default function NewDoctorPage() {
                 required
               />
               <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
-                El doctor podrá cambiarla desde su perfil
+                El {config.staffSingularLabel} podrá cambiarla desde su perfil
               </p>
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function NewDoctorPage() {
                 type="text"
                 value={form.doctor.specialty}
                 onChange={(e) => handleDoctor("specialty", e.target.value)}
-                placeholder="Medicina General Veterinaria"
+                placeholder={`Especialidad del ${config.staffSingularLabel}`}
                 style={inputStyle}
                 required
               />
@@ -278,7 +278,7 @@ export default function NewDoctorPage() {
                 type="text"
                 value={form.doctor.license_number}
                 onChange={(e) => handleDoctor("license_number", e.target.value)}
-                placeholder="VET-001"
+                placeholder={`Cédula, licencia o colegiado del ${config.staffSingularLabel}`}
                 style={inputStyle}
               />
             </div>
@@ -307,7 +307,7 @@ export default function NewDoctorPage() {
               <textarea
                 value={form.doctor.bio}
                 onChange={(e) => handleDoctor("bio", e.target.value)}
-                placeholder="Especialista con X años de experiencia..."
+                placeholder={`Biografía del ${config.staffSingularLabel}...`}
                 rows={4}
                 style={{ ...inputStyle, resize: "none" }}
               />
@@ -384,7 +384,9 @@ export default function NewDoctorPage() {
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Creando doctor..." : "Crear doctor"}
+            {loading
+              ? `Creando ${config.staffSingularLabel}...`
+              : `Crear ${config.staffSingularLabel}`}
           </button>
           <Link href="/dashboard/doctors">
             <button
