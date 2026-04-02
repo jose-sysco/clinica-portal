@@ -697,12 +697,11 @@ function StepDone({ doctorData, scheduleData, organization, onFinish }) {
 
 // ── Main wizard ───────────────────────────────────────────────────────────────
 
-const STEPS = ["Bienvenida", "Profesional", "Horario", "¡Listo!"];
-
 export default function OnboardingPage() {
   const { organization, user } = useAuth();
   const router = useRouter();
   const config = getConfig(organization?.clinic_type);
+  const STEPS = ["Bienvenida", config.staffSingularLabel, "Horario", "¡Listo!"];
   const [step, setStep] = useState(0);
   const [doctorData, setDoctorData] = useState(null);
   const [scheduleData, setScheduleData] = useState(null);

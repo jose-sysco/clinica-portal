@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import AccessDenied from "@/components/AccessDenied";
@@ -141,6 +142,7 @@ function SaveBar({ dirty, saving, onSave, onReset }) {
 
 export default function SettingsPage() {
   const { user, organization, fetchMe } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   const [form,         setForm]         = useState(null);
   const [original,     setOriginal]     = useState(null);
@@ -290,7 +292,7 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl"
             style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
             <UsageBar
-              label="Doctores"
+              label={config.staffLabel}
               used={organization?.doctors_used ?? 0}
               max={organization?.plan_max_doctors ?? null}
               color={PLAN_COLORS[organization?.plan] || "#2563eb"}

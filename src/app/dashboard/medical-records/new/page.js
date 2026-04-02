@@ -271,7 +271,7 @@ export default function NewMedicalRecordPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: config.patientLabel, value: appointment.patient?.name },
-              { label: "Doctor",            value: appointment.doctor?.full_name },
+              { label: config.staffSingularLabel, value: appointment.doctor?.full_name },
               { label: config.ownerLabel,   value: appointment.owner?.full_name },
               { label: "Motivo",            value: appointment.reason },
             ].map(({ label, value }) => value ? (

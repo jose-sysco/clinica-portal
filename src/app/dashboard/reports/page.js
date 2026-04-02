@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import { useFeatures } from "@/lib/useFeature";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import AccessDenied from "@/components/AccessDenied";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import { APPOINTMENTS_CSV, prepareAppointments } from "@/lib/exportCSV";
@@ -356,7 +357,8 @@ function Funnel({ data }) {
 // ── Página principal ─────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
-  const { user } = useAuth();
+  const { user, organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
   const features = useFeatures();
   const featuresLoaded = features.length > 0;
   const isLocked = featuresLoaded && !features.includes("reports");
@@ -582,7 +584,7 @@ export default function ReportsPage() {
       >
         {[
           { key: "summary", label: "Resumen" },
-          { key: "doctors", label: "Profesionales" },
+          { key: "doctors", label: config.staffLabel },
           { key: "breakdown", label: "Análisis" },
           { key: "export", label: "Exportar" },
         ].map((tab) => (
@@ -646,7 +648,7 @@ export default function ReportsPage() {
           {activeTab === "summary" && <SummaryTab data={data} />}
 
           {/* ── TAB: PROFESIONALES ────────────────────────────────────────── */}
-          {activeTab === "doctors" && <DoctorsTab data={data} />}
+          {activeTab === "doctors" && <DoctorsTab data={data} config={config} />}
 
           {/* ── TAB: ANÁLISIS ─────────────────────────────────────────────── */}
           {activeTab === "breakdown" && <BreakdownTab data={data} />}
@@ -899,7 +901,7 @@ function SummaryTab({ data }) {
 
 // ── TAB: Profesionales ───────────────────────────────────────────────────────
 
-function DoctorsTab({ data }) {
+function DoctorsTab({ data, config }) {
   const { busiest_doctors: doctors } = data;
   const maxTotal = doctors[0]?.total || 1;
 
@@ -933,7 +935,7 @@ function DoctorsTab({ data }) {
               <tr>
                 {[
                   "#",
-                  "Profesional",
+                  config.staffSingularLabel,
                   "Citas",
                   "Completadas",
                   "Tasa",

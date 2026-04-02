@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import AccessDenied from "@/components/AccessDenied";
@@ -9,7 +10,8 @@ import { TableSkeleton } from "@/components/Skeleton";
 import EmptyState from "@/components/EmptyState";
 
 export default function MedicalRecordsPage() {
-  const { user }                    = useAuth();
+  const { user, organization }      = useAuth();
+  const config = getConfig(organization?.clinic_type);
   const [records,    setRecords]    = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [pagination, setPagination] = useState(null);
@@ -84,7 +86,7 @@ export default function MedicalRecordsPage() {
           <table className="w-full">
             <thead>
               <tr style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: "#f8fafc" }}>
-                {["Fecha", "Paciente", "Doctor", "Evaluación / Diagnóstico", "Vitales", ""].map((h) => (
+                {["Fecha", "Paciente", config.staffSingularLabel, "Evaluación / Diagnóstico", "Vitales", ""].map((h) => (
                   <th key={h} className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>
                     {h}
                   </th>

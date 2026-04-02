@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useFeature } from "@/lib/useFeature";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -11,6 +13,8 @@ export default function EditDoctorPage() {
   const router = useRouter();
   const { id } = useParams();
   const hasInventory = useFeature("inventory");
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -200,13 +204,13 @@ export default function EditDoctorPage() {
         ),
       );
 
-      toast.success("Profesional actualizado correctamente");
+      toast.success(`${config.staffSingularLabel} actualizado correctamente`);
       router.push("/dashboard/doctors");
     } catch (err) {
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);
       } else {
-        toast.error("Error al actualizar el profesional");
+        toast.error(`Error al actualizar el ${config.staffSingularLabel?.toLowerCase()}`);
       }
     } finally {
       setSubmitting(false);

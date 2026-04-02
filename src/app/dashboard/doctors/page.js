@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import { CardGridSkeleton } from "@/components/Skeleton";
@@ -70,6 +71,7 @@ function formatNextAppt(iso) {
 
 export default function DoctorsPage() {
   const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState(null);
@@ -191,7 +193,7 @@ export default function DoctorsPage() {
             {config.staffLabel}
           </h1>
           <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-            Gestión del equipo médico
+            Gestión del equipo
             {pagination && (
               <span style={{ color: "#94a3b8" }}>
                 {" "}

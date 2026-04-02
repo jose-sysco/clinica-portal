@@ -230,7 +230,7 @@ export default function PatientRecordsPage() {
                   className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"
                   style={{ color: "#64748b" }}
                 >
-                  Doctor
+                  {config.staffSingularLabel}
                 </th>
                 <th
                   className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider"

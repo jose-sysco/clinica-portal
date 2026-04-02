@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import AccessDenied from "@/components/AccessDenied";
@@ -34,7 +35,7 @@ function CheckIcon({ ok }) {
 
 // ── Card de plan ───────────────────────────────────────────────────────────────
 
-function PlanCard({ plan, featureList, isCurrent }) {
+function PlanCard({ plan, featureList, isCurrent, config }) {
   const style       = PLAN_STYLE[plan.key] || { color: "#64748b", bg: "#f8fafc", border: "#e2e8f0" };
   const isEnterprise = plan.key === "enterprise";
 
@@ -115,7 +116,7 @@ function PlanCard({ plan, featureList, isCurrent }) {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
             <span className="text-xs font-medium" style={{ color: "#374151" }}>
-              {plan.max_doctors == null ? "∞ doctores" : `${plan.max_doctors} doctor${plan.max_doctors !== 1 ? "es" : ""}`}
+              {plan.max_doctors == null ? `∞ ${config.staffLabel?.toLowerCase()}` : `${plan.max_doctors} ${plan.max_doctors !== 1 ? config.staffLabel?.toLowerCase() : config.staffSingularLabel?.toLowerCase()}`}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -189,6 +190,7 @@ function PlansSkeleton() {
 
 export default function PlansPage() {
   const { user, organization, fetchMe } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   useEffect(() => { fetchMe(); }, []);
 
@@ -241,7 +243,7 @@ export default function PlansPage() {
                 Actualmente en el plan {organization.plan_display_name || organization.plan}
               </p>
               <p className="text-xs" style={{ color: "#64748b" }}>
-                {organization.doctors_used} / {organization.plan_max_doctors ?? "∞"} doctores
+                {organization.doctors_used} / {organization.plan_max_doctors ?? "∞"} {config.staffLabel?.toLowerCase()}
                 &nbsp;·&nbsp;
                 {organization.patients_used} / {organization.plan_max_patients ?? "∞"} pacientes
                 {organization.on_trial && !organization.trial_expired && (
@@ -279,6 +281,7 @@ export default function PlansPage() {
               plan={plan}
               featureList={featureList}
               isCurrent={organization?.plan === plan.key}
+              config={config}
             />
           ))}
         </div>

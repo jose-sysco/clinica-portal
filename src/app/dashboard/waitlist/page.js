@@ -591,7 +591,7 @@ export default function WaitlistPage() {
                 {[
                   "#",
                   config?.patientLabel || "Paciente",
-                  "Profesional",
+                  config?.staffSingularLabel || "Profesional",
                   "Fecha preferida",
                   "Notas",
                   "Registrado",

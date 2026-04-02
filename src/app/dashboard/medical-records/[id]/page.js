@@ -128,7 +128,7 @@ export default function MedicalRecordDetailPage() {
       <div className="grid grid-cols-3 gap-4">
         {/* Doctor */}
         <div className="rounded-xl p-5" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>Doctor</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#94a3b8" }}>{config.staffSingularLabel}</p>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: "#eff6ff" }}>

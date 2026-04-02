@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -56,6 +58,8 @@ const typeLabel = {
 };
 
 export default function AppointmentsPage() {
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
   const [appointments, setAppointments] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -280,7 +284,7 @@ export default function AppointmentsPage() {
               >
                 {[
                   "Paciente",
-                  "Doctor",
+                  config.staffSingularLabel,
                   "Fecha y hora",
                   "Tipo",
                   "Estado",
