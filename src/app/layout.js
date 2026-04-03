@@ -4,8 +4,8 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata = {
-  title: "Clínica Portal",
-  description: "Sistema de gestión de citas médicas",
+  title: "Agendia - SYSCO",
+  description: "Sistema de gestión de citas",
 };
 
 export default function RootLayout({ children }) {
