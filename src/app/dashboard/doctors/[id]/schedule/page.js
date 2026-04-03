@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -42,6 +44,8 @@ const EMPTY_BLOCK = { start_datetime: "", end_datetime: "", reason: "" };
 export default function DoctorSchedulePage() {
   const { id } = useParams();
   const router = useRouter();
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
 
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);

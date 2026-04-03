@@ -92,33 +92,57 @@ export default function RegisterPage() {
 
   if (registeredEmail) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f1f5f9" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#f1f5f9" }}
+      >
         <div
           className="w-full max-w-md rounded-2xl shadow-sm overflow-hidden"
           style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
         >
           <div style={{ background: "#4f46e5", padding: "32px 40px" }}>
-            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+            >
               <span style={{ fontSize: "24px" }}>✉️</span>
             </div>
-            <h1 className="text-xl font-bold text-center" style={{ color: "#ffffff", margin: 0 }}>
+            <h1
+              className="text-xl font-bold text-center"
+              style={{ color: "#ffffff", margin: 0 }}
+            >
               Revisa tu correo
             </h1>
           </div>
           <div style={{ padding: "40px" }}>
-            <p className="text-center" style={{ color: "#475569", fontSize: "15px", lineHeight: "1.6" }}>
+            <p
+              className="text-center"
+              style={{ color: "#475569", fontSize: "15px", lineHeight: "1.6" }}
+            >
               Enviamos un enlace de verificación a
             </p>
-            <p className="text-center font-semibold" style={{ color: "#0f172a", fontSize: "15px", margin: "8px 0 24px" }}>
+            <p
+              className="text-center font-semibold"
+              style={{
+                color: "#0f172a",
+                fontSize: "15px",
+                margin: "8px 0 24px",
+              }}
+            >
               {registeredEmail}
             </p>
             <div
               className="rounded-lg"
-              style={{ backgroundColor: "#f0f9ff", border: "1px solid #bae6fd", padding: "16px", marginBottom: "24px" }}
+              style={{
+                backgroundColor: "#f0f9ff",
+                border: "1px solid #bae6fd",
+                padding: "16px",
+                marginBottom: "24px",
+              }}
             >
               <p style={{ margin: 0, fontSize: "13px", color: "#0369a1" }}>
-                📬 Haz clic en el enlace del correo para activar tu cuenta. Después podrás iniciar sesión.
+                📬 Haz clic en el enlace del correo para activar tu cuenta.
+                Después podrás iniciar sesión.
               </p>
             </div>
             <Link href="/login">
@@ -126,7 +150,8 @@ export default function RegisterPage() {
                 className="w-full rounded-xl font-semibold text-sm transition-all"
                 style={{
                   height: "44px",
-                  background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
+                  background:
+                    "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
                   color: "#ffffff",
                   border: "none",
                   cursor: "pointer",
@@ -158,7 +183,7 @@ export default function RegisterPage() {
               Registra tu negocio
             </h1>
             <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-              Completa los datos para empezar a usar Cita Portal
+              Completa los datos para empezar a usar Agendia
             </p>
           </div>
 
@@ -180,7 +205,7 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {/* Datos de la clínica */}
               <div
                 className="rounded-xl p-6 shadow-sm space-y-4"
@@ -373,7 +398,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Botones */}
-            <div className="flex gap-3 mt-5">
+            <div className="flex flex-col sm:flex-row gap-3 mt-5">
               <button
                 type="submit"
                 disabled={loading}

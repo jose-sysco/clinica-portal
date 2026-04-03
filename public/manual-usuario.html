@@ -511,7 +511,7 @@
     <div class="cover-subtitle">Manual de Usuario Final</div>
     <div class="cover-divider"></div>
     <div class="cover-meta">
-      <span>📅 Versión 1.0 — 2026</span>
+      <span>📅 Versión 1.0 — <span id="year-cover"></span></span>
       <span>🌐 app.sysco.com.gt</span>
     </div>
     <div class="cover-badges">
@@ -1381,7 +1381,7 @@
         <p>
           Manual de Usuario v1.0<br>
           Sistema de Gestión de Clínicas<br>
-          © 2026 SYSCO. Todos los derechos reservados.
+          © <span id="year-footer"></span> SYSCO. Todos los derechos reservados.
         </p>
       </div>
     </div>
@@ -1391,5 +1391,10 @@
   </div>
 
 </div><!-- /page-wrap -->
+<script>
+  const y = new Date().getFullYear();
+  document.getElementById("year-cover").textContent = y;
+  document.getElementById("year-footer").textContent = y;
+</script>
 </body>
 </html>
