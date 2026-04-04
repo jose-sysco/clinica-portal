@@ -45,6 +45,9 @@ export default function OrgDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ plan: "", status: "", trial_ends_at: "" });
+  const [pwModal, setPwModal] = useState(null); // { id, full_name }
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPw, setSavingPw] = useState(false);
 
   useEffect(() => {
     fetchOrg();
@@ -84,6 +87,24 @@ export default function OrgDetailPage() {
       toast.error(err.response?.data?.errors?.[0] || "Error al guardar");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    setSavingPw(true);
+    try {
+      await superadminApi.patch(`/api/superadmin/users/${pwModal.id}/change_password`, { password: newPassword });
+      toast.success(`Contraseña de ${pwModal.full_name} actualizada`);
+      setPwModal(null);
+      setNewPassword("");
+    } catch (err) {
+      toast.error(err.response?.data?.errors?.[0] || "Error al cambiar contraseña");
+    } finally {
+      setSavingPw(false);
     }
   };
 
@@ -184,6 +205,7 @@ export default function OrgDetailPage() {
             },
             { label: "Dirección", value: org.address || "—" },
             { label: "Zona horaria", value: org.timezone },
+            { label: "IP de registro", value: org.registration_ip || "—" },
           ].map(({ label, value }) => (
             <div key={label} className="flex justify-between">
               <span className="text-xs" style={{ color: "#475569" }}>
@@ -450,6 +472,13 @@ export default function OrgDetailPage() {
             </p>
           </div>
           <table className="w-full" style={{ backgroundColor: "#0f172a" }}>
+            <thead>
+              <tr style={{ backgroundColor: "#1e293b", borderBottom: "1px solid #334155" }}>
+                {["Usuario", "Rol", "Estado", "Último login IP", ""].map((h) => (
+                  <th key={h} className="text-left px-5 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "#475569" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
               {org.users.map((u, i) => (
                 <tr
@@ -460,41 +489,89 @@ export default function OrgDetailPage() {
                   }}
                 >
                   <td className="px-5 py-3">
-                    <p
-                      className="text-sm font-medium"
-                      style={{ color: "#f1f5f9" }}
-                    >
-                      {u.full_name}
-                    </p>
-                    <p className="text-xs" style={{ color: "#475569" }}>
-                      {u.email}
-                    </p>
+                    <p className="text-sm font-medium" style={{ color: "#f1f5f9" }}>{u.full_name}</p>
+                    <p className="text-xs" style={{ color: "#475569" }}>{u.email}</p>
                   </td>
                   <td className="px-5 py-3">
-                    <span className="text-xs" style={{ color: "#64748b" }}>
-                      {roleLabel[u.role]}
-                    </span>
+                    <span className="text-xs" style={{ color: "#64748b" }}>{roleLabel[u.role]}</span>
                   </td>
                   <td className="px-5 py-3">
                     <span
                       className="text-xs font-medium px-2 py-0.5 rounded-full"
                       style={{
                         color: u.status === "active" ? "#22c55e" : "#ef4444",
-                        backgroundColor:
-                          u.status === "active" ? "#14532d33" : "#450a0a33",
+                        backgroundColor: u.status === "active" ? "#14532d33" : "#450a0a33",
                       }}
                     >
-                      {u.status === "active"
-                        ? "Activo"
-                        : u.status === "inactive"
-                          ? "Inactivo"
-                          : "Baneado"}
+                      {u.status === "active" ? "Activo" : u.status === "inactive" ? "Inactivo" : "Baneado"}
                     </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-xs font-mono" style={{ color: u.last_login_ip ? "#94a3b8" : "#334155" }}>
+                      {u.last_login_ip || "—"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <button
+                      onClick={() => { setPwModal({ id: u.id, full_name: u.full_name }); setNewPassword(""); }}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg"
+                      style={{ color: "#f59e0b", backgroundColor: "#451a0333", border: "1px solid #78350f" }}
+                    >
+                      Cambiar contraseña
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal cambiar contraseña */}
+      {pwModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          onClick={() => setPwModal(null)}
+        >
+          <div
+            className="rounded-xl p-6 w-full max-w-sm space-y-4"
+            style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold" style={{ color: "#f1f5f9" }}>
+              Cambiar contraseña
+            </p>
+            <p className="text-xs" style={{ color: "#64748b" }}>
+              {pwModal.full_name}
+            </p>
+            <input
+              type="password"
+              placeholder="Nueva contraseña (mín. 6 caracteres)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ backgroundColor: "#0f172a", border: "1px solid #334155", color: "#f1f5f9" }}
+              onKeyDown={(e) => e.key === "Enter" && handleChangePassword()}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPwModal(null)}
+                className="text-xs px-4 py-2 rounded-lg"
+                style={{ color: "#64748b", border: "1px solid #334155" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleChangePassword}
+                disabled={savingPw}
+                className="text-xs font-medium px-4 py-2 rounded-lg"
+                style={{ backgroundColor: "#f59e0b", color: "#000" }}
+              >
+                {savingPw ? "Guardando..." : "Confirmar"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
