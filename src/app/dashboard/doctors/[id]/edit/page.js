@@ -25,6 +25,8 @@ export default function EditDoctorPage() {
     license_number: "",
     bio: "",
     consultation_duration: 30,
+    consultation_fee: "",
+    card_surcharge_percent: "",
     status: "active",
     inventory_movements: false,
   });
@@ -104,6 +106,8 @@ export default function EditDoctorPage() {
         license_number: d.license_number || "",
         bio: d.bio || "",
         consultation_duration: d.consultation_duration || 30,
+        consultation_fee: d.consultation_fee ?? "",
+        card_surcharge_percent: d.card_surcharge_percent ?? "",
         status: d.status || "active",
         inventory_movements: d.inventory_movements || false,
       });
@@ -345,6 +349,45 @@ export default function EditDoctorPage() {
                 placeholder="VET-001"
                 style={inputStyle}
               />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Tarifa de consulta</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: "14px" }}>Q</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.consultation_fee}
+                  onChange={(e) => setForm((f) => ({ ...f, consultation_fee: e.target.value }))}
+                  placeholder="0.00"
+                  style={{ ...inputStyle, paddingLeft: "28px" }}
+                />
+              </div>
+              <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                Se usa para calcular el estado de pago por cita
+              </p>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Recargo por pago con tarjeta (%)</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={form.card_surcharge_percent}
+                  onChange={(e) => setForm((f) => ({ ...f, card_surcharge_percent: e.target.value }))}
+                  placeholder="0.00"
+                  style={{ ...inputStyle, paddingRight: "28px" }}
+                />
+                <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: "14px" }}>%</span>
+              </div>
+              <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                Se aplica automáticamente al seleccionar tarjeta como método de pago
+              </p>
             </div>
 
             <div>

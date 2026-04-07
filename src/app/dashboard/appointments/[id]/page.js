@@ -43,7 +43,18 @@ export default function AppointmentDetailPage() {
   const [cancelSeriesReason,setCancelSeriesReason]= useState("");
   const [cancellingSerices, setCancellingSerices] = useState(false);
 
+  // Pagos
+  const [showComplete,   setShowComplete]   = useState(false);
+  const [completing,     setCompleting]     = useState(false);
+  const [withPayment,    setWithPayment]    = useState(true);
+  const [paymentForm,    setPaymentForm]    = useState({ amount: "", method: "cash", notes: "" });
+  const [payments,       setPayments]       = useState([]);
+  const [showAddPayment, setShowAddPayment] = useState(false);
+  const [addingPayment,  setAddingPayment]  = useState(false);
+  const [newPayment,     setNewPayment]     = useState({ amount: "", method: "cash", notes: "" });
+
   useEffect(() => { fetchAppointment(); }, []);
+  useEffect(() => { if (appt) fetchPayments(); }, [appt?.id]);
 
   const fetchAppointment = async () => {
     try {
@@ -53,6 +64,57 @@ export default function AppointmentDetailPage() {
       toast.error("Error al cargar la cita");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      const res = await api.get(`/api/v1/appointments/${id}/payments`);
+      setPayments(res.data);
+    } catch {}
+  };
+
+  const handleComplete = async () => {
+    if (withPayment && !paymentForm.amount) {
+      toast.error("Ingresa el monto del pago");
+      return;
+    }
+    setCompleting(true);
+    try {
+      const body = {};
+      if (withPayment) {
+        body.payment = { amount: paymentForm.amount, payment_method: paymentForm.method, notes: paymentForm.notes };
+      }
+      await api.patch(`/api/v1/appointments/${id}/complete`, body);
+      toast.success("Cita finalizada");
+      setShowComplete(false);
+      setPaymentForm({ amount: "", method: "cash", notes: "" });
+      setWithPayment(true);
+      fetchAppointment();
+      fetchPayments();
+    } catch (err) {
+      toast.error(err.response?.data?.errors?.[0] || err.response?.data?.error || "Error al finalizar");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const handleAddPayment = async () => {
+    if (!newPayment.amount) { toast.error("Ingresa el monto"); return; }
+    setAddingPayment(true);
+    try {
+      await api.post(`/api/v1/appointments/${id}/payments`, {
+        payment: { amount: newPayment.amount, payment_method: newPayment.method, notes: newPayment.notes }
+      });
+      toast.success("Pago registrado");
+      setShowAddPayment(false);
+      setNewPayment({ amount: "", method: "cash", notes: "" });
+      fetchAppointment();
+      fetchPayments();
+    } catch (err) {
+      toast.error(err.response?.data?.errors?.[0] || "Error al registrar pago");
+    } finally {
+      setAddingPayment(false);
     }
   };
 
@@ -159,12 +221,32 @@ export default function AppointmentDetailPage() {
     );
   }
 
+  const PAYMENT_METHODS = { cash: "Efectivo", card: "Tarjeta", transfer: "Transferencia", other: "Otro" };
+  const surcharge    = appt?.doctor?.card_surcharge_percent || 0;
+  const baseFee      = appt?.payment_summary?.consultation_fee || null;
+  const calcWithCard = (base) => base ? (base * (1 + surcharge / 100)).toFixed(2) : "";
+  const amountForMethod = (method) =>
+    method === "card" && surcharge > 0 && baseFee
+      ? calcWithCard(baseFee)
+      : baseFee ? baseFee.toFixed(2) : "";
+
+  const PAYMENT_STATUS_CONFIG = {
+    pagado:      { label: "Pagado",       color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
+    parcial:     { label: "Pago parcial", color: "#d97706", bg: "#fffbeb", border: "#fde68a" },
+    sin_pago:    { label: "Sin pago",     color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+    sin_tarifa:  { label: "Sin tarifa",   color: "#64748b", bg: "#f8fafc", border: "#e2e8f0" },
+  };
+
   const status = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending;
   const canConfirm   = appt.status === "pending";
   const canStart     = appt.status === "confirmed";
+  const canComplete  = ["confirmed", "in_progress"].includes(appt.status);
   const canNoShow    = ["pending", "confirmed", "in_progress"].includes(appt.status);
   const canCancel    = !["cancelled", "completed", "no_show"].includes(appt.status);
   const canRecord    = ["confirmed", "in_progress", "completed"].includes(appt.status);
+  const paymentSummary = appt.payment_summary || {};
+  const paymentStatusCfg = PAYMENT_STATUS_CONFIG[paymentSummary.payment_status] || PAYMENT_STATUS_CONFIG.sin_tarifa;
+  const canAddMorePayments = appt.status === "completed" && paymentSummary.payment_status !== "pagado";
 
   return (
     <div className="space-y-6">
@@ -343,6 +425,16 @@ export default function AppointmentDetailPage() {
           </button>
         )}
 
+        {canComplete && (
+          <button
+            onClick={() => { fetchAppointment(); setPaymentForm(f => ({ ...f, amount: amountForMethod(f.method) })); setShowComplete(true); }}
+            className="text-sm font-medium px-5 py-2.5 rounded-xl"
+            style={{ backgroundColor: "#16a34a", color: "#ffffff" }}
+          >
+            ✓ Finalizar cita
+          </button>
+        )}
+
         {canNoShow && (
           <button
             onClick={() => setShowNoShow(true)}
@@ -395,6 +487,217 @@ export default function AppointmentDetailPage() {
           </button>
         )}
       </div>
+
+      {/* Sección de pagos */}
+      {(appt.status === "completed" || payments.length > 0) && (
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+          <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+            <div className="flex items-center gap-3">
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Pagos</p>
+              {paymentSummary.payment_status && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+                  style={{ color: paymentStatusCfg.color, backgroundColor: paymentStatusCfg.bg, border: `1px solid ${paymentStatusCfg.border}` }}>
+                  {paymentStatusCfg.label}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              {paymentSummary.consultation_fee && (
+                <p className="text-xs" style={{ color: "#94a3b8" }}>
+                  Tarifa: <span style={{ color: "#0f172a", fontWeight: 600 }}>Q{paymentSummary.consultation_fee.toFixed(2)}</span>
+                  {" · "}Total recibido: <span style={{ color: "#16a34a", fontWeight: 600 }}>Q{(paymentSummary.total_paid || 0).toFixed(2)}</span>
+                </p>
+              )}
+              {canAddMorePayments && (
+                <button onClick={() => { fetchAppointment(); setNewPayment(f => ({ ...f, amount: amountForMethod(f.method) })); setShowAddPayment(true); }}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg"
+                  style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
+                  + Agregar pago
+                </button>
+              )}
+            </div>
+          </div>
+          {payments.length === 0 ? (
+            <div className="px-6 py-6 text-center" style={{ backgroundColor: "#ffffff" }}>
+              <p className="text-sm" style={{ color: "#94a3b8" }}>No hay pagos registrados para esta cita</p>
+            </div>
+          ) : (
+            <table className="w-full" style={{ backgroundColor: "#ffffff" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                  {["Monto", "Método", "Registrado por", "Fecha", "Notas"].map(h => (
+                    <th key={h} className="text-left px-5 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "#94a3b8" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p, i) => (
+                  <tr key={p.id} style={{ borderBottom: i < payments.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                    <td className="px-5 py-3">
+                      <span className="text-sm font-semibold" style={{ color: "#16a34a" }}>Q{p.amount.toFixed(2)}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-sm" style={{ color: "#0f172a" }}>{PAYMENT_METHODS[p.payment_method] || p.payment_method}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs" style={{ color: "#64748b" }}>{p.recorded_by}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs" style={{ color: "#64748b" }}>
+                        {new Date(p.created_at).toLocaleDateString("es-GT", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs" style={{ color: "#94a3b8" }}>{p.notes || "—"}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Modal finalizar cita */}
+      {showComplete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(15,23,42,0.5)" }} onClick={() => setShowComplete(false)}>
+          <div className="rounded-2xl p-6 w-full max-w-md mx-4 space-y-5" style={{ backgroundColor: "#ffffff" }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold" style={{ color: "#0f172a" }}>Finalizar cita</h2>
+              <button onClick={() => setShowComplete(false)} className="w-7 h-7 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}>✕</button>
+            </div>
+
+            {/* Toggle pago */}
+            <div className="rounded-xl p-4 flex items-center justify-between" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: "#0f172a" }}>¿Registrar pago?</p>
+                <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>Puedes agregar más pagos después</p>
+              </div>
+              <button type="button" onClick={() => setWithPayment(v => !v)}
+                className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors"
+                style={{ backgroundColor: withPayment ? "#16a34a" : "#e2e8f0" }}>
+                <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
+                  style={{ transform: withPayment ? "translateX(20px)" : "translateX(0)" }} />
+              </button>
+            </div>
+
+            {withPayment && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Monto *</label>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>Q</span>
+                    <input type="number" min="0.01" step="0.01" value={paymentForm.amount}
+                      onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))}
+                      placeholder="0.00" className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                      style={{ paddingLeft: "28px", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                  </div>
+                  {appt.payment_summary?.consultation_fee && (
+                    <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Tarifa de consulta: Q{appt.payment_summary.consultation_fee.toFixed(2)}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Método de pago *</label>
+                  <select value={paymentForm.method}
+                    onChange={e => {
+                      const method = e.target.value;
+                      setPaymentForm(f => ({ ...f, method, amount: amountForMethod(method) }));
+                    }}
+                    className="w-full text-sm px-3 py-2 rounded-lg outline-none" style={{ border: "1px solid #e2e8f0", color: "#0f172a", backgroundColor: "#ffffff" }}>
+                    {Object.entries(PAYMENT_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                  {paymentForm.method === "card" && surcharge > 0 && baseFee && (
+                    <div className="mt-2 px-3 py-2 rounded-lg flex items-center justify-between"
+                      style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                      <span className="text-xs" style={{ color: "#2563eb" }}>Q{baseFee.toFixed(2)} + {surcharge}% recargo</span>
+                      <span className="text-sm font-bold" style={{ color: "#2563eb" }}>= Q{calcWithCard(baseFee)}</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Nota (opcional)</label>
+                  <input type="text" value={paymentForm.notes} onChange={e => setPaymentForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="Ej: pago en efectivo exacto"
+                    className="w-full text-sm px-3 py-2 rounded-lg outline-none" style={{ border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={handleComplete} disabled={completing}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#16a34a", color: "#ffffff", cursor: completing ? "not-allowed" : "pointer" }}>
+                {completing ? "Finalizando..." : "Finalizar cita"}
+              </button>
+              <button onClick={() => setShowComplete(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal agregar pago (después de completada) */}
+      {showAddPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(15,23,42,0.5)" }} onClick={() => setShowAddPayment(false)}>
+          <div className="rounded-2xl p-6 w-full max-w-md mx-4 space-y-4" style={{ backgroundColor: "#ffffff" }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold" style={{ color: "#0f172a" }}>Agregar pago</h2>
+              <button onClick={() => setShowAddPayment(false)} className="w-7 h-7 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}>✕</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Monto *</label>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>Q</span>
+                  <input type="number" min="0.01" step="0.01" value={newPayment.amount}
+                    onChange={e => setNewPayment(f => ({ ...f, amount: e.target.value }))}
+                    placeholder="0.00" className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                    style={{ paddingLeft: "28px", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Método de pago *</label>
+                <select value={newPayment.method}
+                  onChange={e => {
+                    const method = e.target.value;
+                    setNewPayment(f => ({ ...f, method, amount: amountForMethod(method) }));
+                  }}
+                  className="w-full text-sm px-3 py-2 rounded-lg outline-none" style={{ border: "1px solid #e2e8f0", color: "#0f172a", backgroundColor: "#ffffff" }}>
+                  {Object.entries(PAYMENT_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+                {newPayment.method === "card" && surcharge > 0 && baseFee && (
+                  <div className="mt-2 px-3 py-2 rounded-lg flex items-center justify-between"
+                    style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                    <span className="text-xs" style={{ color: "#2563eb" }}>Q{baseFee.toFixed(2)} + {surcharge}% recargo</span>
+                    <span className="text-sm font-bold" style={{ color: "#2563eb" }}>= Q{calcWithCard(baseFee)}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Nota (opcional)</label>
+                <input type="text" value={newPayment.notes} onChange={e => setNewPayment(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Ej: saldo pendiente"
+                  className="w-full text-sm px-3 py-2 rounded-lg outline-none" style={{ border: "1px solid #e2e8f0", color: "#0f172a" }} />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleAddPayment} disabled={addingPayment}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#2563eb", color: "#ffffff", cursor: addingPayment ? "not-allowed" : "pointer" }}>
+                {addingPayment ? "Guardando..." : "Registrar pago"}
+              </button>
+              <button onClick={() => setShowAddPayment(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal no asistió */}
       {showNoShow && (
