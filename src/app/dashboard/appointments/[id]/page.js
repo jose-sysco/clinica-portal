@@ -41,7 +41,7 @@ export default function AppointmentDetailPage() {
   const [cancelReason,      setCancelReason]      = useState("");
   const [showCancelSeries,  setShowCancelSeries]  = useState(false);
   const [cancelSeriesReason,setCancelSeriesReason]= useState("");
-  const [cancellingSerices, setCancellingSerices] = useState(false);
+  const [cancellingSeries, setCancellingSeries] = useState(false);
 
   // Pagos
   const [showComplete,   setShowComplete]   = useState(false);
@@ -159,7 +159,7 @@ export default function AppointmentDetailPage() {
   };
 
   const handleCancelSeries = async () => {
-    setCancellingSerices(true);
+    setCancellingSeries(true);
     try {
       await api.patch(`/api/v1/appointments/${id}/cancel_series`, {
         cancellation_reason: cancelSeriesReason || "Serie cancelada",
@@ -170,7 +170,7 @@ export default function AppointmentDetailPage() {
     } catch (err) {
       toast.error(err.response?.data?.error || "Error al cancelar la serie");
     } finally {
-      setCancellingSerices(false);
+      setCancellingSeries(false);
     }
   };
 
@@ -786,11 +786,11 @@ export default function AppointmentDetailPage() {
             <div className="flex gap-3">
               <button
                 onClick={handleCancelSeries}
-                disabled={cancellingSerices}
+                disabled={cancellingSeries}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                style={{ backgroundColor: "#7c3aed", color: "#ffffff", cursor: cancellingSerices ? "not-allowed" : "pointer" }}
+                style={{ backgroundColor: "#7c3aed", color: "#ffffff", cursor: cancellingSeries ? "not-allowed" : "pointer" }}
               >
-                {cancellingSerices ? "Cancelando..." : "Cancelar toda la serie"}
+                {cancellingSeries ? "Cancelando..." : "Cancelar toda la serie"}
               </button>
               <button
                 onClick={() => setShowCancelSeries(false)}

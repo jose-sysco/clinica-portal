@@ -21,6 +21,8 @@ export default function NewAppointmentPage() {
   const [error, setError] = useState(null);
 
   // Owner search
+  const slotsAbortRef = useRef(null);
+
   const [ownerSearch, setOwnerSearch] = useState("");
   const [ownerResults, setOwnerResults] = useState([]);
   const [ownerLoading, setOwnerLoading] = useState(false);
@@ -129,6 +131,10 @@ export default function NewAppointmentPage() {
   };
 
   const fetchSlots = async () => {
+    // Cancelar request anterior si el usuario cambió de doctor/fecha rápido
+    if (slotsAbortRef.current) slotsAbortRef.current.abort();
+    slotsAbortRef.current = new AbortController();
+
     setLoading(true);
     setSlots([]);
     setForm((f) => ({ ...f, time: "" }));
@@ -137,11 +143,12 @@ export default function NewAppointmentPage() {
         `/api/v1/doctors/${form.doctor_id}/availability`,
         {
           params: { date: form.date },
+          signal: slotsAbortRef.current.signal,
         },
       );
       setSlots(res.data.slots);
     } catch (err) {
-      setSlots([]);
+      if (err.name !== "CanceledError") setSlots([]);
     } finally {
       setLoading(false);
     }
@@ -158,6 +165,7 @@ export default function NewAppointmentPage() {
       setOwnerResults(res.data.data);
       setShowOwnerResults(true);
     } catch (err) {
+      toast.error("Error al buscar propietarios");
     } finally {
       setOwnerLoading(false);
     }
@@ -217,6 +225,7 @@ export default function NewAppointmentPage() {
       );
       setShowPatientSearch(true);
     } catch {
+      toast.error("Error al buscar pacientes");
     } finally {
       setPatientSearchLoading(false);
     }
