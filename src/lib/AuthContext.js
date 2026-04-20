@@ -43,11 +43,14 @@ export function AuthProvider({ children }) {
 
     const { token, refresh_token } = response.data
 
+    const secure = window.location.protocol === "https:"
+    const cookieOpts = (days) => ({ expires: days, secure, sameSite: "Strict" })
+
     // Access token: 1 hora (mismo que el JWT en el backend)
-    Cookies.set('token',             token,         { expires: 1 / 24 })
+    Cookies.set('token',             token,         cookieOpts(1 / 24))
     // Refresh token: 30 días
-    Cookies.set('refresh_token',     refresh_token, { expires: 30 })
-    Cookies.set('organization_slug', slug,          { expires: 30 })
+    Cookies.set('refresh_token',     refresh_token, cookieOpts(30))
+    Cookies.set('organization_slug', slug,          cookieOpts(30))
 
     setUser(response.data.user)
     setOrganization(response.data.organization)

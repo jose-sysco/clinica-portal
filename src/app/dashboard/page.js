@@ -317,8 +317,8 @@ export default function DashboardPage() {
                   formatter={(v) => [v, "Citas"]}
                 />
                 <Bar dataKey="count" name="Citas" fill="#2563eb" radius={[4, 4, 0, 0]}>
-                  {stats.peak_hours.map((_, i) => (
-                    <Cell key={i} fill={`rgba(37,99,235,${0.4 + (i / stats.peak_hours.length) * 0.6})`} />
+                  {stats.peak_hours.map((entry, i) => (
+                    <Cell key={entry.hour} fill={`rgba(37,99,235,${0.4 + (i / stats.peak_hours.length) * 0.6})`} />
                   ))}
                 </Bar>
               </BarChart>

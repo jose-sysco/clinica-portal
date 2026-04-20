@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useFeature } from "@/lib/useFeature";
+import { useAuth } from "@/lib/AuthContext";
+import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 
 const STATUS_COLOR = {
@@ -20,6 +22,8 @@ const STATUS_LABEL = {
 
 export default function GlobalSearch({ onClose }) {
   const router = useRouter();
+  const { organization } = useAuth();
+  const config = getConfig(organization?.clinic_type);
   const inputRef = useRef(null);
   const hasInventory = useFeature("inventory");
   const [query, setQuery] = useState("");
