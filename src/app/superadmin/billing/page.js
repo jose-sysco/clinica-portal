@@ -175,10 +175,37 @@ function PaymentModal({ org, planPrice, period, onClose, onSaved }) {
   );
 }
 
+function exportCsv(data, period) {
+  const rows = [
+    ["Organización", "Email", "Plan", "Estado", "Precio GTQ", "Precio especial", "Monto pagado", "Notas", "Registrado por", "Fecha pago"],
+    ...(data?.data || []).map(({ organization: org, billing_record }) => [
+      org.name,
+      org.email,
+      PLAN_LABEL[org.plan] || org.plan,
+      org.status === "suspended" ? "Suspendida" : "Activa",
+      Number(org.price_gtq ?? 0).toFixed(2),
+      org.has_custom_price ? "Sí" : "No",
+      billing_record ? parseFloat(billing_record.amount_paid).toFixed(2) : "",
+      billing_record?.notes || "",
+      billing_record?.recorded_by || "",
+      billing_record?.recorded_at ? new Date(billing_record.recorded_at).toLocaleDateString("es-GT") : "",
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `facturacion-${period}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function BillingPage() {
   const now   = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const [page,  setPage]  = useState(1);
 
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
@@ -189,15 +216,16 @@ export default function BillingPage() {
   const fetchBilling = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await superadminApi.get("/api/superadmin/billing", { params: { period } });
+      const res = await superadminApi.get("/api/superadmin/billing", { params: { period, page } });
       setData(res.data);
     } catch {
       toast.error("Error al cargar la facturación");
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, [period, page]);
 
+  useEffect(() => { setPage(1); }, [period]);
   useEffect(() => { fetchBilling(); }, [fetchBilling]);
 
   const prevMonth = () => {
@@ -252,7 +280,18 @@ export default function BillingPage() {
           </p>
         </div>
 
-        {/* Navegador de mes */}
+        {/* Export + Navegador de mes */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => exportCsv(data, period)}
+            disabled={!data || loading}
+            className="text-xs font-medium px-3 py-2 rounded-lg disabled:opacity-40"
+            style={{ backgroundColor: "#1e293b", color: "#94a3b8", border: "1px solid #334155" }}
+            onMouseEnter={(e) => { if (!loading && data) e.currentTarget.style.color = "#f1f5f9"; }}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
+          >
+            ↓ Exportar CSV
+          </button>
         <div className="flex items-center gap-2">
           <button
             onClick={prevMonth}
@@ -278,6 +317,7 @@ export default function BillingPage() {
           >
             →
           </button>
+        </div>
         </div>
       </div>
 
@@ -354,7 +394,7 @@ export default function BillingPage() {
                 </td>
               </tr>
             ) : (
-              data?.data?.map(({ organization: org, plan_price_gtq, billing_record }) => (
+              data?.data?.map(({ organization: org, billing_record }) => (
                 <tr
                   key={org.id}
                   style={{ borderBottom: "1px solid #334155" }}
@@ -366,9 +406,18 @@ export default function BillingPage() {
                     <p className="text-sm font-medium" style={{ color: "#f1f5f9" }}>
                       {org.name}
                     </p>
-                    <p className="text-xs" style={{ color: "#475569" }}>
+                    <a href={`mailto:${org.email}`}
+                      className="text-xs hover:underline block"
+                      style={{ color: "#475569" }}>
                       {org.email}
-                    </p>
+                    </a>
+                    {org.phone && (
+                      <a href={`tel:${org.phone}`}
+                        className="text-xs font-medium hover:underline block mt-0.5"
+                        style={{ color: "#3b82f6" }}>
+                        {org.phone}
+                      </a>
+                    )}
                   </td>
 
                   {/* Plan */}
@@ -387,9 +436,12 @@ export default function BillingPage() {
 
                   {/* Precio */}
                   <td className="px-5 py-4">
-                    <p className="text-sm font-medium" style={{ color: "#94a3b8" }}>
-                      Q{plan_price_gtq.toFixed(2)}
+                    <p className="text-sm font-medium" style={{ color: org.has_custom_price ? "#f59e0b" : "#94a3b8" }}>
+                      Q{Number(org.price_gtq ?? 0).toFixed(2)}
                     </p>
+                    {org.has_custom_price && (
+                      <p className="text-xs" style={{ color: "#f59e0b" }}>precio especial</p>
+                    )}
                   </td>
 
                   {/* Estado cuenta */}
@@ -444,7 +496,7 @@ export default function BillingPage() {
                         </button>
                       ) : (
                         <button
-                          onClick={() => setModal({ org, planPrice: plan_price_gtq })}
+                          onClick={() => setModal({ org, planPrice: org.price_gtq })}
                           className="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors"
                           style={{ color: "#ffffff", backgroundColor: "#2563eb", border: "1px solid #2563eb" }}
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
@@ -473,6 +525,35 @@ export default function BillingPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Paginación */}
+      {data?.pagination && data.pagination.pages > 1 && (
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs" style={{ color: "#475569" }}>
+            Página {data.pagination.page} de {data.pagination.pages} — {data.pagination.count} organizaciones en total
+          </p>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setPage((p) => p - 1)} disabled={data.pagination.page === 1}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg"
+              style={{
+                border: "1px solid #334155", backgroundColor: "#1e293b",
+                color: data.pagination.page === 1 ? "#334155" : "#94a3b8",
+                cursor: data.pagination.page === 1 ? "not-allowed" : "pointer",
+              }}>
+              ← Anterior
+            </button>
+            <button onClick={() => setPage((p) => p + 1)} disabled={data.pagination.page === data.pagination.pages}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg"
+              style={{
+                border: "1px solid #334155", backgroundColor: "#1e293b",
+                color: data.pagination.page === data.pagination.pages ? "#334155" : "#94a3b8",
+                cursor: data.pagination.page === data.pagination.pages ? "not-allowed" : "pointer",
+              }}>
+              Siguiente →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal registrar pago */}
       {modal && (

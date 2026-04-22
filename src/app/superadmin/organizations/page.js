@@ -139,7 +139,7 @@ export default function SuperadminOrganizationsPage() {
           <table className="w-full">
             <thead>
               <tr style={{ backgroundColor: "#1e293b", borderBottom: "1px solid #334155" }}>
-                {["Organización", "Tipo", "Plan / Estado", "Trial / Licencia", "Actividad", "Equipo", "Registrada"].map((h) => (
+                {["Organización", "Tipo", "Plan / Estado", "Precio mensual", "Trial / Licencia", "Actividad", "Equipo", "Registrada"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#475569" }}>
                     {h}
                   </th>
@@ -200,6 +200,20 @@ export default function SuperadminOrganizationsPage() {
                           style={{ color: status.color, backgroundColor: status.bg, border: `1px solid ${status.border}` }}>
                           {status.label}
                         </span>
+                      </div>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-semibold" style={{ color: "#f1f5f9" }}>
+                          Q{Number(org.locked_price_monthly ?? 0).toFixed(2)}
+                        </span>
+                        {org.has_custom_price && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full w-fit"
+                            style={{ color: "#f59e0b", border: "1px solid #f59e0b33", backgroundColor: "#f59e0b11" }}>
+                            precio especial
+                          </span>
+                        )}
                       </div>
                     </td>
 
