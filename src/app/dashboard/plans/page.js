@@ -16,6 +16,16 @@ const PLAN_STYLE = {
   enterprise:   { color: "#0d9488", bg: "#f0fdfa", border: "#99f6e4" },
 };
 
+// ── Cálculo precios anuales (2 meses gratis = paga 10, obtienes 12) ───────────
+
+function annualMonthlyEquivalent(priceMonthly) {
+  return (priceMonthly * 10) / 12;
+}
+
+function annualTotal(priceMonthly) {
+  return priceMonthly * 10;
+}
+
 // ── Iconos ─────────────────────────────────────────────────────────────────────
 
 function CheckIcon({ ok }) {
@@ -33,11 +43,60 @@ function CheckIcon({ ok }) {
   );
 }
 
+// ── Toggle mensual / anual ─────────────────────────────────────────────────────
+
+function BillingToggle({ value, onChange }) {
+  return (
+    <div className="flex items-center justify-center">
+      <div
+        className="inline-flex items-center rounded-xl p-1 gap-1"
+        style={{ backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0" }}
+      >
+        <button
+          onClick={() => onChange("monthly")}
+          className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={
+            value === "monthly"
+              ? { backgroundColor: "#fff", color: "#0f172a", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+              : { backgroundColor: "transparent", color: "#64748b" }
+          }
+        >
+          Mensual
+        </button>
+        <button
+          onClick={() => onChange("annual")}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={
+            value === "annual"
+              ? { backgroundColor: "#fff", color: "#0f172a", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+              : { backgroundColor: "transparent", color: "#64748b" }
+          }
+        >
+          Anual
+          <span
+            className="text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: "#dcfce7", color: "#16a34a" }}
+          >
+            2 meses gratis
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Card de plan ───────────────────────────────────────────────────────────────
 
-function PlanCard({ plan, featureList, isCurrent, config }) {
-  const style       = PLAN_STYLE[plan.key] || { color: "#64748b", bg: "#f8fafc", border: "#e2e8f0" };
+function PlanCard({ plan, featureList, isCurrent, config, billingCycle }) {
+  const style        = PLAN_STYLE[plan.key] || { color: "#64748b", bg: "#f8fafc", border: "#e2e8f0" };
   const isEnterprise = plan.key === "enterprise";
+  const isFree       = plan.price_monthly === 0;
+
+  const displayPrice = !isFree && billingCycle === "annual"
+    ? annualMonthlyEquivalent(plan.price_monthly)
+    : plan.price_monthly;
+
+  const yearlyTotal = !isFree ? annualTotal(plan.price_monthly) : 0;
 
   return (
     <div
@@ -83,18 +142,24 @@ function PlanCard({ plan, featureList, isCurrent, config }) {
 
         {/* Precio */}
         <div className="mb-6 pb-6" style={{ borderBottom: "1px solid #f1f5f9" }}>
-          {plan.price_monthly > 0 ? (
+          {!isFree ? (
             <>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-extrabold" style={{ color: "#0f172a" }}>
-                  Q{plan.price_monthly.toFixed(2)}
+                  Q{displayPrice.toFixed(0)}
                 </span>
                 <span className="text-sm" style={{ color: "#94a3b8" }}>/mes</span>
               </div>
-              {plan.price_monthly_usd > 0 && (
-                <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
-                  ~${plan.price_monthly_usd.toFixed(0)} USD / mes
+              {billingCycle === "annual" ? (
+                <p className="text-xs mt-0.5" style={{ color: "#16a34a", fontWeight: 600 }}>
+                  Facturado Q{yearlyTotal.toLocaleString()}/año
                 </p>
+              ) : (
+                plan.price_monthly_usd > 0 && (
+                  <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                    ~${plan.price_monthly_usd.toFixed(0)} USD / mes
+                  </p>
+                )
               )}
             </>
           ) : (
@@ -194,10 +259,11 @@ export default function PlansPage() {
 
   useEffect(() => { fetchMe(); }, []);
 
-  const [plans,       setPlans]       = useState([]);
-  const [featureList, setFeatureList] = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
+  const [plans,        setPlans]        = useState([]);
+  const [featureList,  setFeatureList]  = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [billingCycle, setBillingCycle] = useState("monthly");
 
   useEffect(() => {
     api.get("/api/v1/plans")
@@ -263,6 +329,11 @@ export default function PlansPage() {
         </div>
       )}
 
+      {/* Toggle mensual / anual */}
+      {!loading && plans.length > 0 && (
+        <BillingToggle value={billingCycle} onChange={setBillingCycle} />
+      )}
+
       {/* Error */}
       {error && (
         <div className="rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
@@ -282,6 +353,7 @@ export default function PlansPage() {
               featureList={featureList}
               isCurrent={organization?.plan === plan.key}
               config={config}
+              billingCycle={billingCycle}
             />
           ))}
         </div>
