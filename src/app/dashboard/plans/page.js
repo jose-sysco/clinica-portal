@@ -392,6 +392,16 @@ export default function PlansPage() {
             >
               contáctanos por correo
             </a>
+            {" "}o{" "}
+            <a
+              href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hola, quiero más información sobre Agendia y sus planes de suscripción.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline"
+              style={{ color: "#d97706" }}
+            >
+              escríbenos por WhatsApp
+            </a>
             .
           </p>
         </div>
