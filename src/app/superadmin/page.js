@@ -160,6 +160,7 @@ export default function SuperadminDashboard() {
 
   const o       = stats?.organizations       || {};
   const a       = stats?.appointments        || {};
+  const mrr     = stats?.mrr                 || {};
   const expiring = stats?.expiring_soon      || [];
   const suspended = stats?.suspended_orgs    || [];
   const unpaid    = stats?.unpaid_this_month || { count: 0, orgs: [] };
@@ -180,6 +181,56 @@ export default function SuperadminDashboard() {
             Ver organizaciones →
           </button>
         </Link>
+      </div>
+
+      {/* ── MRR ──────────────────────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#475569" }}>
+          Ingresos recurrentes (MRR)
+        </p>
+        <div className="rounded-xl p-5" style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}>
+          <div className="flex flex-col md:flex-row md:items-end gap-5">
+            {/* MRR principal */}
+            <div className="flex-1">
+              <div className="flex items-end gap-3 mb-1">
+                <p className="text-4xl font-bold" style={{ color: "#22c55e" }}>
+                  Q{Number(mrr.current ?? 0).toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                {mrr.last_month !== undefined && mrr.last_month !== null && (
+                  <Trend current={mrr.current} previous={mrr.last_month} />
+                )}
+              </div>
+              <p className="text-xs" style={{ color: "#64748b" }}>
+                este mes · {mrr.paying_orgs ?? 0} clientes con suscripción
+                {mrr.last_month > 0 && (
+                  <span className="ml-2">
+                    · mes anterior (billing): Q{Number(mrr.last_month).toLocaleString("es-GT", { minimumFractionDigits: 2 })}
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Breakdown por plan */}
+            {Object.keys(mrr.by_plan || {}).length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {Object.entries(mrr.by_plan || {}).map(([plan, amount]) => {
+                  const colors = { trial: "#f59e0b", basic: "#3b82f6", professional: "#8b5cf6", enterprise: "#06b6d4" };
+                  const labels = { trial: "Trial", basic: "Starter", professional: "Pro", enterprise: "Enterprise" };
+                  const color  = colors[plan] || "#64748b";
+                  return (
+                    <div key={plan} className="rounded-lg px-3 py-2 text-center"
+                      style={{ backgroundColor: `${color}11`, border: `1px solid ${color}22` }}>
+                      <p className="text-xs font-semibold" style={{ color }}>{labels[plan] || plan}</p>
+                      <p className="text-sm font-bold mt-0.5" style={{ color: "#f1f5f9" }}>
+                        Q{Number(amount).toLocaleString("es-GT", { minimumFractionDigits: 0 })}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ── PANEL: Acciones pendientes ─────────────────────────────────────── */}

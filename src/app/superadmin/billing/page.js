@@ -5,61 +5,89 @@ import superadminApi from "@/lib/superadminApi";
 import { toast } from "sonner";
 
 const PLAN_LABEL = {
-  trial:        "Trial",
-  basic:        "Básico",
-  professional: "Profesional",
-  enterprise:   "Empresarial",
+  trial: "Trial", basic: "Starter", professional: "Pro", enterprise: "Enterprise",
 };
-
 const PLAN_COLOR = {
-  trial:        "#f59e0b",
-  basic:        "#3b82f6",
-  professional: "#8b5cf6",
-  enterprise:   "#06b6d4",
+  trial: "#f59e0b", basic: "#3b82f6", professional: "#8b5cf6", enterprise: "#06b6d4",
 };
 
 function formatPeriod(year, month) {
   return `${year}-${String(month).padStart(2, "0")}`;
 }
-
 function parsePeriod(str) {
   const [y, m] = str.split("-").map(Number);
   return { year: y, month: m };
 }
-
 function monthName(month, year) {
-  return new Date(year, month - 1, 1).toLocaleDateString("es-GT", {
-    month: "long",
-    year: "numeric",
-  });
+  return new Date(year, month - 1, 1).toLocaleDateString("es-GT", { month: "long", year: "numeric" });
 }
-
 function formatDate(iso) {
   if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-GT", { day: "numeric", month: "short" });
+  return new Date(iso).toLocaleDateString("es-GT", { day: "numeric", month: "short" });
 }
 
+// ─── Summary card ─────────────────────────────────────────────────────────────
 function SummaryCard({ label, value, sub, color }) {
   return (
-    <div
-      className="rounded-xl p-5 flex flex-col gap-1"
-      style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}
-    >
-      <p className="text-xs font-medium uppercase tracking-widest" style={{ color: "#475569" }}>
-        {label}
-      </p>
-      <p className="text-2xl font-bold" style={{ color: color || "#f1f5f9" }}>
-        {value}
-      </p>
+    <div className="rounded-xl p-5 flex flex-col gap-1"
+      style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}>
+      <p className="text-xs font-medium uppercase tracking-widest" style={{ color: "#475569" }}>{label}</p>
+      <p className="text-2xl font-bold" style={{ color: color || "#f1f5f9" }}>{value}</p>
       {sub && <p className="text-xs" style={{ color: "#64748b" }}>{sub}</p>}
     </div>
   );
 }
 
+// ─── Commission panel ─────────────────────────────────────────────────────────
+function CommissionPanel({ summary, period }) {
+  const { commissions = [], total_commissions = 0 } = summary || {};
+  const { month, year } = parsePeriod(period);
+
+  if (!commissions.length && total_commissions === 0) return null;
+
+  return (
+    <div className="rounded-xl p-5" style={{ backgroundColor: "#0f172a", border: "1px solid #22c55e33" }}>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#22c55e" }}>
+            Comisiones generadas — {monthName(month, year)}
+          </p>
+          <p className="text-xs" style={{ color: "#475569" }}>
+            Basado en los pagos registrados hasta ahora en este período.
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs" style={{ color: "#475569" }}>Total a pagar</p>
+          <p className="text-2xl font-bold" style={{ color: "#22c55e" }}>
+            Q{Number(total_commissions).toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      {commissions.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          {commissions.map((c) => (
+            <div key={c.id} className="rounded-lg px-4 py-3"
+              style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}>
+              <p className="text-xs font-semibold" style={{ color: "#f1f5f9" }}>{c.name}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#475569" }}>
+                {c.orgs_count} {c.orgs_count === 1 ? "pago registrado" : "pagos registrados"}
+              </p>
+              <p className="text-sm font-bold mt-1" style={{ color: "#22c55e" }}>
+                Q{Number(c.commission_amount).toFixed(2)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Payment modal ────────────────────────────────────────────────────────────
 function PaymentModal({ org, planPrice, period, onClose, onSaved }) {
-  const [amount, setAmount]   = useState(String(planPrice || ""));
-  const [notes,  setNotes]    = useState("");
+  const [amount,  setAmount]  = useState(String(planPrice || ""));
+  const [notes,   setNotes]   = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -76,31 +104,30 @@ function PaymentModal({ org, planPrice, period, onClose, onSaved }) {
       toast.success(`Pago de Q${parseFloat(amount).toFixed(2)} registrado para ${org.name}`);
       onClose();
     } catch (err) {
-      const errors = err.response?.data?.errors;
-      toast.error(errors ? errors[0] : "Error al registrar el pago");
+      toast.error(err.response?.data?.errors?.[0] || "Error al registrar el pago");
     } finally {
       setLoading(false);
     }
   };
 
+  const inputStyle = { backgroundColor: "#0f172a", border: "1px solid #334155", color: "#f1f5f9" };
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm rounded-2xl p-6 space-y-4"
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.6)" }} onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl p-6 space-y-4"
         style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+        onClick={(e) => e.stopPropagation()}>
         <div>
-          <p className="text-base font-semibold" style={{ color: "#f1f5f9" }}>
-            Registrar pago
-          </p>
+          <p className="text-base font-semibold" style={{ color: "#f1f5f9" }}>Registrar pago</p>
           <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
             {org.name} — {monthName(parsePeriod(period).month, parsePeriod(period).year)}
           </p>
+          {org.salesperson && org.salesperson.commission_for_plan > 0 && (
+            <p className="text-xs mt-1" style={{ color: "#22c55e" }}>
+              Vendedor: {org.salesperson.name} · comisión: Q{Number(org.salesperson.commission_for_plan).toFixed(2)}
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -108,64 +135,30 @@ function PaymentModal({ org, planPrice, period, onClose, onSaved }) {
             <label className="block text-xs font-medium mb-1.5" style={{ color: "#94a3b8" }}>
               Monto pagado (GTQ)
             </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              required
-              value={amount}
+            <input type="number" step="0.01" min="0" required value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full text-sm px-3 py-2.5 rounded-lg outline-none"
-              style={{
-                backgroundColor: "#0f172a",
-                border: "1px solid #334155",
-                color: "#f1f5f9",
-              }}
-            />
+              className="w-full text-sm px-3 py-2.5 rounded-lg outline-none" style={inputStyle} />
             {planPrice > 0 && (
-              <p className="text-xs mt-1" style={{ color: "#475569" }}>
-                Precio del plan: Q{planPrice.toFixed(2)}
-              </p>
+              <p className="text-xs mt-1" style={{ color: "#475569" }}>Precio del plan: Q{planPrice.toFixed(2)}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: "#94a3b8" }}>
-              Notas (opcional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
+            <label className="block text-xs font-medium mb-1.5" style={{ color: "#94a3b8" }}>Notas (opcional)</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
               placeholder="Ej: Pagó vía transferencia, referencia #123"
-              className="w-full text-sm px-3 py-2 rounded-lg outline-none resize-none"
-              style={{
-                backgroundColor: "#0f172a",
-                border: "1px solid #334155",
-                color: "#f1f5f9",
-              }}
-            />
+              className="w-full text-sm px-3 py-2 rounded-lg outline-none resize-none" style={inputStyle} />
           </div>
 
           <div className="flex gap-2 pt-1">
-            <button
-              type="submit"
-              disabled={loading}
+            <button type="submit" disabled={loading}
               className="flex-1 py-2.5 rounded-lg text-sm font-semibold"
-              style={{
-                backgroundColor: loading ? "#1d4ed8" : "#2563eb",
-                color: "#ffffff",
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
+              style={{ backgroundColor: "#2563eb", color: "#ffffff", cursor: loading ? "not-allowed" : "pointer" }}>
               {loading ? "Guardando..." : "Confirmar pago"}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
+            <button type="button" onClick={onClose}
               className="px-4 py-2.5 rounded-lg text-sm"
-              style={{ backgroundColor: "#0f172a", color: "#64748b", border: "1px solid #334155" }}
-            >
+              style={{ backgroundColor: "#0f172a", color: "#64748b", border: "1px solid #334155" }}>
               Cancelar
             </button>
           </div>
@@ -175,24 +168,25 @@ function PaymentModal({ org, planPrice, period, onClose, onSaved }) {
   );
 }
 
+// ─── CSV export ───────────────────────────────────────────────────────────────
 function exportCsv(data, period) {
   const rows = [
-    ["Organización", "Email", "Plan", "Estado", "Precio GTQ", "Precio especial", "Monto pagado", "Notas", "Registrado por", "Fecha pago"],
+    ["Organización", "Email", "Plan", "Estado", "Precio GTQ", "Precio especial", "Vendedor", "Monto pagado", "Notas", "Registrado por", "Fecha pago"],
     ...(data?.data || []).map(({ organization: org, billing_record }) => [
-      org.name,
-      org.email,
+      org.name, org.email,
       PLAN_LABEL[org.plan] || org.plan,
       org.status === "suspended" ? "Suspendida" : "Activa",
       Number(org.price_gtq ?? 0).toFixed(2),
       org.has_custom_price ? "Sí" : "No",
+      org.salesperson?.name || "",
       billing_record ? parseFloat(billing_record.amount_paid).toFixed(2) : "",
       billing_record?.notes || "",
       billing_record?.recorded_by || "",
       billing_record?.recorded_at ? new Date(billing_record.recorded_at).toLocaleDateString("es-GT") : "",
     ]),
   ];
-  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const csv  = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement("a");
   a.href     = url;
@@ -201,41 +195,39 @@ function exportCsv(data, period) {
   URL.revokeObjectURL(url);
 }
 
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function BillingPage() {
   const now   = new Date();
-  const [year,  setYear]  = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [page,  setPage]  = useState(1);
+  const [year,          setYear]          = useState(now.getFullYear());
+  const [month,         setMonth]         = useState(now.getMonth() + 1);
+  const [page,          setPage]          = useState(1);
+  const [paymentFilter, setPaymentFilter] = useState("all"); // "all" | "unpaid" | "paid"
 
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
-  const [modal,   setModal]   = useState(null); // { org, planPrice }
+  const [modal,   setModal]   = useState(null);
 
   const period = formatPeriod(year, month);
 
   const fetchBilling = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await superadminApi.get("/api/superadmin/billing", { params: { period, page } });
+      const res = await superadminApi.get("/api/superadmin/billing", {
+        params: { period, page, payment_status: paymentFilter === "all" ? undefined : paymentFilter },
+      });
       setData(res.data);
     } catch {
       toast.error("Error al cargar la facturación");
     } finally {
       setLoading(false);
     }
-  }, [period, page]);
+  }, [period, page, paymentFilter]);
 
-  useEffect(() => { setPage(1); }, [period]);
+  useEffect(() => { setPage(1); }, [period, paymentFilter]);
   useEffect(() => { fetchBilling(); }, [fetchBilling]);
 
-  const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear((y) => y - 1); }
-    else setMonth((m) => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear((y) => y + 1); }
-    else setMonth((m) => m + 1);
-  };
+  const prevMonth = () => { if (month === 1) { setMonth(12); setYear((y) => y - 1); } else setMonth((m) => m - 1); };
+  const nextMonth = () => { if (month === 12) { setMonth(1); setYear((y) => y + 1); } else setMonth((m) => m + 1); };
 
   const handleUndoPayment = async (billingId, orgName) => {
     try {
@@ -249,130 +241,122 @@ export default function BillingPage() {
 
   const handleToggleSuspend = async (org) => {
     const newStatus = org.status === "suspended" ? "active" : "suspended";
-    const label     = newStatus === "suspended" ? "suspendida" : "reactivada";
     try {
-      await superadminApi.patch(`/api/superadmin/organizations/${org.id}/update_license`, {
-        status: newStatus,
-      });
-      toast.success(`${org.name} ${label}`);
+      await superadminApi.patch(`/api/superadmin/organizations/${org.id}/update_license`, { status: newStatus });
+      toast.success(`${org.name} ${newStatus === "suspended" ? "suspendida" : "reactivada"}`);
       fetchBilling();
     } catch {
       toast.error("Error al cambiar el estado");
     }
   };
 
-  const handlePaymentSaved = () => {
-    fetchBilling();
-  };
-
   const { summary } = data || {};
+
+  const FILTERS = [
+    { key: "all",    label: "Todos",     count: summary?.total_orgs },
+    { key: "unpaid", label: "Sin pagar", count: summary?.pending },
+    { key: "paid",   label: "Pagados",   count: summary?.paid },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "#f1f5f9" }}>
-            Facturación
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-            Control manual de pagos por organización
-          </p>
+          <h1 className="text-2xl font-bold" style={{ color: "#f1f5f9" }}>Facturación</h1>
+          <p className="text-sm mt-1" style={{ color: "#64748b" }}>Control manual de pagos por organización</p>
         </div>
 
-        {/* Export + Navegador de mes */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => exportCsv(data, period)}
-            disabled={!data || loading}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button onClick={() => exportCsv(data, period)} disabled={!data || loading}
             className="text-xs font-medium px-3 py-2 rounded-lg disabled:opacity-40"
             style={{ backgroundColor: "#1e293b", color: "#94a3b8", border: "1px solid #334155" }}
             onMouseEnter={(e) => { if (!loading && data) e.currentTarget.style.color = "#f1f5f9"; }}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
-          >
-            ↓ Exportar CSV
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}>
+            ↓ CSV
           </button>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={prevMonth}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors"
-            style={{ backgroundColor: "#1e293b", color: "#94a3b8", border: "1px solid #334155" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#f1f5f9")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
-          >
-            ←
-          </button>
-          <div
-            className="px-4 py-1.5 rounded-lg text-sm font-semibold capitalize"
-            style={{ backgroundColor: "#1e293b", color: "#f1f5f9", border: "1px solid #334155", minWidth: "160px", textAlign: "center" }}
-          >
-            {monthName(month, year)}
+          <div className="flex items-center gap-2">
+            <button onClick={prevMonth}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+              style={{ backgroundColor: "#1e293b", color: "#94a3b8", border: "1px solid #334155" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#f1f5f9")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}>←</button>
+            <div className="px-4 py-1.5 rounded-lg text-sm font-semibold capitalize"
+              style={{ backgroundColor: "#1e293b", color: "#f1f5f9", border: "1px solid #334155", minWidth: "160px", textAlign: "center" }}>
+              {monthName(month, year)}
+            </div>
+            <button onClick={nextMonth}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+              style={{ backgroundColor: "#1e293b", color: "#94a3b8", border: "1px solid #334155" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#f1f5f9")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}>→</button>
           </div>
-          <button
-            onClick={nextMonth}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors"
-            style={{ backgroundColor: "#1e293b", color: "#94a3b8", border: "1px solid #334155" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#f1f5f9")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
-          >
-            →
-          </button>
-        </div>
         </div>
       </div>
 
-      {/* Resumen */}
+      {/* Summary cards */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-xl p-5 animate-pulse" style={{ backgroundColor: "#1e293b", border: "1px solid #334155", height: "90px" }} />
+          {[1,2,3,4].map((i) => (
+            <div key={i} className="rounded-xl p-5 animate-pulse"
+              style={{ backgroundColor: "#1e293b", border: "1px solid #334155", height: "90px" }} />
           ))}
         </div>
       ) : summary ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SummaryCard
-            label="Esperado"
+          <SummaryCard label="Esperado"
             value={`Q${summary.total_expected_gtq.toLocaleString("es-GT", { minimumFractionDigits: 2 })}`}
             sub={`${summary.total_orgs} organización${summary.total_orgs !== 1 ? "es" : ""} activas`}
-            color="#94a3b8"
-          />
-          <SummaryCard
-            label="Cobrado"
+            color="#94a3b8" />
+          <SummaryCard label="Cobrado"
             value={`Q${summary.total_collected_gtq.toLocaleString("es-GT", { minimumFractionDigits: 2 })}`}
             sub={`${summary.paid} pago${summary.paid !== 1 ? "s" : ""} registrado${summary.paid !== 1 ? "s" : ""}`}
-            color="#22c55e"
-          />
-          <SummaryCard
-            label="Pendiente"
+            color="#22c55e" />
+          <SummaryCard label="Pendiente"
             value={`Q${(summary.total_expected_gtq - summary.total_collected_gtq).toLocaleString("es-GT", { minimumFractionDigits: 2 })}`}
             sub={`${summary.pending} sin pagar`}
-            color={summary.pending > 0 ? "#f59e0b" : "#22c55e"}
-          />
-          <SummaryCard
-            label="Completado"
+            color={summary.pending > 0 ? "#f59e0b" : "#22c55e"} />
+          <SummaryCard label="Completado"
             value={summary.total_orgs > 0 ? `${Math.round((summary.paid / summary.total_orgs) * 100)}%` : "—"}
             sub={`${summary.paid} / ${summary.total_orgs}`}
-            color={summary.pending === 0 && summary.total_orgs > 0 ? "#22c55e" : "#f1f5f9"}
-          />
+            color={summary.pending === 0 && summary.total_orgs > 0 ? "#22c55e" : "#f1f5f9"} />
         </div>
       ) : null}
 
+      {/* Comisiones generadas */}
+      {!loading && summary && <CommissionPanel summary={summary} period={period} />}
+
+      {/* Filtro de estado de pago */}
+      <div className="flex items-center gap-1 rounded-xl p-1"
+        style={{ backgroundColor: "#1e293b", border: "1px solid #334155", width: "fit-content" }}>
+        {FILTERS.map(({ key, label, count }) => (
+          <button key={key} onClick={() => setPaymentFilter(key)}
+            className="flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-lg transition-colors"
+            style={paymentFilter === key
+              ? { backgroundColor: "#0f172a", color: "#f1f5f9", border: "1px solid #334155" }
+              : { color: "#64748b", border: "1px solid transparent" }}>
+            {label}
+            {count !== undefined && (
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: paymentFilter === key ? "#334155" : "#0f172a",
+                  color: key === "unpaid" && count > 0 ? "#f59e0b" : "#64748b",
+                }}>
+                {count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Tabla */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}
-      >
-        <table className="w-full">
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #334155" }}>
+        <table className="w-full" style={{ backgroundColor: "#1e293b" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid #334155", backgroundColor: "#0f172a" }}>
-              {["Organización", "Plan", "Precio GTQ", "Estado", "Pago " + monthName(month, year), "Acciones"].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider"
-                  style={{ color: "#475569" }}
-                >
-                  {h}
-                </th>
+              {["Organización", "Plan", "Precio GTQ", "Vendedor", "Estado", `Pago ${monthName(month, year)}`, "Acciones"].map((h) => (
+                <th key={h} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "#475569" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -380,56 +364,48 @@ export default function BillingPage() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} style={{ borderBottom: "1px solid #1e293b" }}>
-                  {Array.from({ length: 6 }).map((_, j) => (
+                  {Array.from({ length: 7 }).map((_, j) => (
                     <td key={j} className="px-5 py-4">
-                      <div className="h-4 rounded animate-pulse" style={{ backgroundColor: "#334155", width: j === 0 ? "140px" : "80px" }} />
+                      <div className="h-4 rounded animate-pulse"
+                        style={{ backgroundColor: "#334155", width: j === 0 ? "140px" : "80px" }} />
                     </td>
                   ))}
                 </tr>
               ))
             ) : data?.data?.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-sm" style={{ color: "#475569" }}>
-                  No hay organizaciones de pago registradas
+                <td colSpan={7} className="px-5 py-10 text-center text-sm" style={{ color: "#475569" }}>
+                  {paymentFilter === "unpaid" ? "Todos los clientes han pagado este mes 🎉" :
+                   paymentFilter === "paid"   ? "Sin pagos registrados este mes" :
+                   "No hay organizaciones de pago registradas"}
                 </td>
               </tr>
             ) : (
               data?.data?.map(({ organization: org, billing_record }) => (
-                <tr
-                  key={org.id}
-                  style={{ borderBottom: "1px solid #334155" }}
+                <tr key={org.id} style={{ borderBottom: "1px solid #334155" }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#0f172a")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
+
                   {/* Organización */}
                   <td className="px-5 py-4">
-                    <p className="text-sm font-medium" style={{ color: "#f1f5f9" }}>
-                      {org.name}
-                    </p>
-                    <a href={`mailto:${org.email}`}
-                      className="text-xs hover:underline block"
-                      style={{ color: "#475569" }}>
+                    <p className="text-sm font-medium" style={{ color: "#f1f5f9" }}>{org.name}</p>
+                    <a href={`mailto:${org.email}`} className="text-xs hover:underline block" style={{ color: "#475569" }}>
                       {org.email}
                     </a>
                     {org.phone && (
-                      <a href={`tel:${org.phone}`}
-                        className="text-xs font-medium hover:underline block mt-0.5"
-                        style={{ color: "#3b82f6" }}>
-                        {org.phone}
-                      </a>
+                      <a href={`tel:${org.phone}`} className="text-xs font-medium hover:underline block mt-0.5"
+                        style={{ color: "#3b82f6" }}>{org.phone}</a>
                     )}
                   </td>
 
                   {/* Plan */}
                   <td className="px-5 py-4">
-                    <span
-                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
                       style={{
                         color: PLAN_COLOR[org.plan] || "#94a3b8",
-                        backgroundColor: `${PLAN_COLOR[org.plan]}18` || "#1e293b",
-                        border: `1px solid ${PLAN_COLOR[org.plan]}44` || "1px solid #334155",
-                      }}
-                    >
+                        backgroundColor: `${PLAN_COLOR[org.plan]}18`,
+                        border: `1px solid ${PLAN_COLOR[org.plan]}44`,
+                      }}>
                       {PLAN_LABEL[org.plan] || org.plan}
                     </span>
                   </td>
@@ -440,20 +416,34 @@ export default function BillingPage() {
                       Q{Number(org.price_gtq ?? 0).toFixed(2)}
                     </p>
                     {org.has_custom_price && (
-                      <p className="text-xs" style={{ color: "#f59e0b" }}>precio especial</p>
+                      <p className="text-xs" style={{ color: "#f59e0b" }}>especial</p>
+                    )}
+                  </td>
+
+                  {/* Vendedor */}
+                  <td className="px-5 py-4">
+                    {org.salesperson ? (
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: "#94a3b8" }}>{org.salesperson.name}</p>
+                        {org.salesperson.commission_for_plan > 0 ? (
+                          <p className="text-xs font-semibold" style={{ color: "#22c55e" }}>
+                            Q{Number(org.salesperson.commission_for_plan).toFixed(0)}/mes
+                          </p>
+                        ) : (
+                          <p className="text-xs" style={{ color: "#475569" }}>sin comisión</p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs" style={{ color: "#334155" }}>—</span>
                     )}
                   </td>
 
                   {/* Estado cuenta */}
                   <td className="px-5 py-4">
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full"
-                      style={
-                        org.status === "suspended"
-                          ? { color: "#ef4444", backgroundColor: "#450a0a33", border: "1px solid #7f1d1d" }
-                          : { color: "#22c55e", backgroundColor: "#14532d33", border: "1px solid #166534" }
-                      }
-                    >
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+                      style={org.status === "suspended"
+                        ? { color: "#ef4444", backgroundColor: "#450a0a33", border: "1px solid #7f1d1d" }
+                        : { color: "#22c55e", backgroundColor: "#14532d33", border: "1px solid #166534" }}>
                       {org.status === "suspended" ? "Suspendida" : "Activa"}
                     </span>
                   </td>
@@ -462,22 +452,16 @@ export default function BillingPage() {
                   <td className="px-5 py-4">
                     {billing_record ? (
                       <div>
-                        <span className="text-xs font-semibold" style={{ color: "#22c55e" }}>
-                          ✓ Pagado
-                        </span>
+                        <span className="text-xs font-semibold" style={{ color: "#22c55e" }}>✓ Pagado</span>
                         <p className="text-xs mt-0.5" style={{ color: "#475569" }}>
                           Q{parseFloat(billing_record.amount_paid).toFixed(2)} · {formatDate(billing_record.recorded_at)}
                         </p>
                         {billing_record.notes && (
-                          <p className="text-xs mt-0.5 italic" style={{ color: "#334155" }}>
-                            {billing_record.notes}
-                          </p>
+                          <p className="text-xs mt-0.5 italic" style={{ color: "#334155" }}>{billing_record.notes}</p>
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs font-medium" style={{ color: "#f59e0b" }}>
-                        ⏳ Pendiente
-                      </span>
+                      <span className="text-xs font-medium" style={{ color: "#f59e0b" }}>⏳ Pendiente</span>
                     )}
                   </td>
 
@@ -485,36 +469,27 @@ export default function BillingPage() {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
                       {billing_record ? (
-                        <button
-                          onClick={() => handleUndoPayment(billing_record.id, org.name)}
+                        <button onClick={() => handleUndoPayment(billing_record.id, org.name)}
                           className="text-xs px-2.5 py-1.5 rounded-lg transition-colors"
                           style={{ color: "#94a3b8", backgroundColor: "#0f172a", border: "1px solid #334155" }}
                           onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#7f1d1d"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "#334155"; }}
-                        >
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "#334155"; }}>
                           Deshacer
                         </button>
                       ) : (
-                        <button
-                          onClick={() => setModal({ org, planPrice: org.price_gtq })}
+                        <button onClick={() => setModal({ org, planPrice: org.price_gtq })}
                           className="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors"
                           style={{ color: "#ffffff", backgroundColor: "#2563eb", border: "1px solid #2563eb" }}
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
-                        >
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}>
                           Registrar pago
                         </button>
                       )}
-
-                      <button
-                        onClick={() => handleToggleSuspend(org)}
+                      <button onClick={() => handleToggleSuspend(org)}
                         className="text-xs px-2.5 py-1.5 rounded-lg transition-colors"
-                        style={
-                          org.status === "suspended"
-                            ? { color: "#22c55e", backgroundColor: "#14532d33", border: "1px solid #166534" }
-                            : { color: "#ef4444", backgroundColor: "#450a0a33", border: "1px solid #7f1d1d" }
-                        }
-                      >
+                        style={org.status === "suspended"
+                          ? { color: "#22c55e", backgroundColor: "#14532d33", border: "1px solid #166534" }
+                          : { color: "#ef4444", backgroundColor: "#450a0a33", border: "1px solid #7f1d1d" }}>
                         {org.status === "suspended" ? "Reactivar" : "Suspender"}
                       </button>
                     </div>
@@ -530,40 +505,30 @@ export default function BillingPage() {
       {data?.pagination && data.pagination.pages > 1 && (
         <div className="flex items-center justify-between px-1">
           <p className="text-xs" style={{ color: "#475569" }}>
-            Página {data.pagination.page} de {data.pagination.pages} — {data.pagination.count} organizaciones en total
+            Página {data.pagination.page} de {data.pagination.pages} — {data.pagination.count} organizaciones
           </p>
           <div className="flex items-center gap-2">
             <button onClick={() => setPage((p) => p - 1)} disabled={data.pagination.page === 1}
               className="text-xs font-medium px-3 py-1.5 rounded-lg"
-              style={{
-                border: "1px solid #334155", backgroundColor: "#1e293b",
+              style={{ border: "1px solid #334155", backgroundColor: "#1e293b",
                 color: data.pagination.page === 1 ? "#334155" : "#94a3b8",
-                cursor: data.pagination.page === 1 ? "not-allowed" : "pointer",
-              }}>
+                cursor: data.pagination.page === 1 ? "not-allowed" : "pointer" }}>
               ← Anterior
             </button>
             <button onClick={() => setPage((p) => p + 1)} disabled={data.pagination.page === data.pagination.pages}
               className="text-xs font-medium px-3 py-1.5 rounded-lg"
-              style={{
-                border: "1px solid #334155", backgroundColor: "#1e293b",
+              style={{ border: "1px solid #334155", backgroundColor: "#1e293b",
                 color: data.pagination.page === data.pagination.pages ? "#334155" : "#94a3b8",
-                cursor: data.pagination.page === data.pagination.pages ? "not-allowed" : "pointer",
-              }}>
+                cursor: data.pagination.page === data.pagination.pages ? "not-allowed" : "pointer" }}>
               Siguiente →
             </button>
           </div>
         </div>
       )}
 
-      {/* Modal registrar pago */}
       {modal && (
-        <PaymentModal
-          org={modal.org}
-          planPrice={modal.planPrice}
-          period={period}
-          onClose={() => setModal(null)}
-          onSaved={handlePaymentSaved}
-        />
+        <PaymentModal org={modal.org} planPrice={modal.planPrice} period={period}
+          onClose={() => setModal(null)} onSaved={() => fetchBilling()} />
       )}
     </div>
   );

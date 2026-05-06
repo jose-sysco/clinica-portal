@@ -98,6 +98,7 @@ function TabInformacion({ org }) {
         <InfoRow label="IP registro"  value={org.registration_ip || "—"} />
         <InfoRow label="Subdominio"   value={org.subdomain || "—"} />
         <InfoRow label="Registrada"   value={formatDate(org.created_at)} />
+        <InfoRow label="Vendedor"     value={org.salesperson ? `${org.salesperson.name}${org.salesperson.commission_for_plan > 0 ? ` · Q${Number(org.salesperson.commission_for_plan).toFixed(0)}/mes` : ""}` : "Sin asignar"} />
       </div>
 
       <div className="space-y-5">
@@ -137,13 +138,17 @@ function TabInformacion({ org }) {
 // ─── Tab: Licencia & Precio ───────────────────────────────────────────────────
 
 function TabLicencia({ org, onUpdate }) {
+  const [salespersons, setSalespersons] = useState([]);
   const [form, setForm] = useState({
-    plan:                   org.plan,
-    status:                 org.status,
-    trial_ends_at:          org.trial_ends_at ? org.trial_ends_at.slice(0, 10) : "",
-    locked_price_monthly:   org.locked_price_monthly ?? "",
+    plan:                     org.plan,
+    status:                   org.status,
+    trial_ends_at:            org.trial_ends_at ? org.trial_ends_at.slice(0, 10) : "",
+    locked_price_monthly:     org.locked_price_monthly ?? "",
     locked_price_monthly_usd: org.locked_price_monthly_usd ?? "",
-    notes:                  "",
+    max_doctors_override:     org.max_doctors_override ?? "",
+    max_patients_override:    org.max_patients_override ?? "",
+    salesperson_id:           org.salesperson_id ?? "",
+    notes:                    "",
   });
   const [saving, setSaving]   = useState(false);
   const [confirm, setConfirm] = useState(null); // "suspend" | null
@@ -163,6 +168,12 @@ function TabLicencia({ org, onUpdate }) {
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
+  useEffect(() => {
+    superadminApi.get("/api/superadmin/salespersons")
+      .then((r) => setSalespersons(r.data))
+      .catch(() => {});
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -176,6 +187,9 @@ function TabLicencia({ org, onUpdate }) {
         payload.locked_price_monthly = form.locked_price_monthly;
       if (form.locked_price_monthly_usd !== "")
         payload.locked_price_monthly_usd = form.locked_price_monthly_usd;
+      payload.max_doctors_override  = form.max_doctors_override  !== "" ? form.max_doctors_override  : null;
+      payload.max_patients_override = form.max_patients_override !== "" ? form.max_patients_override : null;
+      payload.salesperson_id        = form.salesperson_id !== "" ? form.salesperson_id : null;
 
       const r = await superadminApi.patch(
         `/api/superadmin/organizations/${org.id}/update_license`,
@@ -320,6 +334,73 @@ function TabLicencia({ org, onUpdate }) {
                   placeholder={org.plan_price_monthly_usd ?? "0.00"}
                   className="flex-1 text-sm px-3 py-2 rounded-lg outline-none" style={inputStyle} />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Overrides de capacidad + Vendedor */}
+        <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: "#0f172a", border: "1px solid #334155" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#475569" }}>
+            Capacidad personalizada
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-medium block mb-1.5" style={{ color: "#94a3b8" }}>
+                Máx. doctores
+                {org.effective_max_doctors != null && (
+                  <span className="ml-2 font-normal" style={{ color: "#475569" }}>
+                    · plan: {org.effective_max_doctors}
+                  </span>
+                )}
+              </label>
+              <input
+                type="number" min="1" step="1"
+                value={form.max_doctors_override}
+                onChange={(e) => setForm({ ...form, max_doctors_override: e.target.value })}
+                placeholder={org.effective_max_doctors ?? "ilimitado"}
+                className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                style={inputStyle}
+              />
+              {org.max_doctors_override && (
+                <p className="text-xs mt-1" style={{ color: "#f59e0b" }}>Override activo</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium block mb-1.5" style={{ color: "#94a3b8" }}>
+                Máx. pacientes
+                {org.effective_max_patients != null && (
+                  <span className="ml-2 font-normal" style={{ color: "#475569" }}>
+                    · plan: {org.effective_max_patients}
+                  </span>
+                )}
+              </label>
+              <input
+                type="number" min="1" step="1"
+                value={form.max_patients_override}
+                onChange={(e) => setForm({ ...form, max_patients_override: e.target.value })}
+                placeholder={org.effective_max_patients ?? "ilimitado"}
+                className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                style={inputStyle}
+              />
+              {org.max_patients_override && (
+                <p className="text-xs mt-1" style={{ color: "#f59e0b" }}>Override activo</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium block mb-1.5" style={{ color: "#94a3b8" }}>Vendedor</label>
+              <select
+                value={form.salesperson_id}
+                onChange={(e) => setForm({ ...form, salesperson_id: e.target.value })}
+                className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                style={inputStyle}
+              >
+                <option value="">Sin vendedor</option>
+                {salespersons.filter((s) => s.active).map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

@@ -11,6 +11,8 @@ const navigation = [
   { name: "Organizaciones",  href: "/superadmin/organizations" },
   { name: "Facturación",     href: "/superadmin/billing" },
   { name: "Planes",          href: "/superadmin/plans" },
+  { name: "Vendedores",      href: "/superadmin/salespersons" },
+  { name: "Reportes",        href: "/superadmin/reports" },
   { name: "Administradores", href: "/superadmin/users" },
 ];
 
