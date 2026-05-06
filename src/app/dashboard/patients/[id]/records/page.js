@@ -37,9 +37,8 @@ export default function PatientRecordsPage() {
   };
 
   const formatDate = (dateStr) => {
-    // date-only strings (YYYY-MM-DD) must be parsed as local date to avoid
-    // UTC midnight → previous day offset in Guatemala (UTC-6)
-    const [year, month, day] = dateStr.split("-").map(Number);
+    if (!dateStr) return "—";
+    const [year, month, day] = dateStr.split("T")[0].split("-").map(Number);
     const d = new Date(year, month - 1, day);
     return d.toLocaleDateString("es-GT", {
       day: "numeric",
