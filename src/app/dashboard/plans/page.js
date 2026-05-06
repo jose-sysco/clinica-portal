@@ -16,6 +16,26 @@ const PLAN_STYLE = {
   enterprise:   { color: "#0d9488", bg: "#f0fdfa", border: "#99f6e4" },
 };
 
+// ── WhatsApp ───────────────────────────────────────────────────────────────────
+
+const WA_NUMBER = "50245692657";
+
+function waLink(planName, billingCycle) {
+  const ciclo = billingCycle === "annual" ? "anual" : "mensual";
+  const text = `Hola, me interesa activar el plan *${planName}* (${ciclo}) en Agendia. ¿Me pueden ayudar?`;
+  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+// ── Cálculo precios anuales (2 meses gratis = paga 10, obtienes 12) ───────────
+
+function annualMonthlyEquivalent(priceMonthly) {
+  return (priceMonthly * 10) / 12;
+}
+
+function annualTotal(priceMonthly) {
+  return priceMonthly * 10;
+}
+
 // ── Iconos ─────────────────────────────────────────────────────────────────────
 
 function CheckIcon({ ok }) {
@@ -33,11 +53,60 @@ function CheckIcon({ ok }) {
   );
 }
 
+// ── Toggle mensual / anual ─────────────────────────────────────────────────────
+
+function BillingToggle({ value, onChange }) {
+  return (
+    <div className="flex items-center justify-center">
+      <div
+        className="inline-flex items-center rounded-xl p-1 gap-1"
+        style={{ backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0" }}
+      >
+        <button
+          onClick={() => onChange("monthly")}
+          className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={
+            value === "monthly"
+              ? { backgroundColor: "#fff", color: "#0f172a", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+              : { backgroundColor: "transparent", color: "#64748b" }
+          }
+        >
+          Mensual
+        </button>
+        <button
+          onClick={() => onChange("annual")}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={
+            value === "annual"
+              ? { backgroundColor: "#fff", color: "#0f172a", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+              : { backgroundColor: "transparent", color: "#64748b" }
+          }
+        >
+          Anual
+          <span
+            className="text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: "#dcfce7", color: "#16a34a" }}
+          >
+            2 meses gratis
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Card de plan ───────────────────────────────────────────────────────────────
 
-function PlanCard({ plan, featureList, isCurrent, config }) {
-  const style       = PLAN_STYLE[plan.key] || { color: "#64748b", bg: "#f8fafc", border: "#e2e8f0" };
+function PlanCard({ plan, featureList, isCurrent, config, billingCycle }) {
+  const style        = PLAN_STYLE[plan.key] || { color: "#64748b", bg: "#f8fafc", border: "#e2e8f0" };
   const isEnterprise = plan.key === "enterprise";
+  const isFree       = plan.price_monthly === 0;
+
+  const displayPrice = !isFree && billingCycle === "annual"
+    ? annualMonthlyEquivalent(plan.price_monthly)
+    : plan.price_monthly;
+
+  const yearlyTotal = !isFree ? annualTotal(plan.price_monthly) : 0;
 
   return (
     <div
@@ -83,18 +152,24 @@ function PlanCard({ plan, featureList, isCurrent, config }) {
 
         {/* Precio */}
         <div className="mb-6 pb-6" style={{ borderBottom: "1px solid #f1f5f9" }}>
-          {plan.price_monthly > 0 ? (
+          {!isFree ? (
             <>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-extrabold" style={{ color: "#0f172a" }}>
-                  Q{plan.price_monthly.toFixed(2)}
+                  Q{displayPrice.toFixed(0)}
                 </span>
                 <span className="text-sm" style={{ color: "#94a3b8" }}>/mes</span>
               </div>
-              {plan.price_monthly_usd > 0 && (
-                <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
-                  ~${plan.price_monthly_usd.toFixed(0)} USD / mes
+              {billingCycle === "annual" ? (
+                <p className="text-xs mt-0.5" style={{ color: "#16a34a", fontWeight: 600 }}>
+                  Facturado Q{yearlyTotal.toLocaleString()}/año
                 </p>
+              ) : (
+                plan.price_monthly_usd > 0 && (
+                  <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                    ~${plan.price_monthly_usd.toFixed(0)} USD / mes
+                  </p>
+                )
               )}
             </>
           ) : (
@@ -160,15 +235,20 @@ function PlanCard({ plan, featureList, isCurrent, config }) {
           >
             Contactar ventas
           </a>
-        ) : (
-          <button
-            disabled
-            className="w-full py-2.5 rounded-xl text-sm font-semibold cursor-not-allowed"
-            style={{ backgroundColor: "#f1f5f9", color: "#94a3b8", border: "1px solid #e2e8f0" }}
+        ) : !isFree ? (
+          <a
+            href={waLink(plan.display_name, billingCycle)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ backgroundColor: "#25d366", color: "#fff" }}
           >
-            Próximamente
-          </button>
-        )}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Activar por WhatsApp
+          </a>
+        ) : null}
       </div>
     </div>
   );
@@ -194,10 +274,11 @@ export default function PlansPage() {
 
   useEffect(() => { fetchMe(); }, []);
 
-  const [plans,       setPlans]       = useState([]);
-  const [featureList, setFeatureList] = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
+  const [plans,        setPlans]        = useState([]);
+  const [featureList,  setFeatureList]  = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [billingCycle, setBillingCycle] = useState("monthly");
 
   useEffect(() => {
     api.get("/api/v1/plans")
@@ -263,6 +344,11 @@ export default function PlansPage() {
         </div>
       )}
 
+      {/* Toggle mensual / anual */}
+      {!loading && plans.length > 0 && (
+        <BillingToggle value={billingCycle} onChange={setBillingCycle} />
+      )}
+
       {/* Error */}
       {error && (
         <div className="rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
@@ -282,6 +368,7 @@ export default function PlansPage() {
               featureList={featureList}
               isCurrent={organization?.plan === plan.key}
               config={config}
+              billingCycle={billingCycle}
             />
           ))}
         </div>
@@ -304,6 +391,16 @@ export default function PlansPage() {
               style={{ color: "#d97706" }}
             >
               contáctanos por correo
+            </a>
+            {" "}o{" "}
+            <a
+              href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hola, quiero más información sobre Agendia y sus planes de suscripción.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline"
+              style={{ color: "#d97706" }}
+            >
+              escríbenos por WhatsApp
             </a>
             .
           </p>
