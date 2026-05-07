@@ -393,6 +393,93 @@ const roleBadgeStyle = {
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 
+function OrgSwitcher({ currentSlug }) {
+  const [orgs,    setOrgs]    = useState([]);
+  const [open,    setOpen]    = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("accessible_orgs");
+      if (stored) setOrgs(JSON.parse(stored));
+    } catch {}
+  }, []);
+
+  if (orgs.length < 2) return null;
+
+  const handleSwitch = async (targetSlug) => {
+    if (targetSlug === currentSlug) { setOpen(false); return; }
+    setLoading(true);
+    try {
+      const token = Cookies.get("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3010";
+      const res = await fetch(`${apiUrl}/api/v1/auth/switch_org`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ target_slug: targetSlug }),
+      });
+      if (!res.ok) throw new Error("switch failed");
+      const data = await res.json();
+      Cookies.set("token",             data.token,         { expires: 1 / 24 });
+      Cookies.set("refresh_token",     data.refresh_token, { expires: 30 });
+      Cookies.set("organization_slug", targetSlug,         { expires: 30 });
+      window.location.href = "/dashboard";
+    } catch {
+      import("sonner").then(({ toast }) => toast.error("No se pudo cambiar de organización"));
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
+  };
+
+  const others = orgs.filter((o) => o.slug !== currentSlug);
+
+  return (
+    <div className="relative mx-3 mb-1">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        disabled={loading}
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+        style={{ backgroundColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)" }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.14)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)"; }}
+      >
+        <span>{loading ? "Cambiando…" : "Cambiar organización"}</span>
+        <span style={{ fontSize: "10px" }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div
+          className="absolute left-0 right-0 mt-1 rounded-xl overflow-hidden z-50"
+          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
+        >
+          {others.map((o) => (
+            <button
+              key={o.slug}
+              onClick={() => handleSwitch(o.slug)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors"
+              style={{ color: "#0f172a" }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+            >
+              {o.logo_url ? (
+                <img src={o.logo_url} alt={o.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid #e2e8f0" }} />
+              ) : (
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: "#eff6ff", color: "#2563eb" }}>
+                  {o.name?.[0] || "C"}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-xs truncate">{o.name}</p>
+                <p className="text-xs capitalize" style={{ color: "#94a3b8" }}>{o.plan}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }) {
   const { user, organization, logout, loading, fetchMe } = useAuth();
   const features      = useFeatures();
@@ -505,6 +592,9 @@ export default function DashboardLayout({ children }) {
             </p>
           </div>
         </div>
+
+        {/* Org switcher (solo visible si hay múltiples orgs en localStorage) */}
+        <OrgSwitcher currentSlug={organization?.slug} />
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-px">
