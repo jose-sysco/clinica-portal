@@ -59,8 +59,15 @@ export default function DashboardPage() {
         if (user?.role === "admin" && d.data.pagination?.count === 0) {
           try {
             const done = localStorage.getItem(`onboarding_done_${organization?.id}`);
-            if (!done) setShowOnboard(true);
-          } catch { setShowOnboard(true); }
+            if (!done) {
+              router.push("/dashboard/onboarding");
+              return;
+            }
+          } catch {
+            router.push("/dashboard/onboarding");
+            return;
+          }
+          setShowOnboard(true);
         }
       })
       .catch(console.error)
