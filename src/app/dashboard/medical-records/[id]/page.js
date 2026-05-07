@@ -39,11 +39,14 @@ export default function MedicalRecordDetailPage() {
   const [record,       setRecord]       = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
-  const [attachments,  setAttachments]  = useState([]);
-  const [uploading,    setUploading]    = useState(false);
-  const [deleting,     setDeleting]     = useState(null);
+  const [attachments,    setAttachments]    = useState([]);
+  const [uploading,      setUploading]      = useState(false);
+  const [deleting,       setDeleting]       = useState(null);
+  const [prescriptions,  setPrescriptions]  = useState([]);
+  const [showRxForm,     setShowRxForm]     = useState(false);
+  const [savingRx,       setSavingRx]       = useState(false);
 
-  useEffect(() => { fetchRecord(); }, []);
+  useEffect(() => { fetchRecord(); fetchPrescriptions(); }, []);
 
   const fetchRecord = async () => {
     try {
@@ -423,6 +426,18 @@ export default function MedicalRecordDetailPage() {
         onUpload={handleUpload}
         onDelete={handleDeleteAttachment}
       />
+
+      {/* Recetas electrónicas */}
+      <PrescriptionsSection
+        record={record}
+        prescriptions={prescriptions}
+        showForm={showRxForm}
+        saving={savingRx}
+        onToggleForm={() => setShowRxForm((v) => !v)}
+        onSave={handleSaveRx}
+        onRevoke={handleRevokeRx}
+        onDownload={handleDownloadRx}
+      />
     </div>
   );
 
@@ -466,6 +481,67 @@ export default function MedicalRecordDetailPage() {
       import("sonner").then(({ toast }) => toast.error("Error al eliminar"));
     } finally {
       setDeleting(null);
+    }
+  }
+
+  function fetchPrescriptions() {
+    api.get(`/api/v1/prescriptions?medical_record_id=${id}`)
+      .then((r) => setPrescriptions(r.data))
+      .catch(() => {});
+  }
+
+  async function handleSaveRx(rxData) {
+    setSavingRx(true);
+    try {
+      const res = await api.post("/api/v1/prescriptions", {
+        prescription: {
+          ...rxData,
+          patient_id:        record.patient_id,
+          appointment_id:    record.appointment_id,
+          medical_record_id: record.id,
+        },
+      });
+      setPrescriptions((prev) => [res.data, ...prev]);
+      setShowRxForm(false);
+      import("sonner").then(({ toast }) => toast.success("Receta creada"));
+    } catch (err) {
+      const msg = err.response?.data?.errors?.[0] || "Error al crear receta";
+      import("sonner").then(({ toast }) => toast.error(msg));
+    } finally {
+      setSavingRx(false);
+    }
+  }
+
+  async function handleRevokeRx(rxId) {
+    try {
+      await api.patch(`/api/v1/prescriptions/${rxId}/revoke`);
+      setPrescriptions((prev) =>
+        prev.map((p) => (p.id === rxId ? { ...p, status: "revoked" } : p))
+      );
+      import("sonner").then(({ toast }) => toast.success("Receta revocada"));
+    } catch {
+      import("sonner").then(({ toast }) => toast.error("Error al revocar"));
+    }
+  }
+
+  async function handleDownloadRx(rxId) {
+    try {
+      const token = (await import("js-cookie")).default.get("token");
+      const slug  = (await import("js-cookie")).default.get("organization_slug");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3010";
+      const res = await fetch(`${apiUrl}/api/v1/prescriptions/${rxId}/download`, {
+        headers: { Authorization: `Bearer ${token}`, "X-Organization-Slug": slug },
+      });
+      if (!res.ok) throw new Error("Error al descargar");
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.target   = "_blank";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      import("sonner").then(({ toast }) => toast.error("Error al descargar PDF"));
     }
   }
 }
@@ -534,6 +610,210 @@ function AttachmentsSection({ recordId, attachments, uploading, deleting, onUplo
                   style={{ backgroundColor: "rgba(220,38,38,0.9)", color: "#fff" }}>
                   {deleting === a.id ? "…" : "✕"}
                 </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Recetas electrónicas ──────────────────────────────────────────────────────
+
+const EMPTY_MED = { name: "", dose: "", frequency: "", duration: "", instructions: "" };
+
+function PrescriptionsSection({ record, prescriptions, showForm, saving, onToggleForm, onSave, onRevoke, onDownload }) {
+  const [form, setForm] = useState({ diagnosis: record?.diagnosis || "", notes: "", valid_until: "", medications: [{ ...EMPTY_MED }] });
+
+  const addMed   = () => setForm((f) => ({ ...f, medications: [...f.medications, { ...EMPTY_MED }] }));
+  const removeMed = (i) => setForm((f) => ({ ...f, medications: f.medications.filter((_, idx) => idx !== i) }));
+  const updateMed = (i, field, val) =>
+    setForm((f) => ({ ...f, medications: f.medications.map((m, idx) => idx === i ? { ...m, [field]: val } : m) }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const meds = form.medications.filter((m) => m.name.trim());
+    if (!meds.length) {
+      import("sonner").then(({ toast }) => toast.error("Agrega al menos un medicamento"));
+      return;
+    }
+    onSave({ ...form, medications: meds });
+  };
+
+  const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("es-GT", { day: "numeric", month: "short", year: "numeric" }) : "—";
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+      {/* Header */}
+      <div className="px-6 py-4 flex items-center justify-between"
+        style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+        <div className="flex items-center gap-2">
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Recetas electrónicas</p>
+          {prescriptions.length > 0 && (
+            <span className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+              style={{ backgroundColor: "#eff6ff", color: "#2563eb" }}>
+              {prescriptions.length}
+            </span>
+          )}
+        </div>
+        <button onClick={onToggleForm}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: showForm ? "#f1f5f9" : "#eff6ff", color: showForm ? "#94a3b8" : "#2563eb", border: "1px solid #bfdbfe" }}>
+          {showForm ? "Cancelar" : "+ Nueva receta"}
+        </button>
+      </div>
+
+      <div className="p-5" style={{ backgroundColor: "#ffffff" }}>
+        {/* New Rx form */}
+        {showForm && (
+          <form onSubmit={handleSubmit} className="mb-5 space-y-4 p-4 rounded-xl"
+            style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#64748b" }}>Nueva receta</p>
+
+            {/* Diagnosis + valid_until */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: "#64748b" }}>Diagnóstico</label>
+                <input type="text" value={form.diagnosis}
+                  onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
+                  placeholder="Ej. Faringitis aguda"
+                  className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: "#64748b" }}>Válida hasta</label>
+                <input type="date" value={form.valid_until}
+                  onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
+                  className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+              </div>
+            </div>
+
+            {/* Medications */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#64748b" }}>Medicamentos *</label>
+                <button type="button" onClick={addMed}
+                  className="text-xs font-medium px-2 py-1 rounded-lg"
+                  style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
+                  + Agregar
+                </button>
+              </div>
+              <div className="space-y-3">
+                {form.medications.map((med, i) => (
+                  <div key={i} className="p-3 rounded-lg relative" style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}>
+                    {form.medications.length > 1 && (
+                      <button type="button" onClick={() => removeMed(i)}
+                        className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                        style={{ backgroundColor: "#fef2f2", color: "#dc2626" }}>✕</button>
+                    )}
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div className="col-span-2">
+                        <input type="text" value={med.name} placeholder="Nombre del medicamento *"
+                          onChange={(e) => updateMed(i, "name", e.target.value)}
+                          className="w-full text-sm px-3 py-1.5 rounded-lg outline-none"
+                          style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                      </div>
+                      <input type="text" value={med.dose} placeholder="Dosis (ej. 500mg)"
+                        onChange={(e) => updateMed(i, "dose", e.target.value)}
+                        className="text-sm px-3 py-1.5 rounded-lg outline-none"
+                        style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                      <input type="text" value={med.frequency} placeholder="Frecuencia (ej. cada 8h)"
+                        onChange={(e) => updateMed(i, "frequency", e.target.value)}
+                        className="text-sm px-3 py-1.5 rounded-lg outline-none"
+                        style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                      <input type="text" value={med.duration} placeholder="Duración (ej. 7 días)"
+                        onChange={(e) => updateMed(i, "duration", e.target.value)}
+                        className="text-sm px-3 py-1.5 rounded-lg outline-none"
+                        style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                      <input type="text" value={med.instructions} placeholder="Indicaciones especiales"
+                        onChange={(e) => updateMed(i, "instructions", e.target.value)}
+                        className="text-sm px-3 py-1.5 rounded-lg outline-none"
+                        style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="text-xs font-medium block mb-1" style={{ color: "#64748b" }}>Indicaciones generales</label>
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="Reposo, hidratación, regresar si…"
+                rows={2}
+                className="w-full text-sm px-3 py-2 rounded-lg outline-none"
+                style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", resize: "vertical" }} />
+            </div>
+
+            <button type="submit" disabled={saving}
+              className="text-sm font-semibold px-5 py-2 rounded-lg disabled:opacity-50"
+              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}>
+              {saving ? "Guardando…" : "Emitir receta"}
+            </button>
+          </form>
+        )}
+
+        {/* Prescriptions list */}
+        {prescriptions.length === 0 && !showForm ? (
+          <p className="text-sm text-center py-4" style={{ color: "#cbd5e1" }}>
+            Sin recetas — emite la primera receta electrónica de este expediente
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {prescriptions.map((rx) => (
+              <div key={rx.id} className="rounded-xl p-4"
+                style={{ border: `1px solid ${rx.status === "revoked" ? "#fecaca" : "#e2e8f0"}`, backgroundColor: rx.status === "revoked" ? "#fef2f2" : "#f8fafc" }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: rx.status === "revoked" ? "#fee2e2" : "#eff6ff", color: rx.status === "revoked" ? "#dc2626" : "#2563eb", border: `1px solid ${rx.status === "revoked" ? "#fecaca" : "#bfdbfe"}` }}>
+                        {rx.status === "revoked" ? "Revocada" : "Válida"}
+                      </span>
+                      <span className="text-xs" style={{ color: "#94a3b8" }}>{fmtDate(rx.issued_at)}</span>
+                      {rx.diagnosis && (
+                        <span className="text-xs truncate" style={{ color: "#64748b" }}>— {rx.diagnosis}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {rx.medications?.slice(0, 4).map((m, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: "#f1f5f9", color: "#374151" }}>
+                          {m.name}{m.dose ? ` ${m.dose}` : ""}
+                        </span>
+                      ))}
+                      {(rx.medications?.length || 0) > 4 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: "#f1f5f9", color: "#94a3b8" }}>
+                          +{rx.medications.length - 4} más
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => onDownload(rx.id)}
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
+                      style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}
+                      title="Descargar PDF">
+                      PDF ↓
+                    </button>
+                    <a href={rx.public_url} target="_blank" rel="noreferrer"
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
+                      style={{ backgroundColor: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}
+                      title="Ver receta pública">
+                      QR ↗
+                    </a>
+                    {rx.status !== "revoked" && (
+                      <button onClick={() => onRevoke(rx.id)}
+                        className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
+                        style={{ backgroundColor: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}
+                        title="Revocar receta">
+                        Revocar
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
