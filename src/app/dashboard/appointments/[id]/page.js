@@ -43,6 +43,9 @@ export default function AppointmentDetailPage() {
   const [cancelSeriesReason,setCancelSeriesReason]= useState("");
   const [cancellingSeries, setCancellingSeries] = useState(false);
 
+  // Admisión
+  const [admission, setAdmission] = useState(null);
+
   // Pagos
   const [showComplete,   setShowComplete]   = useState(false);
   const [completing,     setCompleting]     = useState(false);
@@ -54,7 +57,7 @@ export default function AppointmentDetailPage() {
   const [newPayment,     setNewPayment]     = useState({ amount: "", method: "cash", notes: "" });
 
   useEffect(() => { fetchAppointment(); }, []);
-  useEffect(() => { if (appt) fetchPayments(); }, [appt?.id]);
+  useEffect(() => { if (appt) { fetchPayments(); fetchAdmission(); } }, [appt?.id]);
 
   const fetchAppointment = async () => {
     try {
@@ -71,6 +74,13 @@ export default function AppointmentDetailPage() {
     try {
       const res = await api.get(`/api/v1/appointments/${id}/payments`);
       setPayments(res.data);
+    } catch {}
+  };
+
+  const fetchAdmission = async () => {
+    try {
+      const res = await api.get(`/api/v1/appointments/${id}/admission`);
+      setAdmission(res.data);
     } catch {}
   };
 
@@ -487,6 +497,48 @@ export default function AppointmentDetailPage() {
           </button>
         )}
       </div>
+
+      {/* Formulario de admisión */}
+      {admission?.exists && (
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+          <div className="px-6 py-4 flex items-center justify-between"
+            style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+              Formulario de admisión
+            </p>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+              style={admission.submitted
+                ? { backgroundColor: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0" }
+                : { backgroundColor: "#fef9c3", color: "#92400e", border: "1px solid #fde68a" }}>
+              {admission.submitted ? "Completado" : "Pendiente"}
+            </span>
+          </div>
+          <div className="px-6 py-5" style={{ backgroundColor: "#ffffff" }}>
+            {!admission.submitted ? (
+              <p className="text-sm" style={{ color: "#94a3b8" }}>
+                El paciente aún no ha completado el formulario.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {[
+                  { label: "Fecha de nacimiento", value: admission.form?.patient_dob },
+                  { label: "Alergias", value: admission.form?.allergies },
+                  { label: "Medicamentos", value: admission.form?.current_medications },
+                  { label: "Antecedentes médicos", value: admission.form?.medical_history },
+                  { label: "Notas adicionales", value: admission.form?.notes },
+                ].filter((r) => r.value).map((row) => (
+                  <div key={row.label}>
+                    <p className="text-xs font-semibold" style={{ color: "#94a3b8", marginBottom: "2px" }}>
+                      {row.label}
+                    </p>
+                    <p className="text-sm" style={{ color: "#0f172a", whiteSpace: "pre-wrap" }}>{row.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Sección de pagos */}
       {(appt.status === "completed" || payments.length > 0) && (

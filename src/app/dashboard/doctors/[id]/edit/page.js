@@ -9,6 +9,22 @@ import api from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
 
+const DAY_DEFAULTS = [
+  { day: 1, name: "Lunes",     start: "08:00", end: "17:00" },
+  { day: 2, name: "Martes",    start: "08:00", end: "17:00" },
+  { day: 3, name: "Miércoles", start: "08:00", end: "17:00" },
+  { day: 4, name: "Jueves",    start: "08:00", end: "17:00" },
+  { day: 5, name: "Viernes",   start: "08:00", end: "17:00" },
+  { day: 6, name: "Sábado",    start: "08:00", end: "13:00" },
+  { day: 0, name: "Domingo",   start: "08:00", end: "13:00" },
+];
+
+const DAY_MAP = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
+
+function makeBlankDays(locationId) {
+  return DAY_DEFAULTS.map((d) => ({ ...d, active: false, id: null, location_id: locationId }));
+}
+
 export default function EditDoctorPage() {
   const router = useRouter();
   const { id } = useParams();
@@ -19,6 +35,7 @@ export default function EditDoctorPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState([]);
+  const [locations, setLocations] = useState([]);
 
   const [form, setForm] = useState({
     specialty: "",
@@ -29,72 +46,36 @@ export default function EditDoctorPage() {
     card_surcharge_percent: "",
     status: "active",
     inventory_movements: false,
+    location_ids: [],
   });
+  const [activeScheduleTab, setActiveScheduleTab] = useState(null); // null = global
 
-  const [schedules, setSchedules] = useState([
-    {
-      day: 1,
-      name: "Lunes",
-      active: false,
-      start: "08:00",
-      end: "17:00",
-      id: null,
-    },
-    {
-      day: 2,
-      name: "Martes",
-      active: false,
-      start: "08:00",
-      end: "17:00",
-      id: null,
-    },
-    {
-      day: 3,
-      name: "Miércoles",
-      active: false,
-      start: "08:00",
-      end: "17:00",
-      id: null,
-    },
-    {
-      day: 4,
-      name: "Jueves",
-      active: false,
-      start: "08:00",
-      end: "17:00",
-      id: null,
-    },
-    {
-      day: 5,
-      name: "Viernes",
-      active: false,
-      start: "08:00",
-      end: "17:00",
-      id: null,
-    },
-    {
-      day: 6,
-      name: "Sábado",
-      active: false,
-      start: "08:00",
-      end: "13:00",
-      id: null,
-    },
-    {
-      day: 0,
-      name: "Domingo",
-      active: false,
-      start: "08:00",
-      end: "13:00",
-      id: null,
-    },
-  ]);
+  const [schedules, setSchedules] = useState(makeBlankDays(null));
 
   const [doctor, setDoctor] = useState(null);
 
   useEffect(() => {
     fetchDoctor();
+    api.get("/api/v1/locations").then((r) => setLocations(r.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!loading && locations.length > 0) {
+      let currentIds = form.location_ids;
+
+      // Si org tiene 1 sola sede y el doctor no tiene ninguna → auto-asignar
+      if (locations.length === 1 && form.location_ids.length === 0) {
+        currentIds = [locations[0].id];
+        setForm((f) => ({ ...f, location_ids: currentIds }));
+      }
+
+      // Auto-seleccionar primer tab si tiene sedes asignadas
+      if (currentIds.length > 0 && activeScheduleTab === null) {
+        const relevant = locations.filter((l) => currentIds.includes(l.id));
+        if (relevant.length > 0) handleTabChange(relevant[0].id);
+      }
+    }
+  }, [loading, locations]);
 
   const fetchDoctor = async () => {
     try {
@@ -110,37 +91,37 @@ export default function EditDoctorPage() {
         card_surcharge_percent: d.card_surcharge_percent ?? "",
         status: d.status || "active",
         inventory_movements: d.inventory_movements || false,
+        location_ids: d.location_ids || [],
       });
 
-      // Mapear horarios existentes
-      if (d.schedules?.length > 0) {
-        setSchedules((prev) =>
-          prev.map((slot) => {
-            const existing = d.schedules.find((s) => {
-              const dayMap = {
-                monday: 1,
-                tuesday: 2,
-                wednesday: 3,
-                thursday: 4,
-                friday: 5,
-                saturday: 6,
-                sunday: 0,
-              };
-              return dayMap[s.day_of_week] === slot.day;
-            });
-            if (existing) {
-              return {
-                ...slot,
-                active: existing.is_active,
-                start: existing.start_time,
-                end: existing.end_time,
-                id: existing.id,
-              };
-            }
-            return slot;
-          }),
-        );
-      }
+      // Build a flat schedules array: 7 days for each location group (null = global)
+      const apiSchedules = d.schedules || [];
+
+      const mergeIntoSlots = (locId, apiSlots) =>
+        DAY_DEFAULTS.map((def) => {
+          const existing = apiSlots.find((s) => DAY_MAP[s.day_of_week] === def.day);
+          return existing
+            ? { ...def, active: existing.is_active, start: existing.start_time, end: existing.end_time, id: existing.id, location_id: locId }
+            : { ...def, active: false, id: null, location_id: locId };
+        });
+
+      // Group by location_id (null for global)
+      const groups = {};
+      apiSchedules.forEach((s) => {
+        const key = s.location_id ?? null;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(s);
+      });
+
+      // Always include global group
+      if (!groups[null]) groups[null] = [];
+
+      const built = Object.entries(groups).flatMap(([key, slots]) => {
+        const locId = key === "null" || key === null ? null : Number(key);
+        return mergeIntoSlots(locId, slots);
+      });
+
+      setSchedules(built);
     } catch (err) {
       toast.error("Error al cargar el doctor");
     } finally {
@@ -162,16 +143,32 @@ export default function EditDoctorPage() {
     );
   };
 
+  const handleTabChange = (locId) => {
+    if (locId !== null) {
+      const hasEntries = schedules.some((s) => s.location_id === locId);
+      if (!hasEntries) {
+        setSchedules((prev) => [...prev, ...makeBlankDays(locId)]);
+      }
+    }
+    setActiveScheduleTab(locId);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors([]);
+
+    if (locations.length > 0 && form.location_ids.length === 0) {
+      setErrors(["Debes asignar al menos una sede al especialista antes de guardar."]);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      // Actualizar datos del doctor
+      // Actualizar datos del doctor (incluye location_ids para sincronizar sedes)
       await api.patch(`/api/v1/doctors/${id}`, { doctor: form });
 
-      // Manejar horarios
+      // Manejar horarios de TODOS los tabs (global + por sede)
       const activeSchedules = schedules.filter((s) => s.active);
       const inactiveSchedules = schedules.filter((s) => !s.active && s.id);
 
@@ -180,11 +177,7 @@ export default function EditDoctorPage() {
         activeSchedules.map((s) => {
           if (s.id) {
             return api.patch(`/api/v1/doctors/${id}/schedules/${s.id}`, {
-              schedule: {
-                start_time: s.start,
-                end_time: s.end,
-                is_active: true,
-              },
+              schedule: { start_time: s.start, end_time: s.end, is_active: true },
             });
           } else {
             return api.post(`/api/v1/doctors/${id}/schedules`, {
@@ -193,6 +186,7 @@ export default function EditDoctorPage() {
                 start_time: s.start,
                 end_time: s.end,
                 is_active: true,
+                location_id: s.location_id,
               },
             });
           }
@@ -477,6 +471,39 @@ export default function EditDoctorPage() {
               </div>
             )}
 
+            {locations.length > 0 && (
+              <div>
+                <label style={labelStyle}>Sedes donde atiende</label>
+                <p style={{ fontSize: "11px", color: "#94a3b8", marginBottom: "8px" }}>
+                  Sin selección = atiende en todas las sedes
+                </p>
+                <div className="space-y-2">
+                  {locations.map((loc) => {
+                    const checked = form.location_ids.includes(loc.id);
+                    return (
+                      <label key={loc.id} className="flex items-center gap-3 cursor-pointer p-2 rounded-lg"
+                        style={{ border: `1px solid ${checked ? "#bfdbfe" : "#e2e8f0"}`, backgroundColor: checked ? "#eff6ff" : "#f8fafc" }}>
+                        <input type="checkbox" checked={checked}
+                          onChange={() => {
+                            if (checked && activeScheduleTab === loc.id) setActiveScheduleTab(null);
+                            setForm((f) => ({
+                              ...f,
+                              location_ids: checked
+                                ? f.location_ids.filter((lid) => lid !== loc.id)
+                                : [...f.location_ids, loc.id],
+                            }));
+                          }}
+                          style={{ width: "16px", height: "16px", accentColor: "#2563eb" }} />
+                        <span style={{ fontSize: "13px", fontWeight: checked ? "600" : "400", color: checked ? "#1d4ed8" : "#374151" }}>
+                          {loc.name}{loc.city ? ` — ${loc.city}` : ""}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
               <label style={labelStyle}>Biografía</label>
               <textarea
@@ -496,62 +523,75 @@ export default function EditDoctorPage() {
             className="rounded-xl p-6 shadow-sm space-y-4"
             style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
           >
-            <p
-              className="text-xs font-semibold uppercase tracking-widest"
-              style={{ color: "#94a3b8" }}
-            >
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
               Días y horarios de atención
             </p>
 
-            <div className="space-y-3">
-              {schedules.map((schedule, index) => (
-                <div key={schedule.day} className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => toggleDay(index)}
-                    className="w-24 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0"
-                    style={{
-                      backgroundColor: schedule.active ? "#2563eb" : "#f1f5f9",
-                      color: schedule.active ? "#ffffff" : "#64748b",
-                      border: `1px solid ${schedule.active ? "#2563eb" : "#e2e8f0"}`,
-                    }}
-                  >
-                    {schedule.name}
-                  </button>
+            {/* Aviso cuando atiende en todas las sedes */}
+            {locations.length > 0 && form.location_ids.length === 0 && (
+              <div className="rounded-lg px-3 py-2.5" style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+                <p className="text-xs" style={{ color: "#92400e" }}>
+                  Este especialista atiende en todas las sedes — el horario general aplica en todas.
+                  Asígnale sedes específicas para configurar horarios independientes por sede.
+                </p>
+              </div>
+            )}
 
-                  {schedule.active && (
-                    <>
-                      <input
-                        type="time"
-                        value={schedule.start}
-                        onChange={(e) =>
-                          updateSchedule(index, "start", e.target.value)
-                        }
-                        className="text-sm px-3 py-1.5 rounded-lg outline-none"
-                        style={{
-                          border: "1px solid #e2e8f0",
-                          color: "#0f172a",
-                        }}
-                      />
-                      <span className="text-xs" style={{ color: "#94a3b8" }}>
-                        a
-                      </span>
-                      <input
-                        type="time"
-                        value={schedule.end}
-                        onChange={(e) =>
-                          updateSchedule(index, "end", e.target.value)
-                        }
-                        className="text-sm px-3 py-1.5 rounded-lg outline-none"
-                        style={{
-                          border: "1px solid #e2e8f0",
-                          color: "#0f172a",
-                        }}
-                      />
-                    </>
+            {/* Tabs por sede — solo cuando tiene sedes asignadas */}
+            {locations.length > 0 && form.location_ids.length > 0 && (() => {
+              const tabLocations = locations.filter((l) => form.location_ids.includes(l.id));
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {tabLocations.map((loc) => (
+                    <button key={loc.id} type="button" onClick={() => handleTabChange(loc.id)}
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                      style={activeScheduleTab === loc.id
+                        ? { backgroundColor: "#2563eb", color: "#fff" }
+                        : { backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
+                      {loc.name}
+                    </button>
+                  ))}
+                  {activeScheduleTab !== null && (
+                    <p className="w-full text-xs" style={{ color: "#94a3b8" }}>
+                      Horario para {locations.find((l) => l.id === activeScheduleTab)?.name}
+                    </p>
                   )}
                 </div>
-              ))}
+              );
+            })()}
+
+            <div className="space-y-3">
+              {schedules
+                .filter((s) => s.location_id === (activeScheduleTab ?? null))
+                .map((schedule, _) => {
+                  const index = schedules.findIndex((s) => s.day === schedule.day && s.location_id === (activeScheduleTab ?? null));
+                  return (
+                    <div key={`${schedule.day}-${activeScheduleTab}`} className="flex items-center gap-4">
+                      <button type="button" onClick={() => toggleDay(index)}
+                        className="w-24 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0"
+                        style={{
+                          backgroundColor: schedule.active ? "#2563eb" : "#f1f5f9",
+                          color: schedule.active ? "#ffffff" : "#64748b",
+                          border: `1px solid ${schedule.active ? "#2563eb" : "#e2e8f0"}`,
+                        }}>
+                        {schedule.name}
+                      </button>
+                      {schedule.active && (
+                        <>
+                          <input type="time" value={schedule.start}
+                            onChange={(e) => updateSchedule(index, "start", e.target.value)}
+                            className="text-sm px-3 py-1.5 rounded-lg outline-none"
+                            style={{ border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                          <span className="text-xs" style={{ color: "#94a3b8" }}>a</span>
+                          <input type="time" value={schedule.end}
+                            onChange={(e) => updateSchedule(index, "end", e.target.value)}
+                            className="text-sm px-3 py-1.5 rounded-lg outline-none"
+                            style={{ border: "1px solid #e2e8f0", color: "#0f172a" }} />
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>

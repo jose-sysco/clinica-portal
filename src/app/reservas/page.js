@@ -45,25 +45,41 @@ export default function ReservasPage() {
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
-      {/* Header */}
-      <div style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* Header — gradiente */}
+      <div style={{ background: "linear-gradient(145deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)" }}>
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-2xl font-bold" style={{ color: "#0f172a" }}>
+              <h1 className="text-2xl font-black text-white tracking-tight">
                 Directorio de clínicas
               </h1>
-              <p className="text-sm mt-1" style={{ color: "#94a3b8" }}>
+              <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.52)" }}>
                 Encuentra y reserva tu cita en línea
               </p>
             </div>
-            <span className="text-xs px-3 py-1 rounded-full font-semibold"
-              style={{ backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
-              Powered by Agendia
-            </span>
+            <div className="flex flex-col items-end gap-2">
+              <span className="text-xs px-3 py-1 rounded-full font-semibold"
+                style={{ backgroundColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)",
+                  border: "1px solid rgba(255,255,255,0.2)" }}>
+                Powered by Agendia
+              </span>
+              <Link href="/login"
+                className="text-xs font-medium"
+                style={{ color: "rgba(255,255,255,0.45)", textDecoration: "none" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}>
+                ¿Tienes una clínica? Inicia sesión →
+              </Link>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <div className="flex flex-wrap gap-3 mt-5">
+      {/* Barra de búsqueda */}
+      <div style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+        <div className="max-w-5xl mx-auto px-6 py-4">
+          <div className="flex flex-wrap gap-3">
             <input
               type="text" value={search}
               onChange={(e) => setSearch(e.target.value)}

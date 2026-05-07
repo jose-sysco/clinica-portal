@@ -113,14 +113,16 @@ export default function BookingPage({ params }) {
   const [notFound, setNF]      = useState(false);
 
   const [step,   setStep]  = useState(1);
+  const [location, setLocation] = useState(null);
   const [doctor, setDoc]   = useState(null);
   const [date,   setDate]  = useState("");
   const [slots,  setSlots] = useState([]);
   const [loadSlots, setLS] = useState(false);
   const [slot,   setSlot]  = useState(null);
-  const [form,   setForm]  = useState({ first_name: "", last_name: "", phone: "", email: "", reason: "" });
+  const [form,   setForm]  = useState({ first_name: "", last_name: "", phone: "", email: "", reason: "", patient_name: "", is_minor: null });
   const [submitting, setSub] = useState(false);
-  const [result,  setResult] = useState(null);
+  const [result,       setResult]       = useState(null);
+  const [admissionToken, setAdmissionToken] = useState(null);
   const [error,   setError]  = useState("");
 
   useEffect(() => {
@@ -130,33 +132,54 @@ export default function BookingPage({ params }) {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  const hasLocations = (clinic?.locations?.length ?? 0) > 0;
+
   useEffect(() => {
-    if (clinic?.doctors?.length === 1) { setDoc(clinic.doctors[0]); setStep(2); }
+    if (!clinic) return;
+    const locs = clinic.locations ?? [];
+    // Si solo hay 1 sede, seleccionarla automáticamente
+    if (locs.length === 1) setLocation(locs[0]);
+    // Si no hay sedes y solo hay 1 doctor, saltar al paso 2
+    if (locs.length === 0 && clinic.doctors?.length === 1) {
+      setDoc(clinic.doctors[0]); setStep(2);
+    }
   }, [clinic]);
 
   const fetchSlots = useCallback(async (d) => {
     if (!doctor || !d) return;
     setLS(true); setSlot(null); setSlots([]);
     try {
-      const r = await fetch(`${API}/api/public/clinics/${slug}/slots?doctor_id=${doctor.id}&date=${d}`);
+      const locParam = location?.id ? `&location_id=${location.id}` : "";
+      const r = await fetch(`${API}/api/public/clinics/${slug}/slots?doctor_id=${doctor.id}&date=${d}${locParam}`);
       const data = await r.json();
       setSlots(data.slots || []);
     } catch { setSlots([]); } finally { setLS(false); }
-  }, [doctor, slug]);
+  }, [doctor, slug, location]);
 
   const handleDateChange = (d) => { setDate(d); fetchSlots(d); };
+
+  const isVet       = clinic?.clinic_type === "veterinary";
+  const isPediatric = clinic?.clinic_type === "pediatric";
+  const needsPatientName = isVet || (isPediatric && form.is_minor === true);
 
   const handleSubmit = async () => {
     setError(""); setSub(true);
     try {
+      const payload = {
+        doctor_id: doctor.id, date, time: slot.starts_at,
+        first_name: form.first_name, last_name: form.last_name,
+        phone: form.phone, email: form.email, reason: form.reason,
+      };
+      if (needsPatientName && form.patient_name) payload.patient_name = form.patient_name;
+      if (location?.id) payload.location_id = location.id;
       const r = await fetch(`${API}/api/public/clinics/${slug}/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctor_id: doctor.id, date, time: slot.starts_at, ...form }),
+        body: JSON.stringify(payload),
       });
       const data = await r.json();
       if (!r.ok) { setError(data.error || "Error al enviar la solicitud"); return; }
-      setResult(data); setStep(5);
+      setResult(data); setAdmissionToken(data.admission_token || null); setStep(5);
     } catch { setError("Error de conexión, intenta de nuevo"); } finally { setSub(false); }
   };
 
@@ -242,6 +265,25 @@ export default function BookingPage({ params }) {
                 Recibirás confirmación en <span style={{ color: "#475569" }}>{form.email}</span>
               </p>
             )}
+
+            {admissionToken && (
+              <div className="rounded-xl p-4 text-left"
+                style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                <p className="text-sm font-semibold" style={{ color: "#15803d", marginBottom: "6px" }}>
+                  Completa tu formulario de admisión
+                </p>
+                <p className="text-xs" style={{ color: "#166534", marginBottom: "12px", lineHeight: "1.5" }}>
+                  Tarda solo 2 minutos y ayuda al profesional a atenderte mejor.
+                </p>
+                <Link href={`/reservas/admision/${admissionToken}`}
+                  style={{ display: "inline-block", backgroundColor: "#16a34a", color: "#ffffff",
+                    fontSize: "13px", fontWeight: "700", padding: "9px 18px", borderRadius: "8px",
+                    textDecoration: "none" }}>
+                  Llenar ahora →
+                </Link>
+              </div>
+            )}
+
             <Link href="/reservas"
               style={{ display: "inline-block", marginTop: "8px", color: "#2563eb",
                 textDecoration: "none", fontSize: "14px" }}>
@@ -250,7 +292,44 @@ export default function BookingPage({ params }) {
           </div>
         )}
 
-        {step < 5 && (
+        {/* Selección de sede — pantalla previa a los pasos */}
+        {step < 5 && hasLocations && !location && (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold" style={{ color: "#475569" }}>
+              Selecciona una sede
+            </p>
+            {clinic.locations.map((loc) => (
+              <button key={loc.id} onClick={() => {
+                  setLocation(loc);
+                  // Si solo hay 1 doctor en esa sede, auto-seleccionar
+                  const locDoctors = clinic.doctors.filter((d) => !d.location_ids?.length || d.location_ids.includes(loc.id));
+                  if (locDoctors.length === 1) { setDoc(locDoctors[0]); setStep(2); }
+                }}
+                className="w-full rounded-2xl p-4 text-left flex items-start gap-4 transition-all"
+                style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93c5fd"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.08)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
+                  style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                  📍
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "#0f172a" }}>{loc.name}</p>
+                  {(loc.address || loc.city) && (
+                    <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                      {[loc.address, loc.city].filter(Boolean).join(", ")}
+                    </p>
+                  )}
+                  <p className="text-xs mt-1" style={{ color: "#cbd5e1" }}>
+                    {clinic.doctors.filter((d) => !d.location_ids?.length || d.location_ids.includes(loc.id)).length} profesional(es)
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step < 5 && (!hasLocations || location) && (
           <>
             <div className="flex items-center justify-between">
               <Steps current={step} total={4} />
@@ -260,10 +339,26 @@ export default function BookingPage({ params }) {
             {/* Paso 1: Doctor */}
             {step === 1 && (
               <div className="space-y-3">
-                <p className="text-sm font-semibold" style={{ color: "#475569" }}>
-                  Selecciona el profesional
-                </p>
-                {clinic.doctors.map((d) => (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold" style={{ color: "#475569" }}>
+                    Selecciona el profesional
+                  </p>
+                  {hasLocations && (
+                    <button onClick={() => { setLocation(null); setDoc(null); setDate(""); setSlots([]); setSlot(null); }}
+                      className="text-xs" style={{ color: "#94a3b8" }}>
+                      ← Cambiar sede
+                    </button>
+                  )}
+                </div>
+                {location && (
+                  <p className="text-xs" style={{ color: "#64748b" }}>
+                    Sede: <span style={{ color: "#475569", fontWeight: 600 }}>{location.name}</span>
+                  </p>
+                )}
+                {(hasLocations
+                  ? clinic.doctors.filter((d) => !d.location_ids?.length || d.location_ids.includes(location?.id))
+                  : clinic.doctors
+                ).map((d) => (
                   <button key={d.id} onClick={() => { setDoc(d); setStep(2); }}
                     className="w-full rounded-2xl p-4 text-left flex items-start gap-4 transition-all"
                     style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0",
@@ -372,7 +467,7 @@ export default function BookingPage({ params }) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold" style={{ color: "#475569" }}>
-                    Tus datos de contacto
+                    {isVet ? "Datos del responsable" : "Tus datos de contacto"}
                   </p>
                   <button onClick={() => { setStep(3); setSlot(null); }}
                     className="text-xs" style={{ color: "#94a3b8" }}>
@@ -383,6 +478,11 @@ export default function BookingPage({ params }) {
                 {/* Resumen */}
                 <div className="rounded-xl p-4 space-y-1.5"
                   style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                  {location && (
+                    <p className="text-xs" style={{ color: "#475569" }}>
+                      <span className="font-medium">Sede: </span>{location.name}
+                    </p>
+                  )}
                   <p className="text-xs" style={{ color: "#475569" }}>
                     <span className="font-medium">Doctor: </span>{doctor?.full_name}
                   </p>
@@ -399,7 +499,7 @@ export default function BookingPage({ params }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium block mb-1.5" style={{ color: "#64748b" }}>
-                        Nombre <span style={{ color: "#ef4444" }}>*</span>
+                        {isVet ? "Nombre del responsable" : "Nombre"} <span style={{ color: "#ef4444" }}>*</span>
                       </label>
                       <input type="text" value={form.first_name}
                         onChange={(e) => setForm({ ...form, first_name: e.target.value })}
@@ -408,7 +508,7 @@ export default function BookingPage({ params }) {
                     </div>
                     <div>
                       <label className="text-xs font-medium block mb-1.5" style={{ color: "#64748b" }}>
-                        Apellido <span style={{ color: "#ef4444" }}>*</span>
+                        {isVet ? "Apellido del responsable" : "Apellido"} <span style={{ color: "#ef4444" }}>*</span>
                       </label>
                       <input type="text" value={form.last_name}
                         onChange={(e) => setForm({ ...form, last_name: e.target.value })}
@@ -436,6 +536,55 @@ export default function BookingPage({ params }) {
                         className="w-full text-sm px-3 py-2.5 rounded-xl outline-none" style={inp} />
                     </div>
                   </div>
+
+                  {/* Nombre del paciente — veterinaria */}
+                  {isVet && (
+                    <div>
+                      <label className="text-xs font-medium block mb-1.5" style={{ color: "#64748b" }}>
+                        Nombre del paciente (animal) <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
+                      <input type="text" value={form.patient_name}
+                        onChange={(e) => setForm({ ...form, patient_name: e.target.value })}
+                        placeholder="Ej: Firulais"
+                        className="w-full text-sm px-3 py-2.5 rounded-xl outline-none" style={inp} />
+                    </div>
+                  )}
+
+                  {/* Adulto / menor — pediatría */}
+                  {isPediatric && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-medium" style={{ color: "#64748b" }}>
+                        La cita es para <span style={{ color: "#ef4444" }}>*</span>
+                      </p>
+                      <div className="flex gap-3">
+                        {[{ val: false, label: "Un adulto" }, { val: true, label: "Un menor de edad" }].map(({ val, label }) => {
+                          const active = form.is_minor === val;
+                          return (
+                            <button key={label} type="button"
+                              onClick={() => setForm({ ...form, is_minor: val, patient_name: "" })}
+                              className="flex-1 text-sm py-2.5 rounded-xl font-medium transition-all"
+                              style={active
+                                ? { backgroundColor: "#2563eb", color: "#fff", border: "1px solid #2563eb" }
+                                : { backgroundColor: "#ffffff", color: "#64748b", border: "1px solid #e2e8f0" }}>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {form.is_minor === true && (
+                        <div>
+                          <label className="text-xs font-medium block mb-1.5" style={{ color: "#64748b" }}>
+                            Nombre del paciente (menor) <span style={{ color: "#ef4444" }}>*</span>
+                          </label>
+                          <input type="text" value={form.patient_name}
+                            onChange={(e) => setForm({ ...form, patient_name: e.target.value })}
+                            placeholder="Nombre completo del menor"
+                            className="w-full text-sm px-3 py-2.5 rounded-xl outline-none" style={inp} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-xs font-medium block mb-1.5" style={{ color: "#64748b" }}>
                       Motivo de consulta <span style={{ color: "#ef4444" }}>*</span>
@@ -457,7 +606,12 @@ export default function BookingPage({ params }) {
                 )}
 
                 <button onClick={handleSubmit}
-                  disabled={submitting || !form.first_name || !form.last_name || !form.phone || !form.reason}
+                  disabled={
+                    submitting || !form.first_name || !form.last_name || !form.phone || !form.reason ||
+                    (isVet && !form.patient_name) ||
+                    (isPediatric && form.is_minor === null) ||
+                    (isPediatric && form.is_minor === true && !form.patient_name)
+                  }
                   className="w-full text-sm font-bold py-3.5 rounded-xl disabled:opacity-50"
                   style={{ backgroundColor: "#2563eb", color: "#fff" }}>
                   {submitting ? "Enviando solicitud..." : "Solicitar cita"}

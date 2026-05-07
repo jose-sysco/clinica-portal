@@ -36,9 +36,12 @@ export default function MedicalRecordDetailPage() {
   const { organization } = useAuth();
   const config           = getConfig(organization?.clinic_type);
 
-  const [record,  setRecord]  = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [record,       setRecord]       = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [attachments,  setAttachments]  = useState([]);
+  const [uploading,    setUploading]    = useState(false);
+  const [deleting,     setDeleting]     = useState(null);
 
   useEffect(() => { fetchRecord(); }, []);
 
@@ -46,6 +49,7 @@ export default function MedicalRecordDetailPage() {
     try {
       const res = await api.get(`/api/v1/medical_records/${id}`);
       setRecord(res.data);
+      fetchAttachments();
     } catch {
       setError("Error al cargar el expediente");
     } finally {
@@ -409,6 +413,132 @@ export default function MedicalRecordDetailPage() {
           <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#78350f" }}>{record.notes}</p>
         </div>
       )}
+
+      {/* Adjuntos */}
+      <AttachmentsSection
+        recordId={id}
+        attachments={attachments}
+        uploading={uploading}
+        deleting={deleting}
+        onUpload={handleUpload}
+        onDelete={handleDeleteAttachment}
+      />
+    </div>
+  );
+
+  function fetchAttachments() {
+    api.get(`/api/v1/medical_records/${id}/attachments`)
+      .then((r) => setAttachments(r.data))
+      .catch(() => {});
+  }
+
+  async function handleUpload(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    if (attachments.length + files.length > 5) {
+      import("sonner").then(({ toast }) => toast.error("Máximo 5 archivos por expediente"));
+      return;
+    }
+    setUploading(true);
+    try {
+      const form = new FormData();
+      files.forEach((f) => form.append("files[]", f));
+      const res = await api.post(`/api/v1/medical_records/${id}/attachments`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setAttachments(res.data);
+    } catch (err) {
+      import("sonner").then(({ toast }) =>
+        toast.error(err.response?.data?.error || "Error al subir archivo")
+      );
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleDeleteAttachment(attachId) {
+    setDeleting(attachId);
+    try {
+      await api.delete(`/api/v1/medical_records/${id}/attachments/${attachId}`);
+      setAttachments((prev) => prev.filter((a) => a.id !== attachId));
+    } catch {
+      import("sonner").then(({ toast }) => toast.error("Error al eliminar"));
+    } finally {
+      setDeleting(null);
+    }
+  }
+}
+
+function AttachmentsSection({ recordId, attachments, uploading, deleting, onUpload, onDelete }) {
+  const isPDF = (ct) => ct === "application/pdf";
+
+  const fmtSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+      <div className="px-6 py-4 flex items-center justify-between"
+        style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+          Adjuntos
+          {attachments.length > 0 && (
+            <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded-full"
+              style={{ backgroundColor: "#eff6ff", color: "#2563eb" }}>
+              {attachments.length}/5
+            </span>
+          )}
+        </p>
+        {attachments.length < 5 && (
+          <label className="text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer"
+            style={{ backgroundColor: uploading ? "#f1f5f9" : "#eff6ff", color: uploading ? "#94a3b8" : "#2563eb", border: "1px solid #bfdbfe" }}>
+            {uploading ? "Subiendo…" : "+ Agregar"}
+            <input type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf"
+              style={{ display: "none" }} onChange={onUpload} disabled={uploading} />
+          </label>
+        )}
+      </div>
+
+      <div className="p-4" style={{ backgroundColor: "#ffffff" }}>
+        {attachments.length === 0 ? (
+          <p className="text-sm text-center py-4" style={{ color: "#cbd5e1" }}>
+            Sin adjuntos — agrega imágenes (JPG, PNG, WebP) o PDFs
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {attachments.map((a) => (
+              <div key={a.id} className="rounded-xl overflow-hidden relative group"
+                style={{ border: "1px solid #e2e8f0" }}>
+                {isPDF(a.content_type) ? (
+                  <a href={a.url} target="_blank" rel="noreferrer"
+                    className="flex flex-col items-center justify-center p-4 gap-2"
+                    style={{ backgroundColor: "#fef2f2", minHeight: "100px" }}>
+                    <span style={{ fontSize: "28px" }}>📄</span>
+                    <span className="text-xs font-medium text-center truncate w-full" style={{ color: "#dc2626" }}>
+                      {a.filename}
+                    </span>
+                    <span className="text-xs" style={{ color: "#94a3b8" }}>{fmtSize(a.byte_size)}</span>
+                  </a>
+                ) : (
+                  <a href={a.url} target="_blank" rel="noreferrer">
+                    <img src={a.url} alt={a.filename}
+                      className="w-full object-cover"
+                      style={{ maxHeight: "140px" }} />
+                  </a>
+                )}
+                <button onClick={() => onDelete(a.id)} disabled={deleting === a.id}
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: "rgba(220,38,38,0.9)", color: "#fff" }}>
+                  {deleting === a.id ? "…" : "✕"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

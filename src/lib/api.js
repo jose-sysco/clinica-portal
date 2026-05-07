@@ -121,6 +121,10 @@ api.interceptors.response.use(
         import('sonner').then(({ toast }) =>
           toast.error('Tu período de prueba ha expirado. Adquiere una suscripción para continuar.')
         )
+      } else if (code === 'trial_appointments_limit') {
+        import('sonner').then(({ toast }) =>
+          toast.error(error.response?.data?.error || 'Límite de citas del período de prueba alcanzado.')
+        )
       }
     }
 
