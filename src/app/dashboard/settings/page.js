@@ -152,7 +152,13 @@ export default function SettingsPage() {
   const [uploadingLogo,setUploadingLogo]= useState(false);
   const fileInputRef = useRef(null);
 
-  useEffect(() => { fetchMe(); }, []);
+  // Sedes
+  const [locations,     setLocations]     = useState([]);
+  const [locForm,       setLocForm]       = useState(null);
+  const [savingLoc,     setSavingLoc]     = useState(false);
+  const [editingLocId,  setEditingLocId]  = useState(null);
+
+  useEffect(() => { fetchMe(); fetchLocations(); }, []);
 
   useEffect(() => {
     if (!organization) return;
@@ -165,6 +171,7 @@ export default function SettingsPage() {
       timezone:      organization.timezone      || "UTC",
       clinic_type:   organization.clinic_type   || "general",
       primary_color: organization.primary_color || "",
+      listed:        organization.listed !== false,
     };
     setForm(initial);
     setOriginal(initial);
@@ -228,6 +235,45 @@ export default function SettingsPage() {
       toast.error(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const res = await api.get("/api/v1/locations");
+      setLocations(res.data);
+    } catch {}
+  };
+
+  const handleSaveLocation = async () => {
+    if (!locForm?.name?.trim()) { toast.error("El nombre es requerido"); return; }
+    setSavingLoc(true);
+    try {
+      if (editingLocId) {
+        const res = await api.patch(`/api/v1/locations/${editingLocId}`, { location: locForm });
+        setLocations((prev) => prev.map((l) => l.id === editingLocId ? res.data : l));
+        toast.success("Sede actualizada");
+      } else {
+        const res = await api.post("/api/v1/locations", { location: locForm });
+        setLocations((prev) => [...prev, res.data]);
+        toast.success("Sede creada");
+      }
+      setLocForm(null);
+      setEditingLocId(null);
+    } catch (err) {
+      toast.error(err.response?.data?.errors?.[0] || "Error al guardar");
+    } finally {
+      setSavingLoc(false);
+    }
+  };
+
+  const handleDeleteLocation = async (locId) => {
+    try {
+      await api.delete(`/api/v1/locations/${locId}`);
+      setLocations((prev) => prev.filter((l) => l.id !== locId));
+      toast.success("Sede desactivada");
+    } catch {
+      toast.error("Error al desactivar");
     }
   };
 
@@ -612,6 +658,31 @@ export default function SettingsPage() {
         </div>
       </Section>
 
+      {/* ── Directorio público ── */}
+      <Section title="Directorio público" description="Controla si tu clínica aparece en el listado de /reservas.">
+        <div className="flex items-center justify-between gap-6">
+          <div>
+            <p className="text-sm font-medium" style={{ color: "#0f172a" }}>Aparecer en el directorio</p>
+            <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
+              {form.listed
+                ? "Tu clínica es visible en el directorio público y los pacientes pueden encontrarla."
+                : "Tu clínica está oculta del directorio. Solo puedes recibir reservas con el enlace directo."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => set("listed", !form.listed)}
+            className="relative flex-shrink-0 w-12 h-6 rounded-full transition-colors"
+            style={{ backgroundColor: form.listed ? "#2563eb" : "#e2e8f0" }}
+          >
+            <span
+              className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
+              style={{ transform: form.listed ? "translateX(24px)" : "translateX(0)" }}
+            />
+          </button>
+        </div>
+      </Section>
+
       {/* ── Info de cuenta (solo lectura) ── */}
       <Section title="Información de cuenta" description="Datos técnicos de tu organización.">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -625,6 +696,97 @@ export default function SettingsPage() {
               <p className="text-sm font-medium" style={{ color: "#334155" }}>{value || "—"}</p>
             </div>
           ))}
+        </div>
+      </Section>
+
+      {/* ── Sedes / sucursales ── */}
+      <Section title="Sedes" description="Administra las ubicaciones físicas de tu organización. Puedes asignar profesionales a cada sede.">
+        <div className="space-y-3">
+          {locations.map((loc) => (
+            <div key={loc.id} className="flex items-center justify-between p-4 rounded-xl"
+              style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{loc.name}</p>
+                {(loc.address || loc.city) && (
+                  <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                    {[loc.address, loc.city].filter(Boolean).join(", ")}
+                  </p>
+                )}
+                {loc.doctors_count > 0 && (
+                  <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
+                    {loc.doctors_count} profesional{loc.doctors_count !== 1 ? "es" : ""}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setEditingLocId(loc.id); setLocForm({ name: loc.name, address: loc.address || "", city: loc.city || "", phone: loc.phone || "" }); }}
+                  className="text-xs px-3 py-1.5 rounded-lg"
+                  style={{ color: "#2563eb", backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                  Editar
+                </button>
+                <button onClick={() => handleDeleteLocation(loc.id)}
+                  className="text-xs px-3 py-1.5 rounded-lg"
+                  style={{ color: "#dc2626", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
+                  Desactivar
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {locations.length === 0 && !locForm && (
+            <p className="text-sm py-2" style={{ color: "#94a3b8" }}>
+              Sin sedes configuradas — por defecto se muestra tu organización como una sola ubicación.
+            </p>
+          )}
+
+          {/* Formulario nueva/editar sede */}
+          {locForm !== null ? (
+            <div className="p-4 rounded-xl space-y-3" style={{ backgroundColor: "#ffffff", border: "1px solid #bfdbfe" }}>
+              <p className="text-sm font-medium" style={{ color: "#0f172a" }}>
+                {editingLocId ? "Editar sede" : "Nueva sede"}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Nombre *</label>
+                  <input value={locForm.name} onChange={(e) => setLocForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Sucursal Centro" className={inputCls} style={inputStyle} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Teléfono</label>
+                  <input value={locForm.phone} onChange={(e) => setLocForm((f) => ({ ...f, phone: e.target.value }))}
+                    placeholder="+502 2345 6789" className={inputCls} style={inputStyle} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Dirección</label>
+                  <input value={locForm.address} onChange={(e) => setLocForm((f) => ({ ...f, address: e.target.value }))}
+                    placeholder="4a Calle 5-55 Zona 1" className={inputCls} style={inputStyle} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#374151" }}>Ciudad</label>
+                  <input value={locForm.city} onChange={(e) => setLocForm((f) => ({ ...f, city: e.target.value }))}
+                    placeholder="Guatemala" className={inputCls} style={inputStyle} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={handleSaveLocation} disabled={savingLoc}
+                  className="text-sm font-medium px-4 py-2 rounded-xl"
+                  style={{ backgroundColor: savingLoc ? "#93c5fd" : "#2563eb", color: "#fff" }}>
+                  {savingLoc ? "Guardando…" : "Guardar sede"}
+                </button>
+                <button onClick={() => { setLocForm(null); setEditingLocId(null); }}
+                  className="text-sm px-4 py-2 rounded-xl"
+                  style={{ color: "#64748b", backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0" }}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setLocForm({ name: "", address: "", city: "", phone: "" })}
+              className="text-sm font-medium px-4 py-2 rounded-xl"
+              style={{ backgroundColor: "#f8fafc", color: "#2563eb", border: "1px solid #bfdbfe" }}>
+              + Nueva sede
+            </button>
+          )}
         </div>
       </Section>
 

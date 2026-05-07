@@ -408,6 +408,20 @@ function LoginForm() {
                   Registra tu negocio
                 </Link>
               </p>
+
+              <p
+                className="text-center text-sm mt-3"
+                style={{ color: "#94a3b8" }}
+              >
+                ¿Eres paciente?{" "}
+                <Link
+                  href="/reservas"
+                  className="font-semibold"
+                  style={{ color: "#2563eb" }}
+                >
+                  Reservar cita en línea
+                </Link>
+              </p>
             </>
           )}
 

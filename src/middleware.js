@@ -12,19 +12,26 @@ export function middleware(request) {
     "/verify-email",
     "/subscription-required",
     "/superadmin/login",
+    "/reservas",
   ];
 
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
 
   // Sin token y en ruta protegida → login correspondiente
   if (!token && !isPublicRoute) {
-    const dest = pathname.startsWith("/superadmin") ? "/superadmin/login" : "/login";
+    const dest = pathname.startsWith("/superadmin")
+      ? "/superadmin/login"
+      : "/login";
     return NextResponse.redirect(new URL(dest, request.url));
   }
 
   // Con token y en ruta pública → destino correspondiente
   if (token && isPublicRoute) {
-    const dest = pathname.startsWith("/superadmin") ? "/superadmin" : "/dashboard";
+    const dest = pathname.startsWith("/superadmin")
+      ? "/superadmin"
+      : "/dashboard";
     return NextResponse.redirect(new URL(dest, request.url));
   }
 
@@ -32,5 +39,7 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|manual-usuario.html).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|manual-usuario.html).*)",
+  ],
 };

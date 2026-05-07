@@ -59,8 +59,15 @@ export default function DashboardPage() {
         if (user?.role === "admin" && d.data.pagination?.count === 0) {
           try {
             const done = localStorage.getItem(`onboarding_done_${organization?.id}`);
-            if (!done) setShowOnboard(true);
-          } catch { setShowOnboard(true); }
+            if (!done) {
+              router.push("/dashboard/onboarding");
+              return;
+            }
+          } catch {
+            router.push("/dashboard/onboarding");
+            return;
+          }
+          setShowOnboard(true);
         }
       })
       .catch(console.error)
@@ -293,6 +300,45 @@ export default function DashboardPage() {
           <p className="text-xs mt-2" style={{ color: "#94a3b8" }}>Últimos 30 días · citas completadas</p>
         </div>
       </div>
+
+      {/* ── NPS ──────────────────────────────────────────────────────────── */}
+      {stats?.nps?.total > 0 && (
+        <div style={card}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Satisfacción de pacientes</p>
+              <p className="text-xs mt-0.5" style={{ color: "#cbd5e1" }}>Últimos 90 días · {stats.nps.total} respuesta{stats.nps.total !== 1 ? "s" : ""}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-black" style={{ color: stats.nps.score >= 50 ? "#16a34a" : stats.nps.score >= 0 ? "#d97706" : "#dc2626" }}>
+                {stats.nps.score > 0 ? "+" : ""}{stats.nps.score}
+              </p>
+              <p className="text-xs" style={{ color: "#94a3b8" }}>NPS Score</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            {[
+              { label: "Promotores", count: stats.nps.promoters, color: "#16a34a", bg: "#f0fdf4", desc: "9-10" },
+              { label: "Pasivos",    count: stats.nps.passives,  color: "#d97706", bg: "#fffbeb", desc: "7-8" },
+              { label: "Detractores",count: stats.nps.detractors,color: "#dc2626", bg: "#fef2f2", desc: "1-6" },
+            ].map((g) => (
+              <div key={g.label} className="flex-1 rounded-xl p-3 text-center" style={{ backgroundColor: g.bg }}>
+                <p className="text-xl font-bold" style={{ color: g.color }}>{g.count}</p>
+                <p className="text-xs font-medium" style={{ color: g.color }}>{g.label}</p>
+                <p className="text-xs" style={{ color: "#94a3b8" }}>{g.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <p className="text-xs" style={{ color: "#94a3b8" }}>
+              Promedio: <strong style={{ color: "#0f172a" }}>{stats.nps.average}/10</strong>
+            </p>
+            <div className="h-2 flex-1 mx-3 rounded-full overflow-hidden" style={{ backgroundColor: "#f1f5f9" }}>
+              <div className="h-full rounded-full" style={{ width: `${(stats.nps.average / 10) * 100}%`, backgroundColor: stats.nps.score >= 50 ? "#16a34a" : stats.nps.score >= 0 ? "#d97706" : "#dc2626" }} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Horas pico + Próximas citas hoy ─────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">

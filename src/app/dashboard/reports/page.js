@@ -586,6 +586,7 @@ export default function ReportsPage() {
           { key: "summary", label: "Resumen" },
           { key: "doctors", label: config.staffLabel },
           { key: "breakdown", label: "Análisis" },
+          { key: "income", label: "Ingresos" },
           { key: "export", label: "Exportar" },
         ].map((tab) => (
           <button
@@ -652,6 +653,9 @@ export default function ReportsPage() {
 
           {/* ── TAB: ANÁLISIS ─────────────────────────────────────────────── */}
           {activeTab === "breakdown" && <BreakdownTab data={data} />}
+
+          {/* ── TAB: INGRESOS ─────────────────────────────────────────────── */}
+          {activeTab === "income" && <IncomeTab data={data} />}
 
           {/* ── TAB: EXPORTAR ─────────────────────────────────────────────── */}
           {activeTab === "export" && <ExportTab />}
@@ -1345,6 +1349,88 @@ function BreakdownTab({ data }) {
 }
 
 // ── TAB: Exportar ─────────────────────────────────────────────────────────────
+
+// ── TAB: INGRESOS ────────────────────────────────────────────────────────────
+
+const METHOD_LABEL = { cash: "Efectivo", card: "Tarjeta", transfer: "Transferencia", other: "Otro" };
+const METHOD_COLORS_INC = { cash: "#22c55e", card: "#3b82f6", transfer: "#8b5cf6", other: "#94a3b8" };
+
+function fmtQ(n) {
+  return `Q${Number(n || 0).toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function IncomeTab({ data }) {
+  const inc = data?.income;
+  if (!inc) return <p style={{ color: "#64748b", padding: "40px" }}>Sin datos de ingresos.</p>;
+
+  const maxDoctor = Math.max(...(inc.by_doctor?.map((d) => d.amount) ?? [1]), 1);
+  const maxPeriod = Math.max(...(inc.by_period?.map((p) => p.amount) ?? [1]), 1);
+
+  return (
+    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+
+      {/* KPI total */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "16px" }}>
+        <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+          <p style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>Total recaudado</p>
+          <p style={{ fontSize: "28px", fontWeight: "800", color: "#22c55e", margin: 0 }}>{fmtQ(inc.total)}</p>
+        </div>
+        {inc.by_method?.filter((m) => m.amount > 0).map((m) => (
+          <div key={m.method} style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+            <p style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>
+              {METHOD_LABEL[m.method] || m.method}
+            </p>
+            <p style={{ fontSize: "22px", fontWeight: "700", color: METHOD_COLORS_INC[m.method] || "#f1f5f9", margin: 0 }}>
+              {fmtQ(m.amount)}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Ingresos por período */}
+      {inc.by_period?.length > 0 && (
+        <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+          <p style={{ fontSize: "13px", fontWeight: "700", color: "#f1f5f9", margin: "0 0 16px" }}>Ingresos por período</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {inc.by_period.map((p) => (
+              <div key={p.label} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ fontSize: "12px", color: "#94a3b8", minWidth: "80px", flexShrink: 0 }}>{p.label}</span>
+                <div style={{ flex: 1, backgroundColor: "#0f172a", borderRadius: "4px", height: "10px", overflow: "hidden" }}>
+                  <div style={{ width: `${(p.amount / maxPeriod) * 100}%`, height: "100%", backgroundColor: "#22c55e", borderRadius: "4px", transition: "width 0.3s" }} />
+                </div>
+                <span style={{ fontSize: "12px", color: "#22c55e", fontWeight: "600", minWidth: "90px", textAlign: "right" }}>{fmtQ(p.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Ingresos por doctor */}
+      {inc.by_doctor?.length > 0 && (
+        <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+          <p style={{ fontSize: "13px", fontWeight: "700", color: "#f1f5f9", margin: "0 0 16px" }}>Ingresos por profesional</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {inc.by_doctor.map((d, i) => (
+              <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ fontSize: "12px", color: "#94a3b8", minWidth: "150px", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                <div style={{ flex: 1, backgroundColor: "#0f172a", borderRadius: "4px", height: "10px", overflow: "hidden" }}>
+                  <div style={{ width: `${(d.amount / maxDoctor) * 100}%`, height: "100%", backgroundColor: DOCTOR_COLORS[i % DOCTOR_COLORS.length], borderRadius: "4px", transition: "width 0.3s" }} />
+                </div>
+                <span style={{ fontSize: "12px", color: "#f1f5f9", fontWeight: "600", minWidth: "90px", textAlign: "right" }}>{fmtQ(d.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {inc.total === 0 && (
+        <div style={{ textAlign: "center", padding: "48px 0", color: "#475569" }}>
+          <p style={{ fontSize: "15px", margin: 0 }}>No hay pagos registrados en este período.</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ExportTab() {
   return (

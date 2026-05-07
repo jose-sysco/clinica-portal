@@ -6,6 +6,17 @@ import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
 import api from "@/lib/api";
 
+// Estilos compartidos por los steps de formulario
+const inp = {
+  width: "100%", padding: "10px 12px", fontSize: "14px",
+  border: "1px solid #e2e8f0", borderRadius: "8px", outline: "none",
+  backgroundColor: "#ffffff", color: "#0f172a",
+};
+const lbl = {
+  display: "block", fontSize: "13px", fontWeight: "500",
+  color: "#374151", marginBottom: "6px",
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const DAYS = [
@@ -132,25 +143,124 @@ function StepWelcome({ organization, config, onNext, onSkip }) {
   );
 }
 
-function StepDoctor({ config, onNext, onBack }) {
-  const inp = {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: "14px",
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    outline: "none",
-    backgroundColor: "#ffffff",
-    color: "#0f172a",
-  };
-  const lbl = {
-    display: "block",
-    fontSize: "13px",
-    fontWeight: "500",
-    color: "#374151",
-    marginBottom: "6px",
+function StepOrgProfile({ organization, onNext, onBack }) {
+  const { fetchMe } = useAuth();
+  const [form, setForm] = useState({
+    phone:         organization?.phone         || "",
+    city:          organization?.city          || "",
+    country:       organization?.country       || "Guatemala",
+    primary_color: organization?.primary_color || "#2563eb",
+  });
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState([]);
+
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setErrors([]);
+    try {
+      await api.patch("/api/v1/organization", { organization: form });
+      await fetchMe();
+      onNext();
+    } catch (err) {
+      setErrors(err.response?.data?.errors || ["Error al guardar los datos"]);
+    } finally {
+      setSaving(false);
+    }
   };
 
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <h2 className="text-xl font-bold mb-1" style={{ color: "#0f172a" }}>
+          Datos de tu clínica
+        </h2>
+        <p className="text-sm" style={{ color: "#64748b" }}>
+          Completa el perfil de <strong>{organization?.name}</strong>. Podés editarlo después en Configuración.
+        </p>
+      </div>
+
+      {errors.length > 0 && (
+        <div className="px-4 py-3 rounded-lg text-sm space-y-1"
+          style={{ backgroundColor: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
+          {errors.map((e, i) => <p key={i}>{e}</p>)}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label style={lbl}>Teléfono de contacto</label>
+          <input type="text" value={form.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            placeholder="+502 1234-5678" style={inp} />
+        </div>
+        <div>
+          <label style={lbl}>Ciudad</label>
+          <input type="text" value={form.city}
+            onChange={(e) => set("city", e.target.value)}
+            placeholder="Ciudad de Guatemala" style={inp} />
+        </div>
+        <div>
+          <label style={lbl}>País</label>
+          <input type="text" value={form.country}
+            onChange={(e) => set("country", e.target.value)}
+            placeholder="Guatemala" style={inp} />
+        </div>
+        <div>
+          <label style={lbl}>Color de marca</label>
+          <div className="flex items-center gap-3 mt-1">
+            <input
+              type="color"
+              value={form.primary_color}
+              onChange={(e) => set("primary_color", e.target.value)}
+              className="w-10 h-10 rounded-lg cursor-pointer p-0.5"
+              style={{ border: "1px solid #e2e8f0" }}
+            />
+            <div>
+              <p className="text-xs font-mono font-semibold" style={{ color: "#374151" }}>
+                {form.primary_color}
+              </p>
+              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                Color del sidebar y botones
+              </p>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {["#2563eb","#7c3aed","#dc2626","#16a34a","#ea580c","#0891b2"].map((c) => (
+                <button key={c} type="button"
+                  onClick={() => set("primary_color", c)}
+                  className="w-6 h-6 rounded-full"
+                  style={{ backgroundColor: c, outline: form.primary_color === c ? `2px solid ${c}` : "none", outlineOffset: "2px" }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button type="button" onClick={onBack}
+          className="px-5 py-2.5 rounded-xl text-sm font-medium"
+          style={{ color: "#64748b", backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0" }}>
+          ← Atrás
+        </button>
+        <button type="submit" disabled={saving}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
+          style={{ backgroundColor: saving ? "#93c5fd" : "#2563eb", color: "#ffffff", cursor: saving ? "not-allowed" : "pointer" }}>
+          {saving ? "Guardando..." : "Continuar →"}
+        </button>
+        <button type="button" onClick={onNext}
+          className="px-5 py-2.5 rounded-xl text-sm font-medium"
+          style={{ color: "#94a3b8" }}>
+          Omitir
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function StepDoctor({ config, onNext, onBack }) {
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -701,9 +811,9 @@ export default function OnboardingPage() {
   const { organization, user } = useAuth();
   const router = useRouter();
   const config = getConfig(organization?.clinic_type);
-  const STEPS = ["Bienvenida", config.staffSingularLabel, "Horario", "¡Listo!"];
-  const [step, setStep] = useState(0);
-  const [doctorData, setDoctorData] = useState(null);
+  const STEPS  = ["Bienvenida", "Tu clínica", config.staffSingularLabel, "Horario", "¡Listo!"];
+  const [step, setStep]           = useState(0);
+  const [doctorData, setDoctorData]   = useState(null);
   const [scheduleData, setScheduleData] = useState(null);
 
   const finishOnboarding = () => markOnboardingDone(organization?.id);
@@ -793,26 +903,33 @@ export default function OnboardingPage() {
             />
           )}
           {step === 1 && (
+            <StepOrgProfile
+              organization={organization}
+              onNext={() => setStep(2)}
+              onBack={() => setStep(0)}
+            />
+          )}
+          {step === 2 && (
             <StepDoctor
               config={config}
               onNext={(data) => {
                 setDoctorData(data);
-                setStep(2);
-              }}
-              onBack={() => setStep(0)}
-            />
-          )}
-          {step === 2 && doctorData && (
-            <StepSchedule
-              doctorData={doctorData}
-              onNext={(data) => {
-                setScheduleData(data);
                 setStep(3);
               }}
               onBack={() => setStep(1)}
             />
           )}
-          {step === 3 && doctorData && scheduleData && (
+          {step === 3 && doctorData && (
+            <StepSchedule
+              doctorData={doctorData}
+              onNext={(data) => {
+                setScheduleData(data);
+                setStep(4);
+              }}
+              onBack={() => setStep(2)}
+            />
+          )}
+          {step === 4 && doctorData && scheduleData && (
             <StepDone
               doctorData={doctorData}
               scheduleData={scheduleData}

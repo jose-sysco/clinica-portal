@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Cookies from "js-cookie";
 import { getConfig } from "@/lib/clinicConfig";
 import { useFeatures } from "@/lib/useFeature";
 import GlobalSearch from "@/components/GlobalSearch";
@@ -172,12 +173,78 @@ const getNavGroups = (clinicType, role, features) => {
   return groups;
 };
 
+// ── Impersonation banner ──────────────────────────────────────────────────────
+
+function ImpersonationBanner() {
+  const [info, setInfo] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = Cookies.get("impersonating");
+      if (raw) setInfo(JSON.parse(raw));
+    } catch {
+      // cookie malformada — ignorar
+    }
+  }, []);
+
+  if (!info) return null;
+
+  const handleExit = () => {
+    const saToken   = Cookies.get("sa_token");
+    const saRefresh = Cookies.get("sa_refresh_token");
+
+    Cookies.remove("impersonating");
+    Cookies.remove("sa_token");
+    Cookies.remove("sa_refresh_token");
+    Cookies.remove("organization_slug");
+    Cookies.remove("token");
+    Cookies.remove("refresh_token");
+
+    if (saToken)   Cookies.set("token",         saToken,   { expires: 1 / 24 });
+    if (saRefresh) Cookies.set("refresh_token",  saRefresh, { expires: 30 });
+
+    window.location.href = info.return_url || "/superadmin/organizations";
+  };
+
+  return (
+    <div
+      className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4"
+      style={{
+        background:   "linear-gradient(90deg, #451a03, #78350f)",
+        borderBottom: "1px solid #92400e",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#f59e0b", color: "#000" }}>
+          SUPERADMIN
+        </span>
+        <p className="text-sm font-medium" style={{ color: "#fcd34d" }}>
+          Estás viendo <strong>{info.org_name}</strong> como administrador
+        </p>
+      </div>
+      <button
+        onClick={handleExit}
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+        style={{ backgroundColor: "#f59e0b", color: "#000" }}
+      >
+        Salir ←
+      </button>
+    </div>
+  );
+}
+
 // ── Trial banner ──────────────────────────────────────────────────────────────
 
 function TrialBanner({ organization }) {
   const expired = organization.trial_expired;
   const days    = organization.trial_days_remaining;
-  const urgent  = expired || days <= 3;
+  const used    = organization.trial_appointments_used  ?? 0;
+  const limit   = organization.trial_appointments_limit ?? 30;
+  const pct     = Math.min((used / limit) * 100, 100);
+
+  const atLimit  = used >= limit;
+  const nearLimit = pct >= 70;
+  const urgent   = expired || days <= 3 || atLimit;
 
   const expiryDate = organization.trial_ends_at
     ? new Date(organization.trial_ends_at).toLocaleDateString("es-GT", {
@@ -185,25 +252,49 @@ function TrialBanner({ organization }) {
       })
     : null;
 
+  const bg      = urgent ? "linear-gradient(90deg,#fef2f2,#fff5f5)"
+                : nearLimit ? "linear-gradient(90deg,#fffbeb,#fffef0)"
+                : "linear-gradient(90deg,#eff6ff,#f8faff)";
+  const border  = urgent ? "#fecaca" : nearLimit ? "#fde68a" : "#bfdbfe";
+  const txtColor = urgent ? "#dc2626" : nearLimit ? "#92400e" : "#1e40af";
+  const barColor = atLimit ? "#dc2626" : nearLimit ? "#d97706" : "#2563eb";
+  const btnBg    = urgent ? "#dc2626" : nearLimit ? "#d97706" : "#2563eb";
+
   return (
     <div
-      className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4"
-      style={{
-        background:   urgent ? "linear-gradient(90deg,#fef2f2,#fff5f5)" : "linear-gradient(90deg,#fffbeb,#fffef0)",
-        borderBottom: `1px solid ${urgent ? "#fecaca" : "#fde68a"}`,
-      }}
+      className="px-5 lg:px-8 py-3 flex items-center justify-between gap-6"
+      style={{ background: bg, borderBottom: `1px solid ${border}` }}
     >
-      <p className="text-sm" style={{ color: urgent ? "#dc2626" : "#92400e" }}>
-        {expired ? (
-          <><strong>Tu período de prueba venció</strong>{expiryDate && <span className="hidden sm:inline"> el {expiryDate}</span>}. Solo lectura.</>
-        ) : (
-          <><strong>{days === 1 ? "Te queda 1 día" : `Te quedan ${days} días`}</strong> de prueba{expiryDate && <span className="hidden sm:inline"> · vence el {expiryDate}</span>}.</>
-        )}
-      </p>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-sm font-semibold" style={{ color: txtColor }}>
+            {expired
+              ? "Tu período de prueba venció"
+              : atLimit
+              ? "Límite de citas alcanzado — activa tu suscripción"
+              : `Período de prueba${expiryDate ? ` · vence el ${expiryDate}` : ""}`}
+          </p>
+          {!expired && (
+            <span className="text-xs font-medium" style={{ color: txtColor, opacity: 0.75 }}>
+              {days === 1 ? "1 día restante" : `${days} días restantes`}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-1.5">
+          <div className="flex-1 h-1.5 rounded-full overflow-hidden max-w-xs"
+            style={{ backgroundColor: border }}>
+            <div className="h-full rounded-full transition-all"
+              style={{ width: `${pct}%`, backgroundColor: barColor }} />
+          </div>
+          <span className="text-xs font-semibold flex-shrink-0" style={{ color: txtColor }}>
+            {used}/{limit} citas
+          </span>
+        </div>
+      </div>
       <a
         href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
         className="text-xs font-bold px-4 py-2 rounded-lg flex-shrink-0"
-        style={{ background: urgent ? "#dc2626" : "#d97706", color: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
+        style={{ background: btnBg, color: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", textDecoration: "none" }}
       >
         Activar →
       </a>
@@ -532,6 +623,9 @@ export default function DashboardLayout({ children }) {
             </span>
           </div>
         </header>
+
+        {/* Impersonation banner */}
+        <ImpersonationBanner />
 
         {/* Trial banner */}
         {organization?.on_trial && <TrialBanner organization={organization} />}
