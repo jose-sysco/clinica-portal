@@ -73,12 +73,21 @@ export default function SuperadminOrganizationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: "#f1f5f9" }}>Organizaciones</h1>
-        <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-          Gestión de clínicas registradas
-          {pagination && <span style={{ color: "#475569" }}> — {pagination.count} en total</span>}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "#f1f5f9" }}>Organizaciones</h1>
+          <p className="text-sm mt-1" style={{ color: "#64748b" }}>
+            Gestión de clínicas registradas
+            {pagination && <span style={{ color: "#475569" }}> — {pagination.count} en total</span>}
+          </p>
+        </div>
+        <Link
+          href="/superadmin/organizations/new"
+          className="text-sm font-semibold px-4 py-2 rounded-lg"
+          style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+        >
+          + Nueva organización
+        </Link>
       </div>
 
       {/* Filtros */}

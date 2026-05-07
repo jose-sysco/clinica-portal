@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Cookies from "js-cookie";
 import { getConfig } from "@/lib/clinicConfig";
 import { useFeatures } from "@/lib/useFeature";
 import GlobalSearch from "@/components/GlobalSearch";
@@ -171,6 +172,66 @@ const getNavGroups = (clinicType, role, features) => {
 
   return groups;
 };
+
+// ── Impersonation banner ──────────────────────────────────────────────────────
+
+function ImpersonationBanner() {
+  const [info, setInfo] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = Cookies.get("impersonating");
+      if (raw) setInfo(JSON.parse(raw));
+    } catch {
+      // cookie malformada — ignorar
+    }
+  }, []);
+
+  if (!info) return null;
+
+  const handleExit = () => {
+    const saToken   = Cookies.get("sa_token");
+    const saRefresh = Cookies.get("sa_refresh_token");
+
+    Cookies.remove("impersonating");
+    Cookies.remove("sa_token");
+    Cookies.remove("sa_refresh_token");
+    Cookies.remove("organization_slug");
+    Cookies.remove("token");
+    Cookies.remove("refresh_token");
+
+    if (saToken)   Cookies.set("token",         saToken,   { expires: 1 / 24 });
+    if (saRefresh) Cookies.set("refresh_token",  saRefresh, { expires: 30 });
+
+    window.location.href = info.return_url || "/superadmin/organizations";
+  };
+
+  return (
+    <div
+      className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4"
+      style={{
+        background:   "linear-gradient(90deg, #451a03, #78350f)",
+        borderBottom: "1px solid #92400e",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#f59e0b", color: "#000" }}>
+          SUPERADMIN
+        </span>
+        <p className="text-sm font-medium" style={{ color: "#fcd34d" }}>
+          Estás viendo <strong>{info.org_name}</strong> como administrador
+        </p>
+      </div>
+      <button
+        onClick={handleExit}
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+        style={{ backgroundColor: "#f59e0b", color: "#000" }}
+      >
+        Salir ←
+      </button>
+    </div>
+  );
+}
 
 // ── Trial banner ──────────────────────────────────────────────────────────────
 
@@ -562,6 +623,9 @@ export default function DashboardLayout({ children }) {
             </span>
           </div>
         </header>
+
+        {/* Impersonation banner */}
+        <ImpersonationBanner />
 
         {/* Trial banner */}
         {organization?.on_trial && <TrialBanner organization={organization} />}

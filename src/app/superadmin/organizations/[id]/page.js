@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import superadminApi from "@/lib/superadminApi";
 import { toast } from "sonner";
+import Cookies from "js-cookie";
 
 const clinicTypeLabel = {
   veterinary:    "Veterinaria",
@@ -732,9 +733,69 @@ export default function OrgDetailPage() {
   const { id } = useParams();
   const router  = useRouter();
 
-  const [org, setOrg]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(0);
+  const [org, setOrg]               = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [activeTab, setActiveTab]   = useState(0);
+  const [impersonating, setImpersonating] = useState(false);
+  const [exporting, setExporting]   = useState(false);
+
+  const handleImpersonate = async () => {
+    setImpersonating(true);
+    try {
+      const r = await superadminApi.post(`/api/superadmin/organizations/${id}/impersonate`);
+      const { token, organization_slug, organization_name, organization_id } = r.data;
+
+      // Guarda sesión actual del superadmin
+      const currentToken   = Cookies.get("token");
+      const currentRefresh = Cookies.get("refresh_token");
+      if (currentToken)   Cookies.set("sa_token",         currentToken,   { expires: 1 / 24 });
+      if (currentRefresh) Cookies.set("sa_refresh_token", currentRefresh, { expires: 30 });
+
+      // Setea la sesión de la org impersonada
+      Cookies.set("token",             token,             { expires: 1 / 24 });
+      Cookies.set("organization_slug", organization_slug, { expires: 1 / 24 });
+      Cookies.remove("refresh_token");
+
+      // Marca de impersonación para el banner del dashboard
+      Cookies.set("impersonating", JSON.stringify({
+        org_name:   organization_name,
+        org_id:     organization_id,
+        return_url: `/superadmin/organizations/${id}`,
+      }), { expires: 1 / 24 });
+
+      window.location.href = "/dashboard";
+    } catch (err) {
+      toast.error(err.response?.data?.error || "No se pudo impersonar la organización");
+      setImpersonating(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3010";
+      const token   = Cookies.get("token");
+      const res = await fetch(
+        `${API_URL}/api/superadmin/organizations/${id}/export_backup`,
+        { headers: { Authorization: `Bearer ${token}`, "X-Organization-Slug": "sistema-superadmin" } }
+      );
+      if (!res.ok) throw new Error("Error al generar el backup");
+      const blob     = await res.blob();
+      const url      = URL.createObjectURL(blob);
+      const a        = document.createElement("a");
+      a.href         = url;
+      a.download     = `backup_${org?.slug || id}_${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Backup descargado correctamente");
+    } catch {
+      toast.error("No se pudo generar el backup");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     superadminApi
@@ -793,6 +854,24 @@ export default function OrgDetailPage() {
             style={{ color: status.color, border: `1px solid ${status.color}44`, backgroundColor: `${status.color}11` }}>
             {status.label}
           </span>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
+            style={{ backgroundColor: "#0f172a", color: "#64748b", border: "1px solid #334155" }}
+          >
+            {exporting ? "Generando..." : "↓ Backup"}
+          </button>
+          {org.status !== "suspended" && (
+            <button
+              onClick={handleImpersonate}
+              disabled={impersonating}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
+              style={{ backgroundColor: "#f59e0b22", color: "#f59e0b", border: "1px solid #f59e0b44" }}
+            >
+              {impersonating ? "Entrando..." : "Entrar como admin →"}
+            </button>
+          )}
         </div>
       </div>
 
