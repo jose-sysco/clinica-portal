@@ -12,6 +12,7 @@ import { useFeatures } from "@/lib/useFeature";
 import GlobalSearch from "@/components/GlobalSearch";
 import NotificationBell from "@/components/NotificationBell";
 import PaymentReminder from "@/components/PaymentReminder";
+import { usePushSubscription } from "@/lib/usePushSubscription";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -391,6 +392,53 @@ const roleBadgeStyle = {
   staff:        { background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" },
 };
 
+// ── Push notification banner ──────────────────────────────────────────────────
+
+function PushNotificationBanner() {
+  const { permission, subscribed, loading, subscribe } = usePushSubscription();
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+  if (typeof window === "undefined") return null;
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) return null;
+  if (permission === "denied") return null;
+  if (permission === "granted" && subscribed) return null;
+
+  return (
+    <div
+      className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4"
+      style={{
+        background:   "linear-gradient(90deg,#eff6ff,#f0fdf4)",
+        borderBottom: "1px solid #bfdbfe",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <span style={{ fontSize: "18px" }}>🔔</span>
+        <p className="text-sm font-medium" style={{ color: "#1e40af" }}>
+          Activa las notificaciones push para recibir alertas de citas y stock.
+        </p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={subscribe}
+          disabled={loading}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+          style={{ background: "#2563eb", color: "#fff" }}
+        >
+          {loading ? "Activando…" : "Activar"}
+        </button>
+        <button
+          onClick={() => setDismissed(true)}
+          className="text-xs font-medium px-2 py-1.5 rounded-lg"
+          style={{ color: "#64748b" }}
+        >
+          Ahora no
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 function OrgSwitcher({ currentSlug }) {
@@ -722,6 +770,9 @@ export default function DashboardLayout({ children }) {
 
         {/* Recordatorio de pago — últimos 7 días del mes, solo planes de pago */}
         {!organization?.on_trial && <PaymentReminder />}
+
+        {/* Push notification opt-in banner */}
+        <PushNotificationBanner />
 
         {/* Content */}
         <div className="flex-1 p-5 lg:p-8 relative" style={{ backgroundColor: "#f1f5f9" }}>
