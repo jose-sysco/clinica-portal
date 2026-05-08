@@ -45,10 +45,10 @@ export function usePushSubscription() {
       if (result !== "granted") return;
 
       // Get VAPID public key
-      const keyData = await fetch(`${API_URL}/api/public/vapid_public_key`).then(
-        (r) => r.json()
-      );
-      const vapidPublicKey = keyData.vapid_public_key;
+      const keyRes = await fetch(`${API_URL}/api/public/vapid_public_key`);
+      const keyData = await keyRes.json();
+      const vapidPublicKey = keyData?.vapid_public_key;
+      if (!vapidPublicKey) throw new Error("VAPID public key not available");
 
       // Create push subscription
       const sub = await reg.pushManager.subscribe({
