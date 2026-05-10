@@ -12,6 +12,7 @@ import { useFeatures } from "@/lib/useFeature";
 import GlobalSearch from "@/components/GlobalSearch";
 import NotificationBell from "@/components/NotificationBell";
 import PaymentReminder from "@/components/PaymentReminder";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -208,25 +209,18 @@ function ImpersonationBanner() {
   };
 
   return (
-    <div
-      className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4"
-      style={{
-        background:   "linear-gradient(90deg, #451a03, #78350f)",
-        borderBottom: "1px solid #92400e",
-      }}
-    >
+    <div className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4 bg-gradient-to-r from-amber-950 to-amber-900 border-b border-amber-800">
       <div className="flex items-center gap-3">
-        <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#f59e0b", color: "#000" }}>
+        <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-500 text-amber-950">
           SUPERADMIN
         </span>
-        <p className="text-sm font-medium" style={{ color: "#fcd34d" }}>
+        <p className="text-sm font-medium text-amber-200">
           Estás viendo <strong>{info.org_name}</strong> como administrador
         </p>
       </div>
       <button
         onClick={handleExit}
-        className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
-        style={{ backgroundColor: "#f59e0b", color: "#000" }}
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0 bg-amber-500 text-amber-950 hover:bg-amber-400 transition-colors"
       >
         Salir ←
       </button>
@@ -253,22 +247,35 @@ function TrialBanner({ organization }) {
       })
     : null;
 
-  const bg      = urgent ? "linear-gradient(90deg,#fef2f2,#fff5f5)"
-                : nearLimit ? "linear-gradient(90deg,#fffbeb,#fffef0)"
-                : "linear-gradient(90deg,#eff6ff,#f8faff)";
-  const border  = urgent ? "#fecaca" : nearLimit ? "#fde68a" : "#bfdbfe";
-  const txtColor = urgent ? "#dc2626" : nearLimit ? "#92400e" : "#1e40af";
-  const barColor = atLimit ? "#dc2626" : nearLimit ? "#d97706" : "#2563eb";
-  const btnBg    = urgent ? "#dc2626" : nearLimit ? "#d97706" : "#2563eb";
+  const variant = urgent
+    ? {
+        wrap:  "bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-900/60",
+        text:  "text-red-700 dark:text-red-300",
+        track: "bg-red-200 dark:bg-red-900/60",
+        bar:   "bg-red-600 dark:bg-red-500",
+        btn:   "bg-red-600 hover:bg-red-700 text-white",
+      }
+    : nearLimit
+    ? {
+        wrap:  "bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/60",
+        text:  "text-amber-800 dark:text-amber-300",
+        track: "bg-amber-200 dark:bg-amber-900/60",
+        bar:   "bg-amber-600 dark:bg-amber-500",
+        btn:   "bg-amber-600 hover:bg-amber-700 text-white",
+      }
+    : {
+        wrap:  "bg-blue-50 dark:bg-blue-950/30 border-b border-blue-200 dark:border-blue-900/60",
+        text:  "text-blue-800 dark:text-blue-300",
+        track: "bg-blue-200 dark:bg-blue-900/60",
+        bar:   "bg-blue-600 dark:bg-blue-500",
+        btn:   "bg-blue-600 hover:bg-blue-700 text-white",
+      };
 
   return (
-    <div
-      className="px-5 lg:px-8 py-3 flex items-center justify-between gap-6"
-      style={{ background: bg, borderBottom: `1px solid ${border}` }}
-    >
+    <div className={`px-5 lg:px-8 py-3 flex items-center justify-between gap-6 ${variant.wrap}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 flex-wrap">
-          <p className="text-sm font-semibold" style={{ color: txtColor }}>
+          <p className={`text-sm font-semibold ${variant.text}`}>
             {expired
               ? "Tu período de prueba venció"
               : atLimit
@@ -276,26 +283,23 @@ function TrialBanner({ organization }) {
               : `Período de prueba${expiryDate ? ` · vence el ${expiryDate}` : ""}`}
           </p>
           {!expired && (
-            <span className="text-xs font-medium" style={{ color: txtColor, opacity: 0.75 }}>
+            <span className={`text-xs font-medium opacity-75 ${variant.text}`}>
               {days === 1 ? "1 día restante" : `${days} días restantes`}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 mt-1.5">
-          <div className="flex-1 h-1.5 rounded-full overflow-hidden max-w-xs"
-            style={{ backgroundColor: border }}>
-            <div className="h-full rounded-full transition-all"
-              style={{ width: `${pct}%`, backgroundColor: barColor }} />
+          <div className={`flex-1 h-1.5 rounded-full overflow-hidden max-w-xs ${variant.track}`}>
+            <div className={`h-full rounded-full transition-all ${variant.bar}`} style={{ width: `${pct}%` }} />
           </div>
-          <span className="text-xs font-semibold flex-shrink-0" style={{ color: txtColor }}>
+          <span className={`text-xs font-semibold flex-shrink-0 ${variant.text}`}>
             {used}/{limit} citas
           </span>
         </div>
       </div>
       <a
         href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
-        className="text-xs font-bold px-4 py-2 rounded-lg flex-shrink-0"
-        style={{ background: btnBg, color: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", textDecoration: "none" }}
+        className={`text-xs font-bold px-4 py-2 rounded-lg flex-shrink-0 shadow-sm transition-colors no-underline ${variant.btn}`}
       >
         Activar →
       </a>
@@ -313,13 +317,12 @@ function NavItem({ item, pathname, brandColor = "#2563eb" }) {
   if (item.locked) {
     return (
       <div
-        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm"
+        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-not-allowed text-muted-foreground/40"
         title="No disponible en tu plan actual"
-        style={{ color: "#d1d9e3", cursor: "not-allowed" }}
       >
-        <span style={{ color: "#e2e8f0", flexShrink: 0 }}>{item.icon}</span>
+        <span className="flex-shrink-0 text-muted-foreground/30">{item.icon}</span>
         <span className="flex-1 truncate text-xs">{item.name}</span>
-        <span style={{ color: "#e2e8f0" }}>{Icon.lock}</span>
+        <span className="text-muted-foreground/30">{Icon.lock}</span>
       </div>
     );
   }
@@ -327,30 +330,21 @@ function NavItem({ item, pathname, brandColor = "#2563eb" }) {
   return (
     <Link
       href={item.href}
-      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+        isActive
+          ? "font-semibold"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      }`}
       style={
         isActive
-          ? {
-              backgroundColor: `${brandColor}12`,
-              color:            brandColor,
-              fontWeight:       "600",
-            }
-          : { color: "#64748b" }
+          ? { backgroundColor: `${brandColor}1f`, color: brandColor }
+          : undefined
       }
-      onMouseEnter={e => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = "#f1f5f9";
-          e.currentTarget.style.color = "#1e293b";
-        }
-      }}
-      onMouseLeave={e => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = "transparent";
-          e.currentTarget.style.color = "#64748b";
-        }
-      }}
     >
-      <span style={{ color: isActive ? brandColor : "#94a3b8", flexShrink: 0 }}>
+      <span
+        className={`flex-shrink-0 ${isActive ? "" : "text-muted-foreground/70"}`}
+        style={isActive ? { color: brandColor } : undefined}
+      >
         {item.icon}
       </span>
       <span className="flex-1 truncate">{item.name}</span>
@@ -385,11 +379,11 @@ const getRoleLabel = (role, config) => {
   return labels[role] || role;
 };
 
-const roleBadgeStyle = {
-  admin:        { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" },
-  doctor:       { background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" },
-  receptionist: { background: "#fdf4ff", color: "#7e22ce", border: "1px solid #e9d5ff" },
-  staff:        { background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" },
+const roleBadgeClass = {
+  admin:        "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60",
+  doctor:       "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60",
+  receptionist: "bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-900/60",
+  staff:        "bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900/60",
 };
 
 // ── Push notification banner ──────────────────────────────────────────────────
@@ -405,16 +399,10 @@ function PushNotificationBanner() {
   if (permission === "granted" && subscribed) return null;
 
   return (
-    <div
-      className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4"
-      style={{
-        background:   "linear-gradient(90deg,#eff6ff,#f0fdf4)",
-        borderBottom: "1px solid #bfdbfe",
-      }}
-    >
+    <div className="px-5 lg:px-8 py-2.5 flex items-center justify-between gap-4 bg-blue-50 dark:bg-blue-950/30 border-b border-blue-200 dark:border-blue-900/60">
       <div className="flex items-center gap-3">
-        <span style={{ fontSize: "18px" }}>🔔</span>
-        <p className="text-sm font-medium" style={{ color: "#1e40af" }}>
+        <span className="text-lg">🔔</span>
+        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
           Activa las notificaciones push para recibir alertas de citas y stock.
         </p>
       </div>
@@ -422,15 +410,13 @@ function PushNotificationBanner() {
         <button
           onClick={subscribe}
           disabled={loading}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-          style={{ background: "#2563eb", color: "#fff" }}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-60"
         >
           {loading ? "Activando…" : "Activar"}
         </button>
         <button
           onClick={() => setDismissed(true)}
-          className="text-xs font-medium px-2 py-1.5 rounded-lg"
-          style={{ color: "#64748b" }}
+          className="text-xs font-medium px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
         >
           Ahora no
         </button>
@@ -487,38 +473,29 @@ function OrgSwitcher({ currentSlug }) {
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={loading}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-        style={{ backgroundColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)" }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.14)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)"; }}
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/15"
       >
         <span>{loading ? "Cambiando…" : "Cambiar organización"}</span>
-        <span style={{ fontSize: "10px" }}>{open ? "▲" : "▼"}</span>
+        <span className="text-[10px]">{open ? "▲" : "▼"}</span>
       </button>
       {open && (
-        <div
-          className="absolute left-0 right-0 mt-1 rounded-xl overflow-hidden z-50"
-          style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
-        >
+        <div className="absolute left-0 right-0 mt-1 rounded-xl overflow-hidden z-50 bg-popover border border-border shadow-xl">
           {others.map((o) => (
             <button
               key={o.slug}
               onClick={() => handleSwitch(o.slug)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors"
-              style={{ color: "#0f172a" }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-popover-foreground hover:bg-muted transition-colors"
             >
               {o.logo_url ? (
-                <img src={o.logo_url} alt={o.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid #e2e8f0" }} />
+                <img src={o.logo_url} alt={o.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0 border border-border" />
               ) : (
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: "#eff6ff", color: "#2563eb" }}>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300">
                   {o.name?.[0] || "C"}
                 </div>
               )}
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-xs truncate">{o.name}</p>
-                <p className="text-xs capitalize" style={{ color: "#94a3b8" }}>{o.plan}</p>
+                <p className="text-xs capitalize text-muted-foreground">{o.plan}</p>
               </div>
             </button>
           ))}
@@ -564,12 +541,9 @@ export default function DashboardLayout({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f8fafc" }}>
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-lg font-black"
-            style={{ background: "linear-gradient(135deg,#1e40af,#2563eb)", boxShadow: "0 4px 16px rgba(37,99,235,0.3)" }}
-          >
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-lg font-black bg-gradient-to-br from-blue-800 to-blue-600 shadow-lg shadow-blue-600/30">
             C
           </div>
           <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -581,45 +555,29 @@ export default function DashboardLayout({ children }) {
   const initials   = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
   const config     = getConfig(organization?.clinic_type);
   const navGroups  = getNavGroups(organization?.clinic_type, user?.role, features);
-  const roleStyle  = roleBadgeStyle[user?.role] || roleBadgeStyle.staff;
+  const roleClass  = roleBadgeClass[user?.role] || roleBadgeClass.staff;
   const brandColor = organization?.primary_color || "#2563eb";
   const brandGradient = `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`;
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: "#f1f5f9" }}>
+    <div className="min-h-screen flex bg-background">
 
       {/* Backdrop móvil */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 lg:hidden"
-          style={{ backgroundColor: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)" }}
+          className="fixed inset-0 z-30 lg:hidden bg-slate-900/45 backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* ── Sidebar ──────────────────────────────────────────────────── */}
       <aside
-        className={`w-64 fixed h-full flex flex-col z-40 transition-transform duration-300
+        className={`w-64 fixed h-full flex flex-col z-40 transition-transform duration-300 bg-card border-r border-border shadow-md
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-        style={{
-          backgroundColor: "#ffffff",
-          borderRight:     "1px solid #e8edf3",
-          boxShadow:       "2px 0 24px rgba(15,23,42,0.07)",
-        }}
       >
-        {/* Org header con color de marca */}
-        <div
-          className="px-4 py-4 flex items-center gap-3"
-          style={{ background: brandGradient }}
-        >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-            style={{
-              backgroundColor: "rgba(255,255,255,0.18)",
-              backdropFilter:  "blur(4px)",
-              border:          "1px solid rgba(255,255,255,0.28)",
-            }}
-          >
+        {/* Org header con color de marca (siempre coloreado por la marca de la org) */}
+        <div className="px-4 py-4 flex items-center gap-3" style={{ background: brandGradient }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-white/20 backdrop-blur-sm border border-white/30">
             {organization?.logo_url && !logoError ? (
               <img
                 src={organization.logo_url}
@@ -632,10 +590,8 @@ export default function DashboardLayout({ children }) {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold truncate" style={{ color: "#ffffff" }}>
-              {organization?.name}
-            </p>
-            <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.6)" }}>
+            <p className="text-sm font-bold truncate text-white">{organization?.name}</p>
+            <p className="text-xs truncate text-white/60">
               {clinicTypeLabel[organization?.clinic_type] || "Portal médico"}
             </p>
           </div>
@@ -648,9 +604,7 @@ export default function DashboardLayout({ children }) {
         <nav className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-px">
           {navGroups.map((group, gi) => (
             <div key={gi}>
-              {gi > 0 && (
-                <div className="my-2 mx-1" style={{ height: "1px", backgroundColor: "#f0f4f8" }} />
-              )}
+              {gi > 0 && <div className="my-2 mx-1 h-px bg-border" />}
               <div className="flex flex-col gap-px">
                 {group.items.map(item => (
                   <NavItem key={item.href} item={item} pathname={pathname} brandColor={brandColor} />
@@ -661,13 +615,11 @@ export default function DashboardLayout({ children }) {
         </nav>
 
         {/* User footer — fila única compacta */}
-        <div className="px-3 py-3" style={{ borderTop: "1px solid #f0f4f8" }}>
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl transition-colors">
+        <div className="px-3 py-3 border-t border-border">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl">
             <Link
               href="/dashboard/profile"
-              className="flex items-center gap-2.5 flex-1 min-w-0 transition-colors"
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
@@ -676,23 +628,14 @@ export default function DashboardLayout({ children }) {
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold truncate" style={{ color: "#0f172a" }}>{user?.full_name}</p>
-                <p className="text-xs truncate" style={{ color: roleStyle.color }}>{getRoleLabel(user?.role, config)}</p>
+                <p className="text-xs font-semibold truncate text-foreground">{user?.full_name}</p>
+                <p className="text-xs truncate text-muted-foreground">{getRoleLabel(user?.role, config)}</p>
               </div>
             </Link>
             <button
               onClick={logout}
               title="Cerrar sesión"
-              className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0 transition-all"
-              style={{ color: "#b0bac8" }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = "#dc2626";
-                e.currentTarget.style.backgroundColor = "#fff5f5";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = "#b0bac8";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -707,19 +650,11 @@ export default function DashboardLayout({ children }) {
       <main className="flex-1 lg:ml-64 flex flex-col min-h-screen">
 
         {/* Header */}
-        <header
-          className="px-5 lg:px-8 py-3.5 sticky top-0 z-20 flex items-center justify-between gap-3"
-          style={{
-            backgroundColor: "#ffffff",
-            borderBottom:    "1px solid #e8edf3",
-            boxShadow:       "0 1px 8px rgba(15,23,42,0.05)",
-          }}
-        >
+        <header className="px-5 lg:px-8 py-3.5 sticky top-0 z-20 flex items-center justify-between gap-3 bg-card border-b border-border shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
             {/* Hamburger */}
             <button
-              className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl flex-shrink-0 transition-colors"
-              style={{ backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0", color: "#64748b" }}
+              className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl flex-shrink-0 bg-muted hover:bg-muted/70 border border-border text-muted-foreground transition-colors"
               onClick={() => setSidebarOpen(v => !v)}
               aria-label="Abrir menú"
             >
@@ -731,8 +666,8 @@ export default function DashboardLayout({ children }) {
             </button>
 
             <div className="hidden sm:flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#22c55e" }} />
-              <p className="text-sm capitalize" style={{ color: "#94a3b8" }}>
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <p className="text-sm capitalize text-muted-foreground">
                 {new Date().toLocaleDateString("es-GT", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
@@ -741,22 +676,18 @@ export default function DashboardLayout({ children }) {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-sm"
-              style={{ color: "#64748b", backgroundColor: "#f8fafc", border: "1px solid #e8edf3" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#f1f5f9"; e.currentTarget.style.borderColor = "#d1d9e3"; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#f8fafc"; e.currentTarget.style.borderColor = "#e8edf3"; }}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <span className="hidden md:inline">Buscar</span>
-              <kbd className="text-xs px-1.5 py-0.5 rounded hidden lg:inline" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", fontFamily: "monospace", color: "#94a3b8" }}>⌘K</kbd>
+              <kbd className="text-xs px-1.5 py-0.5 rounded hidden lg:inline bg-card border border-border font-mono text-muted-foreground">⌘K</kbd>
             </button>
 
             <NotificationBell />
 
-            <span
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg hidden sm:inline"
-              style={roleStyle}
-            >
+            <ThemeToggle />
+
+            <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg hidden sm:inline ${roleClass}`}>
               {getRoleLabel(user?.role, config)}
             </span>
           </div>
@@ -775,28 +706,18 @@ export default function DashboardLayout({ children }) {
         <PushNotificationBanner />
 
         {/* Content */}
-        <div className="flex-1 p-5 lg:p-8 relative" style={{ backgroundColor: "#f1f5f9" }}>
+        <div className="flex-1 p-5 lg:p-8 relative bg-background">
           {organization?.trial_expired && (
-            <div
-              className="absolute inset-0 z-20 flex items-start justify-center pt-24"
-              style={{ backgroundColor: "rgba(15,23,42,0.5)", backdropFilter: "blur(3px)" }}
-            >
-              <div
-                className="rounded-2xl p-8 text-center max-w-sm mx-4"
-                style={{ backgroundColor: "#ffffff", boxShadow: "0 20px 60px rgba(15,23,42,0.25)" }}
-              >
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5"
-                  style={{ background: "#fef2f2" }}
-                >
+            <div className="absolute inset-0 z-20 flex items-start justify-center pt-24 bg-slate-900/50 backdrop-blur-sm">
+              <div className="rounded-2xl p-8 text-center max-w-sm mx-4 bg-card border border-border shadow-2xl">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 bg-red-50 dark:bg-red-950/40">
                   ⏰
                 </div>
-                <p className="text-lg font-bold mb-2" style={{ color: "#0f172a" }}>Período de prueba vencido</p>
-                <p className="text-sm mb-6" style={{ color: "#64748b" }}>Para continuar usando el sistema adquiere una suscripción.</p>
+                <p className="text-lg font-bold mb-2 text-foreground">Período de prueba vencido</p>
+                <p className="text-sm mb-6 text-muted-foreground">Para continuar usando el sistema adquiere una suscripción.</p>
                 <a
                   href="mailto:soporte@clinicaportal.com?subject=Activar suscripción"
-                  className="inline-block text-sm font-bold px-6 py-3 rounded-xl"
-                  style={{ background: "linear-gradient(135deg,#1d4ed8,#2563eb)", color: "#fff", boxShadow: "0 4px 14px rgba(37,99,235,0.4)" }}
+                  className="inline-block text-sm font-bold px-6 py-3 rounded-xl text-white bg-gradient-to-br from-blue-700 to-blue-600 shadow-lg shadow-blue-600/40 hover:from-blue-800 hover:to-blue-700 transition-colors"
                 >
                   Contactar para activar →
                 </a>

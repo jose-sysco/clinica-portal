@@ -38,18 +38,10 @@ const CLINIC_TYPE_ICONS = {
   fitness:       "🏋️",
 };
 
-const inputStyle = {
-  height: "48px",
-  backgroundColor: "#ffffff",
-  border: "1.5px solid #e2e8f0",
-  color: "#0f172a",
-  boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
-};
-
 function InputField({ label, name, type, value, onChange, placeholder, disabled, autoFocus }) {
   return (
     <div>
-      <label className="block text-sm font-semibold mb-2" style={{ color: "#374151" }}>
+      <label className="block text-sm font-semibold mb-2 text-foreground/80">
         {label}
       </label>
       <input
@@ -61,23 +53,11 @@ function InputField({ label, name, type, value, onChange, placeholder, disabled,
         disabled={disabled}
         autoFocus={autoFocus}
         required
-        className="w-full text-sm px-4 rounded-xl outline-none transition-all"
-        style={{
-          ...inputStyle,
-          backgroundColor: disabled ? "#f8fafc" : "#ffffff",
-          color: disabled ? "#94a3b8" : "#0f172a",
-          cursor: disabled ? "not-allowed" : "text",
-        }}
-        onFocus={(e) => {
-          if (!disabled) {
-            e.target.style.borderColor = "#2563eb";
-            e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.12)";
-          }
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = "#e2e8f0";
-          e.target.style.boxShadow = "0 1px 3px rgba(15,23,42,0.05)";
-        }}
+        className="w-full text-sm px-4 h-12 rounded-xl outline-none transition-all
+                   bg-card border-[1.5px] border-border text-foreground placeholder:text-muted-foreground
+                   shadow-sm
+                   focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+                   disabled:bg-muted/50 disabled:text-muted-foreground disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -86,10 +66,7 @@ function InputField({ label, name, type, value, onChange, placeholder, disabled,
 function ErrorBox({ msg }) {
   if (!msg) return null;
   return (
-    <div
-      className="flex items-start gap-3 px-4 py-3 rounded-xl mb-5 text-sm"
-      style={{ backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" }}
-    >
+    <div className="flex items-start gap-3 px-4 py-3 rounded-xl mb-5 text-sm bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300">
       <span className="flex-shrink-0">⚠</span>
       {msg}
     </div>
@@ -101,17 +78,10 @@ function SubmitButton({ loading, label, loadingLabel }) {
     <button
       type="submit"
       disabled={loading}
-      className="w-full text-sm font-bold rounded-xl transition-all"
-      style={{
-        height: "48px",
-        background: loading ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
-        color: "#ffffff",
-        border: "none",
-        boxShadow: loading ? "none" : "0 4px 16px rgba(37,99,235,0.35)",
-        cursor: loading ? "not-allowed" : "pointer",
-      }}
-      onMouseEnter={(e) => { if (!loading) e.currentTarget.style.boxShadow = "0 6px 22px rgba(37,99,235,0.45)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = loading ? "none" : "0 4px 16px rgba(37,99,235,0.35)"; }}
+      className={`w-full text-sm font-bold rounded-xl h-12 text-white transition-all
+                  ${loading
+                    ? "bg-blue-300 dark:bg-blue-800 cursor-not-allowed"
+                    : "bg-gradient-to-br from-blue-700 to-blue-600 hover:from-blue-800 hover:to-blue-700 shadow-lg shadow-blue-600/35 hover:shadow-blue-600/45"}`}
     >
       {loading ? (
         <span className="flex items-center justify-center gap-2">
@@ -124,25 +94,14 @@ function SubmitButton({ loading, label, loadingLabel }) {
 }
 
 function LeftPanel() {
+  // Panel de marketing — siempre oscuro por diseño (el gradient es la marca)
   return (
-    <div
-      className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
-      style={{ background: "linear-gradient(145deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)" }}
-    >
-      <div
-        className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10 pointer-events-none"
-        style={{ background: "radial-gradient(circle,#60a5fa,transparent)", transform: "translate(30%,-30%)" }}
-      />
-      <div
-        className="absolute bottom-0 left-0 w-72 h-72 rounded-full opacity-10 pointer-events-none"
-        style={{ background: "radial-gradient(circle,#818cf8,transparent)", transform: "translate(-30%,30%)" }}
-      />
+    <div className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-blue-700">
+      <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10 pointer-events-none bg-[radial-gradient(circle,#60a5fa,transparent)] translate-x-[30%] -translate-y-[30%]" />
+      <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full opacity-10 pointer-events-none bg-[radial-gradient(circle,#818cf8,transparent)] -translate-x-[30%] translate-y-[30%]" />
 
       <div className="flex items-center gap-3 relative z-10">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ backgroundColor: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)" }}
-        >
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/15 border border-white/25">
           <span className="text-white font-black text-base">C</span>
         </div>
         <span className="text-white font-bold text-base tracking-tight">Agendia</span>
@@ -150,19 +109,16 @@ function LeftPanel() {
 
       <div className="space-y-8 relative z-10">
         <div>
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5"
-            style={{ backgroundColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.15)" }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: "#4ade80" }} />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5 bg-white/10 text-white/70 border border-white/15">
+            <span className="w-1.5 h-1.5 rounded-full inline-block bg-emerald-400" />
             Sistema activo — Guatemala
           </div>
           <h1 className="text-4xl font-black text-white leading-tight">
             Gestión de citas
             <br />
-            <span style={{ color: "#93c5fd" }}>sin complicaciones</span>
+            <span className="text-blue-300">sin complicaciones</span>
           </h1>
-          <p className="mt-4 text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.52)" }}>
+          <p className="mt-4 text-base leading-relaxed text-white/55">
             Administra citas, clientes y profesionales desde un solo portal.
             Rápido, seguro y adaptable a cualquier negocio.
           </p>
@@ -171,24 +127,19 @@ function LeftPanel() {
         <div className="space-y-4">
           {MARKETING.map((f) => (
             <div key={f.title} className="flex items-start gap-4">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
-                style={{ backgroundColor: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.14)" }}
-              >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg bg-white/10 border border-white/15">
                 {f.icon}
               </div>
               <div>
                 <p className="text-white font-semibold text-sm">{f.title}</p>
-                <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.48)" }}>
-                  {f.desc}
-                </p>
+                <p className="text-xs mt-0.5 leading-relaxed text-white/50">{f.desc}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <p className="text-xs relative z-10" style={{ color: "rgba(255,255,255,0.25)" }}>
+      <p className="text-xs relative z-10 text-white/30">
         © {new Date().getFullYear()} Agendia · Todos los derechos reservados
       </p>
     </div>
@@ -204,19 +155,16 @@ function LoginForm() {
 
   const justRegistered = searchParams.get("registered") === "true";
 
-  // step: "email" | "org_picker" | "password"
   const [step,           setStep]           = useState("email");
   const [email,          setEmail]          = useState("");
   const [password,       setPassword]       = useState("");
-  const [org,            setOrg]            = useState(null);   // org seleccionada { slug, name, logo_url }
-  const [allOrgs,        setAllOrgs]        = useState([]);     // todas las orgs del email (multi-org)
+  const [org,            setOrg]            = useState(null);
+  const [allOrgs,        setAllOrgs]        = useState([]);
   const [error,          setError]          = useState(null);
   const [loading,        setLoading]        = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState(null);
   const [resendLoading,  setResendLoading]  = useState(false);
   const [resendDone,     setResendDone]     = useState(false);
-
-  // ── Paso 1: buscar organización(es) por email ─────────────────────────────
 
   const handleLookup = async (e) => {
     e.preventDefault();
@@ -234,11 +182,9 @@ function LoginForm() {
       setAllOrgs(orgs);
 
       if (orgs.length === 1) {
-        // Una sola org → saltar selección y ir directo a contraseña
         setOrg(orgs[0]);
         setStep("password");
       } else {
-        // Múltiples orgs → mostrar selector
         setStep("org_picker");
       }
     } catch (err) {
@@ -249,14 +195,10 @@ function LoginForm() {
     }
   };
 
-  // ── Paso 1b: seleccionar organización ────────────────────────────────────
-
   const handleSelectOrg = (selectedOrg) => {
     setOrg(selectedOrg);
     setStep("password");
   };
-
-  // ── Paso 2: iniciar sesión ────────────────────────────────────────────────
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -266,7 +208,6 @@ function LoginForm() {
     setLoading(true);
     try {
       const data = await login(org.slug, email, password);
-      // Guardar orgs accesibles para el switcher del dashboard
       if (allOrgs.length > 1) {
         localStorage.setItem("accessible_orgs", JSON.stringify(allOrgs));
       } else {
@@ -305,42 +246,30 @@ function LoginForm() {
     setError(null);
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <LeftPanel />
 
-      <div className="flex flex-col items-center justify-center p-8" style={{ backgroundColor: "#f8fafc" }}>
+      <div className="flex flex-col items-center justify-center p-8 bg-muted/30">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg,#1e3a8a,#2563eb)" }}
-            >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-800 to-blue-600">
               <span className="text-white font-black">C</span>
             </div>
-            <span className="font-bold text-base" style={{ color: "#0f172a" }}>Agendia</span>
+            <span className="font-bold text-base text-foreground">Agendia</span>
           </div>
 
           {/* ── Paso 1: email ────────────────────────────────────────── */}
           {step === "email" && (
             <>
               <div className="mb-8">
-                <h2 className="text-2xl font-black tracking-tight" style={{ color: "#0f172a" }}>
-                  Bienvenido de vuelta
-                </h2>
-                <p className="text-sm mt-1.5" style={{ color: "#64748b" }}>
-                  Ingresa tu correo para continuar
-                </p>
+                <h2 className="text-2xl font-black tracking-tight text-foreground">Bienvenido de vuelta</h2>
+                <p className="text-sm mt-1.5 text-muted-foreground">Ingresa tu correo para continuar</p>
               </div>
 
               {justRegistered && (
-                <div
-                  className="flex items-start gap-3 px-4 py-3 rounded-xl mb-5 text-sm"
-                  style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", color: "#16a34a" }}
-                >
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl mb-5 text-sm bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-300">
                   <span className="flex-shrink-0">✓</span>
                   Clínica registrada correctamente. Ya puedes iniciar sesión.
                 </div>
@@ -361,16 +290,16 @@ function LoginForm() {
                 <SubmitButton loading={loading} label="Continuar →" loadingLabel="Buscando..." />
               </form>
 
-              <p className="text-center text-sm mt-6" style={{ color: "#94a3b8" }}>
+              <p className="text-center text-sm mt-6 text-muted-foreground">
                 ¿No tienes cuenta?{" "}
-                <Link href="/register" className="font-semibold" style={{ color: "#2563eb" }}>
+                <Link href="/register" className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                   Registra tu negocio
                 </Link>
               </p>
 
-              <p className="text-center text-sm mt-3" style={{ color: "#94a3b8" }}>
+              <p className="text-center text-sm mt-3 text-muted-foreground">
                 ¿Eres paciente?{" "}
-                <Link href="/reservas" className="font-semibold" style={{ color: "#2563eb" }}>
+                <Link href="/reservas" className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                   Reservar cita en línea
                 </Link>
               </p>
@@ -381,10 +310,8 @@ function LoginForm() {
           {step === "org_picker" && (
             <>
               <div className="mb-6">
-                <h2 className="text-2xl font-black tracking-tight" style={{ color: "#0f172a" }}>
-                  Selecciona tu organización
-                </h2>
-                <p className="text-sm mt-1.5" style={{ color: "#64748b" }}>
+                <h2 className="text-2xl font-black tracking-tight text-foreground">Selecciona tu organización</h2>
+                <p className="text-sm mt-1.5 text-muted-foreground">
                   Tu cuenta tiene acceso a {allOrgs.length} organizaciones
                 </p>
               </div>
@@ -395,34 +322,20 @@ function LoginForm() {
                     key={o.slug}
                     type="button"
                     onClick={() => handleSelectOrg(o)}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all"
-                    style={{ backgroundColor: "#ffffff", border: "1.5px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,0.05)" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "#2563eb";
-                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "#e2e8f0";
-                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(15,23,42,0.05)";
-                    }}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl text-left bg-card border-[1.5px] border-border shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-500/15 transition-all"
                   >
                     {o.logo_url ? (
-                      <img src={o.logo_url} alt={o.name}
-                        className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
-                        style={{ border: "1px solid #e2e8f0" }} />
+                      <img src={o.logo_url} alt={o.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-border" />
                     ) : (
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
-                        style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}
-                      >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60">
                         {CLINIC_TYPE_ICONS[o.clinic_type] || "🏥"}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "#0f172a" }}>{o.name}</p>
-                      <p className="text-xs mt-0.5 capitalize" style={{ color: "#94a3b8" }}>{o.plan}</p>
+                      <p className="text-sm font-semibold truncate text-foreground">{o.name}</p>
+                      <p className="text-xs mt-0.5 capitalize text-muted-foreground">{o.plan}</p>
                     </div>
-                    <span style={{ color: "#94a3b8", fontSize: "16px" }}>→</span>
+                    <span className="text-base text-muted-foreground">→</span>
                   </button>
                 ))}
               </div>
@@ -430,8 +343,7 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={goBackToEmail}
-                className="w-full text-sm font-medium py-2 rounded-xl"
-                style={{ color: "#64748b", background: "transparent" }}
+                className="w-full text-sm font-medium py-2 rounded-xl text-muted-foreground hover:text-foreground transition-colors"
               >
                 ← Usar otro correo
               </button>
@@ -442,17 +354,12 @@ function LoginForm() {
           {step === "password" && (
             <>
               <div className="mb-8">
-                <h2 className="text-2xl font-black tracking-tight" style={{ color: "#0f172a" }}>
-                  Ingresa tu contraseña
-                </h2>
-                <div
-                  className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full text-xs font-semibold"
-                  style={{ backgroundColor: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" }}
-                >
+                <h2 className="text-2xl font-black tracking-tight text-foreground">Ingresa tu contraseña</h2>
+                <div className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60">
                   {org?.logo_url ? (
                     <img src={org.logo_url} alt={org.name} className="w-4 h-4 rounded object-cover flex-shrink-0" />
                   ) : (
-                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: "#2563eb" }} />
+                    <span className="w-1.5 h-1.5 rounded-full inline-block bg-blue-600 dark:bg-blue-400" />
                   )}
                   {org?.name}
                 </div>
@@ -461,11 +368,9 @@ function LoginForm() {
               <ErrorBox msg={error} />
 
               {unverifiedEmail && (
-                <div className="rounded-xl p-4 mb-2" style={{ backgroundColor: "#fefce8", border: "1px solid #fde68a" }}>
-                  <p className="text-sm font-semibold" style={{ color: "#92400e", margin: "0 0 8px 0" }}>
-                    ⚠️ Correo no verificado
-                  </p>
-                  <p className="text-sm" style={{ color: "#92400e", margin: "0 0 12px 0" }}>
+                <div className="rounded-xl p-4 mb-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60">
+                  <p className="text-sm font-semibold mb-2 text-amber-800 dark:text-amber-200">⚠️ Correo no verificado</p>
+                  <p className="text-sm mb-3 text-amber-800 dark:text-amber-200">
                     Debes verificar tu correo antes de iniciar sesión.
                   </p>
                   {!resendDone ? (
@@ -473,13 +378,15 @@ function LoginForm() {
                       type="button"
                       onClick={handleResendVerification}
                       disabled={resendLoading}
-                      className="text-sm font-semibold rounded-lg px-4 py-2"
-                      style={{ backgroundColor: resendLoading ? "#fde68a" : "#f59e0b", color: "#ffffff", border: "none", cursor: resendLoading ? "not-allowed" : "pointer" }}
+                      className={`text-sm font-semibold rounded-lg px-4 py-2 text-white transition-colors
+                                  ${resendLoading
+                                    ? "bg-amber-300 dark:bg-amber-700 cursor-not-allowed"
+                                    : "bg-amber-500 hover:bg-amber-600"}`}
                     >
                       {resendLoading ? "Enviando..." : "Reenviar correo de verificación"}
                     </button>
                   ) : (
-                    <p className="text-sm font-medium" style={{ color: "#16a34a", margin: 0 }}>
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                       ✓ Correo reenviado. Revisa tu bandeja de entrada.
                     </p>
                   )}
@@ -500,7 +407,7 @@ function LoginForm() {
                 />
 
                 <div className="flex justify-end -mt-2">
-                  <Link href="/forgot-password" className="text-sm font-medium" style={{ color: "#2563eb" }}>
+                  <Link href="/forgot-password" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
@@ -510,7 +417,6 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => {
-                    // Si había múltiples orgs → volver al picker, si no → volver al email
                     if (allOrgs.length > 1) {
                       setStep("org_picker");
                       setPassword("");
@@ -519,10 +425,7 @@ function LoginForm() {
                       goBackToEmail();
                     }
                   }}
-                  className="w-full text-sm font-medium py-2 rounded-xl transition-all"
-                  style={{ color: "#64748b", background: "transparent" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#1e293b")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
+                  className="w-full text-sm font-medium py-2 rounded-xl text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {allOrgs.length > 1 ? "← Cambiar organización" : "← Usar otro correo"}
                 </button>
@@ -530,9 +433,9 @@ function LoginForm() {
             </>
           )}
 
-          <p className="text-xs text-center mt-6" style={{ color: "#94a3b8" }}>
+          <p className="text-xs text-center mt-6 text-muted-foreground">
             ¿Necesitas ayuda?{" "}
-            <a href="/manual-usuario.html" target="_blank" rel="noopener noreferrer" className="font-semibold" style={{ color: "#2563eb" }}>
+            <a href="/manual-usuario.html" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
               Ver manual de usuario
             </a>
           </p>
@@ -546,7 +449,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </div>
       }

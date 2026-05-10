@@ -5,20 +5,8 @@ import { useRouter } from "next/navigation";
 import { useFeature } from "@/lib/useFeature";
 import { useAuth } from "@/lib/AuthContext";
 import { getConfig } from "@/lib/clinicConfig";
+import { APPOINTMENT_STATUS, appointmentStatus } from "@/lib/statusColors";
 import api from "@/lib/api";
-
-const STATUS_COLOR = {
-  pending: "#d97706",
-  confirmed: "#2563eb",
-  completed: "#16a34a",
-  cancelled: "#dc2626",
-};
-const STATUS_LABEL = {
-  pending: "Pendiente",
-  confirmed: "Confirmada",
-  completed: "Completada",
-  cancelled: "Cancelada",
-};
 
 export default function GlobalSearch({ onClose }) {
   const router = useRouter();
@@ -36,15 +24,11 @@ export default function GlobalSearch({ onClose }) {
     inputRef.current?.focus();
   }, []);
 
-  // Flatten results for keyboard navigation
   const flat = results
     ? [
         ...results.patients.map((r) => ({ ...r, _type: "patient" })),
         ...results.doctors.map((r) => ({ ...r, _type: "doctor" })),
-        ...(results.appointments || []).map((r) => ({
-          ...r,
-          _type: "appointment",
-        })),
+        ...(results.appointments || []).map((r) => ({ ...r, _type: "appointment" })),
         ...(results.products || []).map((r) => ({ ...r, _type: "product" })),
       ]
     : [];
@@ -75,19 +59,13 @@ export default function GlobalSearch({ onClose }) {
   const navigate = (item) => {
     onClose();
     if (item._type === "patient") router.push(`/dashboard/patients/${item.id}`);
-    if (item._type === "doctor")
-      router.push(`/dashboard/doctors/${item.id}/calendar`);
-    if (item._type === "appointment")
-      router.push(`/dashboard/appointments/${item.id}`);
-    if (item._type === "product")
-      router.push(`/dashboard/inventory/${item.id}`);
+    if (item._type === "doctor") router.push(`/dashboard/doctors/${item.id}/calendar`);
+    if (item._type === "appointment") router.push(`/dashboard/appointments/${item.id}`);
+    if (item._type === "product") router.push(`/dashboard/inventory/${item.id}`);
   };
 
   const handleKey = (e) => {
-    if (e.key === "Escape") {
-      onClose();
-      return;
-    }
+    if (e.key === "Escape") { onClose(); return; }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setSelected((s) => Math.min(s + 1, flat.length - 1));
@@ -100,10 +78,8 @@ export default function GlobalSearch({ onClose }) {
   };
 
   const totalResults = results
-    ? results.patients.length +
-      results.doctors.length +
-      (results.appointments?.length || 0) +
-      (results.products?.length || 0)
+    ? results.patients.length + results.doctors.length +
+      (results.appointments?.length || 0) + (results.products?.length || 0)
     : 0;
   const hasResults = results && totalResults > 0;
   const noResults = results && !hasResults;
@@ -114,14 +90,7 @@ export default function GlobalSearch({ onClose }) {
     if (!items?.length) return null;
     return (
       <div>
-        <p
-          className="text-xs font-semibold uppercase tracking-widest px-4 py-2"
-          style={{
-            color: "#94a3b8",
-            backgroundColor: "#f8fafc",
-            borderBottom: "1px solid #f1f5f9",
-          }}
-        >
+        <p className="text-xs font-semibold uppercase tracking-widest px-4 py-2 text-muted-foreground bg-muted/40 border-b border-border">
           {title}
         </p>
         {items.map((item) => {
@@ -132,11 +101,9 @@ export default function GlobalSearch({ onClose }) {
               key={item.id}
               onMouseEnter={() => setSelected(idx)}
               onClick={() => navigate({ ...item, _type: item.type })}
-              className="w-full text-left px-4 py-3 transition-colors"
-              style={{
-                backgroundColor: isSelected ? "#eff6ff" : "transparent",
-                borderBottom: "1px solid #f8fafc",
-              }}
+              className={`w-full text-left px-4 py-3 border-b border-border/60 transition-colors ${
+                isSelected ? "bg-blue-50 dark:bg-blue-950/30" : ""
+              }`}
             >
               {renderItem(item, isSelected)}
             </button>
@@ -148,33 +115,17 @@ export default function GlobalSearch({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24"
-      style={{
-        backgroundColor: "rgba(15,23,42,0.5)",
-        backdropFilter: "blur(3px)",
-      }}
+      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-900/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl mx-4 rounded-2xl overflow-hidden shadow-2xl"
-        style={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0" }}
+        className="w-full max-w-2xl mx-4 rounded-2xl overflow-hidden shadow-2xl bg-popover border border-border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Input */}
-        <div
-          className="flex items-center gap-3 px-4 py-3.5"
-          style={{ borderBottom: "1px solid #f1f5f9" }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#94a3b8"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -189,36 +140,22 @@ export default function GlobalSearch({ onClose }) {
                 ? "Buscar pacientes, profesionales, citas, productos..."
                 : "Buscar pacientes, profesionales, citas..."
             }
-            className="flex-1 text-sm outline-none"
-            style={{ color: "#0f172a", backgroundColor: "transparent" }}
+            className="flex-1 text-sm outline-none bg-transparent text-foreground placeholder:text-muted-foreground"
           />
           {loading && (
             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
           )}
-          <kbd
-            className="text-xs px-1.5 py-0.5 rounded flex-shrink-0"
-            style={{
-              backgroundColor: "#f1f5f9",
-              border: "1px solid #e2e8f0",
-              color: "#94a3b8",
-              fontFamily: "monospace",
-            }}
-          >
+          <kbd className="text-xs px-1.5 py-0.5 rounded flex-shrink-0 bg-muted border border-border text-muted-foreground font-mono">
             Esc
           </kbd>
         </div>
 
         {/* Results */}
-        <div style={{ maxHeight: "420px", overflowY: "auto" }}>
+        <div className="max-h-[420px] overflow-y-auto">
           {!query && (
             <div className="px-4 py-8 text-center">
-              <p
-                className="text-sm font-medium mb-1"
-                style={{ color: "#64748b" }}
-              >
-                Búsqueda global
-              </p>
-              <p className="text-xs" style={{ color: "#94a3b8" }}>
+              <p className="text-sm font-medium mb-1 text-foreground">Búsqueda global</p>
+              <p className="text-xs text-muted-foreground">
                 {hasInventory
                   ? "Escribe para buscar pacientes, profesionales, citas o productos del inventario"
                   : "Escribe el nombre de un paciente, profesional o motivo de cita"}
@@ -228,15 +165,8 @@ export default function GlobalSearch({ onClose }) {
 
           {noResults && (
             <div className="px-4 py-8 text-center">
-              <p
-                className="text-sm font-medium mb-1"
-                style={{ color: "#64748b" }}
-              >
-                Sin resultados para "{query}"
-              </p>
-              <p className="text-xs" style={{ color: "#94a3b8" }}>
-                Intenta con otro término
-              </p>
+              <p className="text-sm font-medium mb-1 text-foreground">Sin resultados para &ldquo;{query}&rdquo;</p>
+              <p className="text-xs text-muted-foreground">Intenta con otro término</p>
             </div>
           )}
 
@@ -247,36 +177,20 @@ export default function GlobalSearch({ onClose }) {
                 items={results.patients}
                 renderItem={(item, isSel) => (
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: isSel ? "#dbeafe" : "#f1f5f9" }}
-                    >
-                      <span
-                        className="text-xs font-bold"
-                        style={{ color: isSel ? "#2563eb" : "#64748b" }}
-                      >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isSel ? "bg-blue-100 dark:bg-blue-900/60" : "bg-muted"
+                    }`}>
+                      <span className={`text-xs font-bold ${isSel ? "text-blue-700 dark:text-blue-300" : "text-muted-foreground"}`}>
                         {item.name[0]}
                       </span>
                     </div>
                     <div>
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: "#0f172a" }}
-                      >
-                        {item.name}
-                      </p>
+                      <p className="text-sm font-medium text-foreground">{item.name}</p>
                       {item.owner_name && (
-                        <p className="text-xs" style={{ color: "#94a3b8" }}>
-                          {item.owner_name}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{item.owner_name}</p>
                       )}
                     </div>
-                    <span
-                      className="ml-auto text-xs"
-                      style={{ color: "#cbd5e1" }}
-                    >
-                      Paciente
-                    </span>
+                    <span className="ml-auto text-xs text-muted-foreground/60">Paciente</span>
                   </div>
                 )}
               />
@@ -285,157 +199,89 @@ export default function GlobalSearch({ onClose }) {
                 items={results.doctors}
                 renderItem={(item, isSel) => (
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: isSel ? "#f3e8ff" : "#f1f5f9" }}
-                    >
-                      <span
-                        className="text-xs font-bold"
-                        style={{ color: isSel ? "#7c3aed" : "#64748b" }}
-                      >
-                        {item.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isSel ? "bg-violet-100 dark:bg-violet-900/60" : "bg-muted"
+                    }`}>
+                      <span className={`text-xs font-bold ${isSel ? "text-violet-700 dark:text-violet-300" : "text-muted-foreground"}`}>
+                        {item.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                       </span>
                     </div>
                     <div>
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: "#0f172a" }}
-                      >
-                        {item.name}
-                      </p>
-                      <p className="text-xs" style={{ color: "#94a3b8" }}>
-                        {item.specialty}
-                      </p>
+                      <p className="text-sm font-medium text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.specialty}</p>
                     </div>
-                    <span
-                      className="ml-auto text-xs"
-                      style={{ color: "#cbd5e1" }}
-                    >
-                      {config.staffLabel}
-                    </span>
+                    <span className="ml-auto text-xs text-muted-foreground/60">{config.staffLabel}</span>
                   </div>
                 )}
               />
               <Section
                 title="Citas"
                 items={results.appointments}
-                renderItem={(item, isSel) => (
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{
-                        backgroundColor: STATUS_COLOR[item.status] + "20",
-                      }}
-                    >
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={STATUS_COLOR[item.status]}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="3" y="4" width="18" height="18" rx="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
+                renderItem={(item) => {
+                  const st = appointmentStatus(item.status);
+                  return (
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${st.bg}`}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                             className={st.text}>
+                          <rect x="3" y="4" width="18" height="18" rx="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate text-foreground">{item.patient_name}</p>
+                        <p className="text-xs truncate text-muted-foreground">
+                          {item.doctor_name} · {item.date}
+                        </p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${st.bg} ${st.text}`}>
+                        {st.label}
+                      </span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="text-sm font-medium truncate"
-                        style={{ color: "#0f172a" }}
-                      >
-                        {item.patient_name}
-                      </p>
-                      <p
-                        className="text-xs truncate"
-                        style={{ color: "#94a3b8" }}
-                      >
-                        {item.doctor_name} · {item.date}
-                      </p>
-                    </div>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{
-                        backgroundColor: STATUS_COLOR[item.status] + "15",
-                        color: STATUS_COLOR[item.status],
-                      }}
-                    >
-                      {STATUS_LABEL[item.status]}
-                    </span>
-                  </div>
-                )}
+                  );
+                }}
               />
               {hasInventory && (
                 <Section
                   title="Inventario"
                   items={results.products}
-                  renderItem={(item, isSel) => (
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{
-                          backgroundColor: item.low_stock
-                            ? "#fef2f2"
-                            : isSel
-                              ? "#f0fdf4"
-                              : "#f1f5f9",
-                        }}
-                      >
-                        <svg
-                          width="13"
-                          height="13"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={
-                            item.low_stock
-                              ? "#dc2626"
-                              : isSel
-                                ? "#16a34a"
-                                : "#64748b"
-                          }
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
+                  renderItem={(item, isSel) => {
+                    const wrap = item.low_stock
+                      ? "bg-red-50 dark:bg-red-950/40"
+                      : isSel
+                        ? "bg-emerald-50 dark:bg-emerald-950/40"
+                        : "bg-muted";
+                    const stroke = item.low_stock
+                      ? "text-red-600 dark:text-red-400"
+                      : isSel
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-muted-foreground";
+                    return (
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${wrap}`}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                               className={stroke}>
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate text-foreground">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.category && <span>{item.category} · </span>}
+                            <span className={item.low_stock ? "text-red-600 dark:text-red-400 font-semibold" : ""}>
+                              {item.current_stock} {item.unit}
+                              {item.low_stock ? " — Stock bajo" : ""}
+                            </span>
+                          </p>
+                        </div>
+                        <span className="ml-auto text-xs text-muted-foreground/60">Producto</span>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className="text-sm font-medium truncate"
-                          style={{ color: "#0f172a" }}
-                        >
-                          {item.name}
-                        </p>
-                        <p className="text-xs" style={{ color: "#94a3b8" }}>
-                          {item.category && <span>{item.category} · </span>}
-                          <span
-                            style={{
-                              color: item.low_stock ? "#dc2626" : "#94a3b8",
-                              fontWeight: item.low_stock ? "600" : "400",
-                            }}
-                          >
-                            {item.current_stock} {item.unit}
-                            {item.low_stock ? " — Stock bajo" : ""}
-                          </span>
-                        </p>
-                      </div>
-                      <span
-                        className="ml-auto text-xs"
-                        style={{ color: "#cbd5e1" }}
-                      >
-                        Producto
-                      </span>
-                    </div>
-                  )}
+                    );
+                  }}
                 />
               )}
             </>
@@ -443,25 +289,15 @@ export default function GlobalSearch({ onClose }) {
         </div>
 
         {/* Footer */}
-        <div
-          className="flex items-center gap-4 px-4 py-2.5"
-          style={{ borderTop: "1px solid #f1f5f9", backgroundColor: "#f8fafc" }}
-        >
-          <span className="text-xs" style={{ color: "#94a3b8" }}>
-            <kbd style={{ fontFamily: "monospace", marginRight: "4px" }}>
-              ↑↓
-            </kbd>{" "}
-            navegar
+        <div className="flex items-center gap-4 px-4 py-2.5 border-t border-border bg-muted/40">
+          <span className="text-xs text-muted-foreground">
+            <kbd className="font-mono mr-1">↑↓</kbd> navegar
           </span>
-          <span className="text-xs" style={{ color: "#94a3b8" }}>
-            <kbd style={{ fontFamily: "monospace", marginRight: "4px" }}>↵</kbd>{" "}
-            abrir
+          <span className="text-xs text-muted-foreground">
+            <kbd className="font-mono mr-1">↵</kbd> abrir
           </span>
-          <span className="text-xs" style={{ color: "#94a3b8" }}>
-            <kbd style={{ fontFamily: "monospace", marginRight: "4px" }}>
-              Esc
-            </kbd>{" "}
-            cerrar
+          <span className="text-xs text-muted-foreground">
+            <kbd className="font-mono mr-1">Esc</kbd> cerrar
           </span>
         </div>
       </div>

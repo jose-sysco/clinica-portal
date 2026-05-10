@@ -10,7 +10,6 @@ export default function PaymentReminder() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Solo consulta si estamos en los últimos 7 días del mes
     const today    = new Date();
     const lastDay  = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const dayOfMonth = today.getDate();
@@ -41,16 +40,9 @@ export default function PaymentReminder() {
   };
 
   return (
-    <div
-      className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm"
-      style={{
-        backgroundColor: "#fffbeb",
-        borderBottom:    "1px solid #fde68a",
-        color:           "#92400e",
-      }}
-    >
+    <div className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-200">
       <div className="flex items-center gap-2.5">
-        <span style={{ fontSize: "15px" }}>⏰</span>
+        <span className="text-base">⏰</span>
         <span>
           <strong>Recordatorio de pago:</strong> quedan {daysLeft} día{daysLeft !== 1 ? "s" : ""} para
           finalizar el mes. Contáctanos si ya realizaste tu pago.
@@ -58,10 +50,7 @@ export default function PaymentReminder() {
       </div>
       <button
         onClick={dismiss}
-        className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg transition-colors"
-        style={{ color: "#b45309", backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fde68a")}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fef3c7")}
+        className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-900/60 transition-colors"
       >
         Entendido
       </button>
