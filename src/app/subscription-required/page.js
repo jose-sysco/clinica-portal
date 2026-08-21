@@ -80,48 +80,6 @@ function SubscriptionContent() {
           </p>
         </div>
 
-        {/* Planes */}
-        <div className="space-y-3 mb-6">
-          {[
-            {
-              name: "Básico",
-              price: "$29/mes",
-              features: "Hasta 2 profesionales · 200 citas/mes",
-            },
-            {
-              name: "Profesional",
-              price: "$59/mes",
-              features: "Hasta 10 profesionales · citas ilimitadas",
-            },
-            {
-              name: "Empresarial",
-              price: "A consultar",
-              features: "Multi-sede · soporte prioritario",
-            },
-          ].map((plan) => (
-            <div
-              key={plan.name}
-              className="rounded-lg p-3 text-left flex items-center justify-between"
-              style={{ border: "1px solid #e2e8f0" }}
-            >
-              <div>
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "#0f172a" }}
-                >
-                  {plan.name}
-                </p>
-                <p className="text-xs" style={{ color: "#94a3b8" }}>
-                  {plan.features}
-                </p>
-              </div>
-              <span className="text-sm font-bold" style={{ color: "#2563eb" }}>
-                {plan.price}
-              </span>
-            </div>
-          ))}
-        </div>
-
         {/* Botones */}
         <div className="flex flex-col gap-2">
           <a
